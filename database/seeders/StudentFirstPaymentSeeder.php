@@ -285,10 +285,18 @@ class StudentFirstPaymentSeeder extends Seeder
     {
         $baseDate = now()->startOfMonth();
         $terms = StudentPaymentTerm::TERMS;
+        $totalAmount = 0;
+        $totalTerms = count($terms);
 
         foreach ($terms as $termOrder => $termData) {
-            // Calculate amount based on percentage
-            $amount = round($assessment->total_assessment * ($termData['percentage'] / 100), 2);
+            // For the last term, use remainder to ensure total equals assessment (no rounding)
+            if ($termOrder === $totalTerms) {
+                $amount = $assessment->total_assessment - $totalAmount;
+            } else {
+                // Calculate amount based on percentage
+                $amount = round($assessment->total_assessment * ($termData['percentage'] / 100), 2);
+                $totalAmount += $amount;
+            }
 
             // Calculate due date based on term order
             $dueDate = match ($termOrder) {

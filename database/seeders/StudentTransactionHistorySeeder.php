@@ -229,8 +229,18 @@ class StudentTransactionHistorySeeder extends Seeder
 
         // Create payment terms
         $termsData = [];
+        $totalAmount = 0;
+        $totalTerms = count(self::PAYMENT_TERMS);
+        $termIndex = 0;
         foreach (self::PAYMENT_TERMS as $term) {
-            $amount = round(self::TOTAL_ASSESSMENT_PER_TERM * ($term['percentage'] / 100), 2);
+            $termIndex++;
+            // For the last term, use remainder to ensure total equals assessment (no rounding)
+            if ($termIndex === $totalTerms) {
+                $amount = self::TOTAL_ASSESSMENT_PER_TERM - $totalAmount;
+            } else {
+                $amount = round(self::TOTAL_ASSESSMENT_PER_TERM * ($term['percentage'] / 100), 2);
+                $totalAmount += $amount;
+            }
 
             $paymentTerm = StudentPaymentTerm::create([
                 'student_assessment_id' => $assessment->id,
@@ -311,8 +321,18 @@ class StudentTransactionHistorySeeder extends Seeder
         ]);
 
         // Create payment terms - ALL UNPAID
+        $totalAmount = 0;
+        $totalTerms = count(self::PAYMENT_TERMS);
+        $termIndex = 0;
         foreach (self::PAYMENT_TERMS as $term) {
-            $amount = round(self::TOTAL_ASSESSMENT_PER_TERM * ($term['percentage'] / 100), 2);
+            $termIndex++;
+            // For the last term, use remainder to ensure total equals assessment (no rounding)
+            if ($termIndex === $totalTerms) {
+                $amount = self::TOTAL_ASSESSMENT_PER_TERM - $totalAmount;
+            } else {
+                $amount = round(self::TOTAL_ASSESSMENT_PER_TERM * ($term['percentage'] / 100), 2);
+                $totalAmount += $amount;
+            }
 
             StudentPaymentTerm::create([
                 'student_assessment_id' => $assessment->id,

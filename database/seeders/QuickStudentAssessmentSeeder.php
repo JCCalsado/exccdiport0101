@@ -136,8 +136,16 @@ class QuickStudentAssessmentSeeder extends Seeder
         $baseDate = now()->startOfMonth();
         $terms = \App\Models\StudentPaymentTerm::TERMS;
 
+        $totalAmount = 0;
+        $totalTerms = count($terms);
         foreach ($terms as $termOrder => $termData) {
-            $amount = round($totalAssessment * ($termData['percentage'] / 100), 2);
+            // For the last term, use remainder to ensure total equals assessment (no rounding)
+            if ($termOrder === $totalTerms) {
+                $amount = $totalAssessment - $totalAmount;
+            } else {
+                $amount = round($totalAssessment * ($termData['percentage'] / 100), 2);
+                $totalAmount += $amount;
+            }
             
             $dueDate = match ($termOrder) {
                 1 => $baseDate->copy(),

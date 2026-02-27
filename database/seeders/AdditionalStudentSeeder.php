@@ -160,9 +160,17 @@ class AdditionalStudentSeeder extends Seeder
     {
         $baseDate = now()->startOfMonth();
         $terms = StudentPaymentTerm::TERMS;
+        $totalAmount = 0;
+        $totalTerms = count($terms);
 
         foreach ($terms as $termOrder => $termData) {
-            $amount = round($assessment->total_assessment * ($termData['percentage'] / 100), 2);
+            // For the last term, use remainder to ensure total equals assessment (no rounding)
+            if ($termOrder === $totalTerms) {
+                $amount = $assessment->total_assessment - $totalAmount;
+            } else {
+                $amount = round($assessment->total_assessment * ($termData['percentage'] / 100), 2);
+                $totalAmount += $amount;
+            }
 
             // Only set due dates if not the "no due dates" student
             $dueDate = null;
