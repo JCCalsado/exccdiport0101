@@ -5,76 +5,65 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, CreditCard, History, Users, Receipt, Banknote, GraduationCap, User, SettingsIcon, Bell, CheckCircle2 } from 'lucide-vue-next';
+import { Folder, LayoutGrid, CreditCard, History, Users, Receipt, Banknote, GraduationCap, User, Bell, CheckCircle2 } from 'lucide-vue-next';
+// REMOVED: BookOpen — was used for Subject Management (now disabled)
 import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
 import { StudentUser } from '@/types/user';
 
-// Access the authenticated user's role from Inertia props
 const page = usePage();
 const userRole = computed(() => page.props.auth?.user?.role || 'student');
 
-// Define all possible navigation items with required roles
 const allNavItems: NavItem[] = [
     {
         title: 'Student Dashboard',
         href: route('student.dashboard'),
         icon: GraduationCap,
-        roles: ['student'], // Student-specific dashboard
+        roles: ['student'],
     },
     {
         title: 'My Account',
         href: route('student.account'),
         icon: CreditCard,
-        roles: ['student'], // Only students
+        roles: ['student'],
     },
     {
         title: 'Transaction History',
         href: route('transactions.index'),
         icon: History,
-        roles: ['student'], // Only students
+        roles: ['student'],
     },
     {
         title: 'Admin Dashboard',
         href: route('admin.dashboard'),
         icon: LayoutGrid,
-        roles: ['admin'], // Only admin
+        roles: ['admin'],
     },
     {
         title: 'Accounting Dashboard',
         href: route('accounting.dashboard'),
         icon: Banknote,
-        roles: ['accounting'], // Accounting and above
+        roles: ['accounting'],
     },
-    {
-        title: 'Fee Management',
-        href: route('fees.index'),
-        icon: Receipt,
-        roles: ['accounting', 'admin'],
-    },
-    {
-        title: 'Subject Management',
-        href: route('subjects.index'),
-        icon: BookOpen,
-        roles: ['accounting', 'admin'],
-    },
+    // REMOVED: Fee Management (route disabled)
+    // REMOVED: Subject Management (route disabled)
     {
         title: 'Admin Users',
         href: '/admin/users',
         icon: Users,
-        roles: ['admin'], // Only admin
+        roles: ['admin'],
     },
     {
         title: 'Notifications',
         href: '/admin/notifications',
         icon: Bell,
-        roles: ['admin'], // Only admin can manage
+        roles: ['admin'],
     },
     {
         title: 'User Management',
         href: route('users.index'),
         icon: Users,
-        roles: ['admin'], // Only super admin
+        roles: ['admin'],
     },
     {
         title: 'Archives',
@@ -86,12 +75,12 @@ const allNavItems: NavItem[] = [
         title: 'My Profile',
         href: route('my-profile'),
         icon: User,
-        roles: ['student'], // Only for students
+        roles: ['student'],
     },
     {
         title: 'Student Fee Management',
         href: route('student-fees.index'),
-        icon: Receipt, // Make sure to import Receipt from lucide-vue-next
+        icon: Receipt,
         roles: ['accounting', 'admin'],
     },
     {
@@ -102,17 +91,14 @@ const allNavItems: NavItem[] = [
     },
 ];
 
-// Filter navigation items based on the user's role
 const mainNavItems = computed(() => {
-  return allNavItems.filter((item) => {
-    if (!item.roles) return true;
-    return item.roles.includes(userRole.value);
-  });
+    return allNavItems.filter((item) => {
+        if (!item.roles) return true;
+        return item.roles.includes(userRole.value);
+    });
 });
 
-const footerNavItems: NavItem[] = [
-  
-];
+const footerNavItems: NavItem[] = [];
 </script>
 
 <template>

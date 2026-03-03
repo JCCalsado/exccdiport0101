@@ -26,7 +26,7 @@ class StudentFeeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with(['student', 'account'])
+        $query = User::with(['student', 'account', 'latestAssessment.paymentTerms'])
             ->where('role', 'student');
 
         // Search functionality
@@ -289,24 +289,63 @@ class StudentFeeController extends Controller
             ->orderBy('paid_at', 'desc')
             ->get();
 
-        // Calculate fee breakdown
-        $feeBreakdown = $transactions->where('kind', 'charge')
-            ->groupBy('type')
-            ->map(function ($group) {
-                return [
-                    'category' => $group->first()->type,
-                    'total' => $group->sum('amount'),
-                    'items' => $group->count(),
-                ];
-            });
+        // ── FIX: Build feeBreakdown from the assessment record first. ─────────────
+        // Previously this was derived only from transactions, which meant students
+        // without charge transactions (like jcdc742713) showed an empty fee breakdown.
+        // Now we derive from the assessment's stored amounts, falling back to
+        // transactions if no assessment exists.
+        if ($latestAssessment) {
+            $feeBreakdown = collect();
+
+            if ($latestAssessment->tuition_fee > 0) {
+                $feeBreakdown->push([
+                    'category' => 'Tuition',
+                    'total'    => (float) $latestAssessment->tuition_fee,
+                    'items'    => 1,
+                ]);
+            }
+
+            if ($latestAssessment->other_fees > 0) {
+                // Try to further break down other_fees from stored fee_breakdown JSON
+                $storedBreakdown = $latestAssessment->fee_breakdown ?? [];
+                if (!empty($storedBreakdown)) {
+                    $grouped = collect($storedBreakdown)->groupBy('category');
+                    foreach ($grouped as $category => $items) {
+                        $feeBreakdown->push([
+                            'category' => $category,
+                            'total'    => $items->sum('amount'),
+                            'items'    => $items->count(),
+                        ]);
+                    }
+                } else {
+                    // No detailed breakdown stored — show as Miscellaneous
+                    $feeBreakdown->push([
+                        'category' => 'Miscellaneous',
+                        'total'    => (float) $latestAssessment->other_fees,
+                        'items'    => 1,
+                    ]);
+                }
+            }
+        } else {
+            // Fallback: derive from transactions (original behavior)
+            $feeBreakdown = $transactions->where('kind', 'charge')
+                ->groupBy('type')
+                ->map(function ($group) {
+                    return [
+                        'category' => $group->first()->type,
+                        'total'    => $group->sum('amount'),
+                        'items'    => $group->count(),
+                    ];
+                });
+        }
 
         return Inertia::render('StudentFees/Show', [
-            'student' => $student,
+            'student'          => $student,
             'student_model_id' => $student->student->id ?? null,
-            'assessment' => $latestAssessment,
-            'transactions' => $transactions,
-            'payments' => $payments,
-            'feeBreakdown' => $feeBreakdown->values(),
+            'assessment'       => $latestAssessment,
+            'transactions'     => $transactions,
+            'payments'         => $payments,
+            'feeBreakdown'     => $feeBreakdown->values(),
         ]);
     }
 

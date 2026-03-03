@@ -1,4 +1,3 @@
-<!-- resources/js/pages/Accounting/Dashboard.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
@@ -58,7 +57,6 @@ type YearLevel = {
   count: number
 }
 
-// Add Student Fee Stats type
 type StudentFeeStats = {
   total_assessments: number
   total_assessment_amount: number
@@ -78,7 +76,6 @@ const props = defineProps<{
     year: number
     semester: string
   }
-  // Add student fee stats
   studentFeeStats?: StudentFeeStats
 }>()
 
@@ -162,13 +159,7 @@ const viewStudent = (studentId: number) => {
             <RefreshCw :size="16" />
             Refresh
           </button>
-          <Link
-            :href="route('fees.index')"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Receipt :size="16" />
-            Manage Fees
-          </Link>
+          <!-- Manage Fees button removed (Fee Management disabled) -->
         </div>
       </div>
 
@@ -239,7 +230,7 @@ const viewStudent = (studentId: number) => {
         </div>
       </div>
 
-      <!-- Student Fee Management Widget (NEW) -->
+      <!-- Student Fee Management Widget -->
       <div v-if="studentFeeStats" class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 border-2 border-blue-200">
         <div class="flex items-center justify-between mb-6">
           <div>
@@ -260,7 +251,6 @@ const viewStudent = (studentId: number) => {
 
         <!-- Student Fee Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Total Assessments -->
           <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
               <div class="flex-1">
@@ -274,7 +264,6 @@ const viewStudent = (studentId: number) => {
             </div>
           </div>
 
-          <!-- Total Assessment Amount -->
           <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
               <div class="flex-1">
@@ -290,7 +279,6 @@ const viewStudent = (studentId: number) => {
             </div>
           </div>
 
-          <!-- Pending Assessments -->
           <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
               <div class="flex-1">
@@ -306,7 +294,6 @@ const viewStudent = (studentId: number) => {
             </div>
           </div>
 
-          <!-- Recent Payments -->
           <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
               <div class="flex-1">
@@ -412,7 +399,6 @@ const viewStudent = (studentId: number) => {
         <div class="p-6">
           <!-- Overview Tab -->
           <div v-if="activeTab === 'overview'" class="space-y-6">
-            <!-- Payment Trends Chart -->
             <div>
               <h3 class="text-lg font-semibold mb-4">Payment Trends (Last 6 Months)</h3>
               <div class="bg-gray-50 rounded-lg p-4">
@@ -450,9 +436,7 @@ const viewStudent = (studentId: number) => {
               </div>
             </div>
 
-            <!-- Payment Methods & Year Levels -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Payment by Method -->
               <div>
                 <h3 class="text-lg font-semibold mb-4">Payment Methods</h3>
                 <div class="space-y-3">
@@ -480,7 +464,6 @@ const viewStudent = (studentId: number) => {
                 </div>
               </div>
 
-              <!-- Students by Year Level -->
               <div>
                 <h3 class="text-lg font-semibold mb-4">Students by Year Level</h3>
                 <div class="space-y-3">
@@ -511,10 +494,7 @@ const viewStudent = (studentId: number) => {
           <div v-if="activeTab === 'payments'">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-lg font-semibold">Recent Payments</h3>
-              <Link
-                :href="route('transactions.index')"
-                class="text-sm text-blue-600 hover:text-blue-800"
-              >
+              <Link :href="route('transactions.index')" class="text-sm text-blue-600 hover:text-blue-800">
                 View All →
               </Link>
             </div>
@@ -523,29 +503,15 @@ const viewStudent = (studentId: number) => {
               <table class="min-w-full">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Reference
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Student
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Amount
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Date
-                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                  <tr
-                    v-for="payment in recentPayments"
-                    :key="payment.id"
-                    class="hover:bg-gray-50"
-                  >
+                  <tr v-for="payment in recentPayments" :key="payment.id" class="hover:bg-gray-50">
                     <td class="px-4 py-3 text-sm font-medium">{{ payment.reference }}</td>
                     <td class="px-4 py-3 text-sm">{{ payment.student_name }}</td>
                     <td class="px-4 py-3 text-sm font-semibold text-green-600">
@@ -554,18 +520,12 @@ const viewStudent = (studentId: number) => {
                     <td class="px-4 py-3 text-sm">
                       <span
                         class="px-2 py-1 text-xs rounded-full"
-                        :class="
-                          payment.status === 'paid'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        "
+                        :class="payment.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
                       >
                         {{ payment.status }}
                       </span>
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-600">
-                      {{ formatDate(payment.created_at) }}
-                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(payment.created_at) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -580,10 +540,7 @@ const viewStudent = (studentId: number) => {
           <div v-if="activeTab === 'students'">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-lg font-semibold">Students with Outstanding Balances</h3>
-              <Link
-                :href="route('students.index')"
-                class="text-sm text-blue-600 hover:text-blue-800"
-              >
+              <Link :href="route('students.index')" class="text-sm text-blue-600 hover:text-blue-800">
                 View All Students →
               </Link>
             </div>
@@ -599,9 +556,7 @@ const viewStudent = (studentId: number) => {
                   <div class="flex-1">
                     <p class="font-medium text-gray-900">{{ student.name }}</p>
                     <p class="text-sm text-gray-600">{{ student.student_id }} • {{ student.email }}</p>
-                    <p class="text-xs text-gray-500 mt-1">
-                      {{ student.course }} - {{ student.year_level }}
-                    </p>
+                    <p class="text-xs text-gray-500 mt-1">{{ student.course }} - {{ student.year_level }}</p>
                   </div>
                   <div class="text-right">
                     <p class="text-lg font-bold text-red-600">{{ formatCurrency(student.balance) }}</p>
@@ -618,36 +573,10 @@ const viewStudent = (studentId: number) => {
         </div>
       </div>
 
-      <!-- Quick Actions -->
+      <!-- Quick Actions — Fee/Subject links removed -->
       <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Link
-            :href="route('fees.create')"
-            class="flex items-center gap-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-          >
-            <div class="p-2 bg-blue-500 rounded">
-              <Receipt :size="20" class="text-white" />
-            </div>
-            <div>
-              <p class="font-medium text-gray-900">Create Fee</p>
-              <p class="text-xs text-gray-600">Add new fee</p>
-            </div>
-          </Link>
-
-          <Link
-            :href="route('subjects.create')"
-            class="flex items-center gap-3 p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-          >
-            <div class="p-2 bg-green-500 rounded">
-              <BarChart3 :size="20" class="text-white" />
-            </div>
-            <div>
-              <p class="font-medium text-gray-900">Create Subject</p>
-              <p class="text-xs text-gray-600">Add new subject</p>
-            </div>
-          </Link>
-
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
             :href="route('students.index')"
             class="flex items-center gap-3 p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"

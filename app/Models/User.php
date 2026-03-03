@@ -85,6 +85,13 @@ class User extends Authenticatable
         return $this->hasOne(Account::class);
     }
 
+    public function latestAssessment(): HasOne
+    {
+        return $this->hasOne(\App\Models\StudentAssessment::class, 'user_id')
+                    ->where('status', 'active')
+                    ->latestOfMany();
+    }
+
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);

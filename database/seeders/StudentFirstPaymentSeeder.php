@@ -13,6 +13,8 @@ use App\Models\Transaction;
 use App\Models\Account;
 use App\Events\PaymentRecorded;
 use App\Enums\UserRoleEnum;
+use App\Services\AccountService;
+use Illuminate\Support\Str;
 
 /**
  * StudentFirstPaymentSeeder
@@ -274,6 +276,29 @@ class StudentFirstPaymentSeeder extends Seeder
 
         // Create payment terms for this assessment
         $this->createPaymentTermsForAssessment($assessment);
+
+        // ── FIX: Create a charge Transaction for the full assessment ──────────────
+        // AccountService::recalculate() derives account.balance ONLY from the
+        // transactions table (kind='charge' minus kind='payment' status='paid').
+        // Without a charge transaction, account.balance stays 0 and the frontend
+        // displays ₱0.00 instead of ₱15,540 in both Index and Show.
+        \App\Models\Transaction::create([
+            'user_id'   => $student->user_id,
+            'reference' => 'ASSESS-' . strtoupper(Str::random(8)),
+            'kind'      => 'charge',
+            'type'      => 'Tuition',
+            'year'      => explode('-', $schoolYear)[0],
+            'semester'  => $semester,
+            'amount'    => $totalAssessment,
+            'status'    => 'pending',
+            'meta'      => [
+                'assessment_id' => $assessment->id,
+                'description'   => "Assessment Charge - {$semester} {$schoolYear}",
+            ],
+        ]);
+
+        // Sync account.balance → will equal $totalAssessment (no payments yet)
+        AccountService::recalculate($student->user);
 
         return $assessment;
     }

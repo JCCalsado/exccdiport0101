@@ -1,12 +1,27 @@
-<!-- resources/js/pages/StudentFees/Index.vue -->
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Eye, Edit, UserPlus } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { Search, Plus, Eye, Edit, UserPlus, TrendingDown, TrendingUp, AlertCircle } from 'lucide-vue-next';
+import { ref, watch, computed } from 'vue';
+
+interface PaymentTerm {
+    id: number;
+    term_name: string;
+    term_order: number;
+    amount: number;
+    balance: number;
+    status: string;
+    due_date: string | null;
+}
+
+interface Assessment {
+    id: number;
+    total_assessment: number;
+    paymentTerms: PaymentTerm[];
+}
 
 interface Student {
     id: number;
@@ -15,9 +30,8 @@ interface Student {
     course: string;
     year_level: string;
     status: string;
-    account: {
-        balance: number;
-    } | null;
+    account: { balance: number } | null;
+    latestAssessment: Assessment | null;
 }
 
 interface PaginationLink {
@@ -68,10 +82,7 @@ const performSearch = () => {
                 year_level: selectedYearLevel.value,
                 status: selectedStatus.value,
             },
-            {
-                preserveState: true,
-                replace: true,
-            }
+            { preserveState: true, replace: true }
         );
     }, 300);
 };
@@ -82,23 +93,105 @@ watch([search, selectedCourse, selectedYearLevel, selectedStatus], () => {
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'active':
-            return 'bg-green-500 text-white';
-        case 'graduated':
-            return 'bg-blue-500 text-white';
-        case 'dropped':
-            return 'bg-red-500 text-white';
-        default:
-            return 'bg-gray-500 text-white';
+        case 'active':    return 'bg-green-500 text-white';
+        case 'graduated': return 'bg-blue-500 text-white';
+        case 'dropped':   return 'bg-red-500 text-white';
+        default:          return 'bg-gray-500 text-white';
     }
 };
 
 const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-    }).format(amount);
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 };
+
+/**
+ * Accurate remaining balance — resolved in priority order:
+ *
+ * 1. account.balance  (most authoritative when > 0)
+ *    AccountService keeps this as: SUM(charge txns) - SUM(paid payment txns)
+ *
+ * 2. SUM(latestAssessment.paymentTerms[].balance)  (fallback)
+ *    Covers students whose assessment was created without charge transactions
+ *    (e.g. jcdc742713@gmail.com seeded via StudentFirstPaymentSeeder).
+ *    Without this fallback, their balance shows as ₱0 even though ₱15,540 is owed.
+ */
+const getRemainingBalance = (student: Student): number => {
+    const accountBal = parseFloat(String(student.account?.balance ?? 0));
+    if (accountBal > 0) return accountBal;
+
+    // Fallback: sum unpaid payment term balances from the eager-loaded assessment
+    const terms = student.latestAssessment?.paymentTerms ?? [];
+    if (terms.length > 0) {
+        const termsTotal = terms.reduce((sum: number, t: PaymentTerm) => sum + parseFloat(String(t.balance)), 0);
+        if (termsTotal > 0) return termsTotal;
+    }
+
+    return 0;
+};
+
+/**
+ * Payment timing status:
+ * - Count total terms and how many are paid.
+ * - If the first term (Upon Registration / Prelim) is unpaid → RED (behind).
+ * - If at least the first term is paid → GREEN (on track).
+ * - Returns null when there are no payment terms yet.
+ */
+const getBalanceTimingStatus = (student: Student): 'red' | 'green' | 'zero' | null => {
+    const balance = getRemainingBalance(student);
+
+    if (balance === 0) return 'zero';
+
+    const terms = student.latestAssessment?.paymentTerms;
+    if (!terms || terms.length === 0) return null;
+
+    const sorted = [...terms].sort((a, b) => a.term_order - b.term_order);
+    const firstTerm = sorted[0];
+
+    // If the very first term has not been paid at all → behind schedule
+    if (firstTerm.status === 'pending' || parseFloat(String(firstTerm.balance)) >= parseFloat(String(firstTerm.amount))) {
+        return 'red';
+    }
+
+    // First term is at least partially paid → on schedule
+    return 'green';
+};
+
+const getBalanceClasses = (student: Student): string => {
+    const timing = getBalanceTimingStatus(student);
+    switch (timing) {
+        case 'red':   return 'text-red-600 font-bold';
+        case 'green': return 'text-green-600 font-bold';
+        case 'zero':  return 'text-green-600 font-semibold';
+        default:      return 'text-gray-900 font-medium';
+    }
+};
+
+const getBalanceIcon = (student: Student) => {
+    const timing = getBalanceTimingStatus(student);
+    if (timing === 'red')   return TrendingDown;
+    if (timing === 'green') return TrendingUp;
+    return null;
+};
+
+const getBalanceBadge = (student: Student): { label: string; cls: string } | null => {
+    const timing = getBalanceTimingStatus(student);
+    if (timing === 'red')   return { label: 'Behind', cls: 'bg-red-100 text-red-700 border border-red-200' };
+    if (timing === 'green') return { label: 'On Track', cls: 'bg-green-100 text-green-700 border border-green-200' };
+    if (timing === 'zero')  return { label: 'Fully Paid', cls: 'bg-blue-100 text-blue-700 border border-blue-200' };
+    return null;
+};
+
+// Summary stats
+const totalStudents = computed(() => props.students.data.length);
+const totalOutstanding = computed(() =>
+    props.students.data.reduce((sum, s) => sum + getRemainingBalance(s), 0)
+);
+const fullyPaidCount = computed(() =>
+    props.students.data.filter(s => getRemainingBalance(s) === 0).length
+);
+const behindCount = computed(() =>
+    props.students.data.filter(s => getBalanceTimingStatus(s) === 'red').length
+);
 </script>
 
 <template>
@@ -112,9 +205,7 @@ const formatCurrency = (amount: number) => {
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold">Student Fee Management</h1>
-                    <p class="text-gray-600 mt-2">
-                        Manage student assessments and fees
-                    </p>
+                    <p class="text-gray-600 mt-1">Manage student assessments and fees</p>
                 </div>
                 <div class="flex gap-2">
                     <Link :href="route('student-fees.create-student')">
@@ -132,106 +223,79 @@ const formatCurrency = (amount: number) => {
                 </div>
             </div>
 
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl border shadow-sm p-4">
+                    <p class="text-sm text-gray-500">Shown Students</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ totalStudents }}</p>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm p-4">
+                    <p class="text-sm text-gray-500">Total Outstanding</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1">{{ formatCurrency(totalOutstanding) }}</p>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm p-4">
+                    <p class="text-sm text-gray-500">Fully Paid</p>
+                    <p class="text-2xl font-bold text-green-600 mt-1">{{ fullyPaidCount }}</p>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm p-4">
+                    <p class="text-sm text-gray-500">Behind Schedule</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1">{{ behindCount }}</p>
+                </div>
+            </div>
+
             <!-- Filters -->
-            <div class="bg-white p-4 rounded-lg border shadow-sm space-y-4">
+            <div class="bg-white p-4 rounded-xl border shadow-sm">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <!-- Search -->
                     <div class="relative">
-                        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input
-                            v-model="search"
-                            placeholder="Search by ID or name..."
-                            class="pl-10"
-                        />
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input v-model="search" placeholder="Search by ID or name..." class="pl-10" />
                     </div>
-
-                    <!-- Course Filter -->
-                    <select
-                        v-model="selectedCourse"
-                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
+                    <select v-model="selectedCourse"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                         <option value="">All Courses</option>
-                        <option
-                            v-for="course in courses"
-                            :key="course"
-                            :value="course"
-                        >
-                            {{ course }}
-                        </option>
+                        <option v-for="course in courses" :key="course" :value="course">{{ course }}</option>
                     </select>
-
-                    <!-- Year Level Filter -->
-                    <select
-                        v-model="selectedYearLevel"
-                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
+                    <select v-model="selectedYearLevel"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                         <option value="">All Year Levels</option>
-                        <option
-                            v-for="year in yearLevels"
-                            :key="year"
-                            :value="year"
-                        >
-                            {{ year }}
-                        </option>
+                        <option v-for="year in yearLevels" :key="year" :value="year">{{ year }}</option>
                     </select>
-
-                    <!-- Status Filter -->
-                    <select
-                        v-model="selectedStatus"
-                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
+                    <select v-model="selectedStatus"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                         <option value="">All Statuses</option>
-                        <option
-                            v-for="(label, value) in statuses"
-                            :key="value"
-                            :value="value"
-                        >
-                            {{ label }}
-                        </option>
+                        <option v-for="(label, value) in statuses" :key="value" :value="value">{{ label }}</option>
                     </select>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+            <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Student ID
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Name
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Course
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Year Level
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Remaining Balance
-                                </th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year Level</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining Balance</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-if="students.data.length === 0">
-                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                                    No students found
+                                <td colspan="7" class="px-6 py-12 text-center text-gray-400">
+                                    <Search class="w-8 h-8 mx-auto mb-2 opacity-40" />
+                                    <p class="font-medium">No students found</p>
                                 </td>
                             </tr>
-                            <tr v-for="student in students.data" :key="student.id" class="hover:bg-gray-50">
+                            <tr v-for="student in students.data" :key="student.id"
+                                class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ student.student_id }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                     {{ student.name }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -241,31 +305,43 @@ const formatCurrency = (amount: number) => {
                                     {{ student.year_level }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span 
-                                        class="px-2 py-1 text-xs font-semibold rounded-full"
-                                        :class="getStatusColor(student.status)"
-                                    >
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                                        :class="getStatusColor(student.status)">
                                         {{ student.status }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
-                                    {{ formatCurrency(Math.abs(student.account?.balance ?? 0)) }}
+
+                                <!-- Remaining Balance with timing indicator -->
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="flex flex-col items-end gap-1">
+                                        <div class="flex items-center gap-1.5 justify-end">
+                                            <component
+                                                v-if="getBalanceIcon(student)"
+                                                :is="getBalanceIcon(student)"
+                                                class="w-3.5 h-3.5"
+                                                :class="getBalanceTimingStatus(student) === 'red' ? 'text-red-500' : 'text-green-500'"
+                                            />
+                                            <span class="text-sm" :class="getBalanceClasses(student)">
+                                                {{ formatCurrency(getRemainingBalance(student)) }}
+                                            </span>
+                                        </div>
+                                        <span v-if="getBalanceBadge(student)"
+                                            class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                                            :class="getBalanceBadge(student)!.cls">
+                                            {{ getBalanceBadge(student)!.label }}
+                                        </span>
+                                    </div>
                                 </td>
+
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end gap-2">
                                         <Link :href="route('student-fees.show', student.id)">
-                                            <button 
-                                                class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                                title="View Details"
-                                            >
+                                            <button class="text-blue-600 hover:text-blue-900 p-1.5 rounded-lg hover:bg-blue-50 transition-colors" title="View Details">
                                                 <Eye class="w-4 h-4" />
                                             </button>
                                         </Link>
                                         <Link :href="route('student-fees.edit', student.id)">
-                                            <button 
-                                                class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
-                                                title="Edit Assessment"
-                                            >
+                                            <button class="text-green-600 hover:text-green-900 p-1.5 rounded-lg hover:bg-green-50 transition-colors" title="Edit Assessment">
                                                 <Edit class="w-4 h-4" />
                                             </button>
                                         </Link>
@@ -276,39 +352,41 @@ const formatCurrency = (amount: number) => {
                     </table>
                 </div>
 
-                <!-- Fixed Pagination with null check -->
-                <div 
-                    v-if="students.last_page > 1" 
-                    class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50"
-                >
+                <!-- Pagination -->
+                <div v-if="students.last_page > 1"
+                    class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
                     <div class="text-sm text-gray-600">
                         Page {{ students.current_page }} of {{ students.last_page }}
                     </div>
                     <div class="flex gap-2">
                         <template v-for="(link, index) in students.links" :key="index">
-                            <!-- Render as Link if URL exists -->
-                            <Link
-                                v-if="link.url"
-                                :href="link.url"
-                                :class="[
-                                    'px-3 py-1 rounded border text-sm transition-colors',
-                                    link.active 
-                                        ? 'bg-blue-600 text-white border-blue-600' 
-                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                                ]"
-                                v-html="link.label"
-                            />
-                            <!-- Render as disabled span if URL is null -->
-                            <span
-                                v-else
-                                :class="[
-                                    'px-3 py-1 rounded border text-sm',
-                                    'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed opacity-60'
-                                ]"
-                                v-html="link.label"
-                            />
+                            <Link v-if="link.url" :href="link.url"
+                                :class="['px-3 py-1 rounded border text-sm transition-colors',
+                                    link.active
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']"
+                                v-html="link.label" />
+                            <span v-else
+                                class="px-3 py-1 rounded border text-sm bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed opacity-60"
+                                v-html="link.label" />
                         </template>
                     </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="flex items-center gap-6 text-xs text-gray-500 px-1">
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-red-500"></span>
+                    <span><strong class="text-red-600">Behind</strong> — 1st term unpaid</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                    <span><strong class="text-green-600">On Track</strong> — paying on schedule</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span><strong class="text-blue-600">Fully Paid</strong> — no outstanding balance</span>
                 </div>
             </div>
         </div>

@@ -9,8 +9,8 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentFeeController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\AccountingDashboardController;
-use App\Http\Controllers\FeeController;
-use App\Http\Controllers\SubjectController;
+// REMOVED: FeeController (Fee Management disabled)
+// REMOVED: SubjectController (Subject Management disabled)
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminController;
@@ -35,8 +35,6 @@ Route::get('/', function () {
 // ============================================
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Notification dismissal (for all authenticated users)
     Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('notifications.dismiss');
 });
 
@@ -56,8 +54,6 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->grou
 Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::resource('students', StudentController::class);
     Route::post('students/{student}/payments', [StudentController::class, 'storePayment'])->name('students.payments.store');
-    
-    // NEW: Student Workflow Actions
     Route::post('students/{student}/advance-workflow', [StudentController::class, 'advanceWorkflow'])
         ->name('students.advance-workflow');
     Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])
@@ -69,24 +65,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('student-fees')->group(function () {
     Route::get('/', [StudentFeeController::class, 'index'])->name('student-fees.index');
-    
-    // Create new student (separate from assessment)
     Route::get('/create-student', [StudentFeeController::class, 'createStudent'])->name('student-fees.create-student');
     Route::post('/store-student', [StudentFeeController::class, 'storeStudent'])->name('student-fees.store-student');
-    
-    // Create assessment
     Route::get('/create', [StudentFeeController::class, 'create'])->name('student-fees.create');
     Route::post('/', [StudentFeeController::class, 'store'])->name('student-fees.store');
-    
-    // View and manage specific student
     Route::get('/{userId}', [StudentFeeController::class, 'show'])->name('student-fees.show');
     Route::get('/{userId}/edit', [StudentFeeController::class, 'edit'])->name('student-fees.edit');
     Route::put('/{userId}', [StudentFeeController::class, 'update'])->name('student-fees.update');
-    
-    // Payment for student
     Route::post('/{userId}/payments', [StudentFeeController::class, 'storePayment'])->name('student-fees.payments.store');
-    
-    // Export PDF
     Route::get('/{userId}/export-pdf', [StudentFeeController::class, 'exportPdf'])->name('student-fees.export-pdf');
 });
 
@@ -111,16 +97,10 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-    
-    // Admin User Management
     Route::resource('users', AdminController::class);
     Route::post('users/{user}/deactivate', [AdminController::class, 'deactivate'])->name('admin.users.deactivate');
     Route::post('users/{user}/reactivate', [AdminController::class, 'reactivate'])->name('admin.users.reactivate');
-    
-    // Notification Management
     Route::resource('notifications', NotificationController::class);
-    
-    // Payment Terms Management
     Route::get('/payment-terms', [PaymentTermsController::class, 'index'])->name('admin.payment-terms.index');
     Route::post('/payment-terms/{paymentTerm}/due-date', [PaymentTermsController::class, 'updateDueDate'])->name('admin.payment-terms.update-due-date');
 });
@@ -134,7 +114,7 @@ Route::middleware(['auth', 'verified', 'role:accounting,admin'])->prefix('accoun
 });
 
 // ============================================
-// NEW: ACCOUNTING TRANSACTION WORKFLOW ROUTES
+// ACCOUNTING TRANSACTION WORKFLOW ROUTES
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('accounting-workflows')->group(function () {
     Route::get('/', [AccountingTransactionController::class, 'index'])->name('accounting-workflows.index');
@@ -143,28 +123,26 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('accoun
     Route::get('/{transaction}', [AccountingTransactionController::class, 'show'])->name('accounting-workflows.show');
     Route::put('/{transaction}', [AccountingTransactionController::class, 'update'])->name('accounting-workflows.update');
     Route::delete('/{transaction}', [AccountingTransactionController::class, 'destroy'])->name('accounting-workflows.destroy');
-    
-    // Submit for approval workflow
     Route::post('/{transaction}/submit', [AccountingTransactionController::class, 'submitForApproval'])
         ->name('accounting-workflows.submit');
 });
 
 // ============================================
-// FEE MANAGEMENT ROUTES
+// FEE MANAGEMENT ROUTES — DISABLED
 // ============================================
-Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
-    Route::resource('fees', FeeController::class);
-    Route::post('fees/{fee}/toggle-status', [FeeController::class, 'toggleStatus'])->name('fees.toggleStatus');
-    Route::post('fees/assign-to-students', [FeeController::class, 'assignToStudents'])->name('fees.assignToStudents');
-});
+// Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
+//     Route::resource('fees', FeeController::class);
+//     Route::post('fees/{fee}/toggle-status', [FeeController::class, 'toggleStatus'])->name('fees.toggleStatus');
+//     Route::post('fees/assign-to-students', [FeeController::class, 'assignToStudents'])->name('fees.assignToStudents');
+// });
 
 // ============================================
-// SUBJECT MANAGEMENT ROUTES
+// SUBJECT MANAGEMENT ROUTES — DISABLED
 // ============================================
-Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
-    Route::resource('subjects', SubjectController::class);
-    Route::post('subjects/{subject}/enroll-students', [SubjectController::class, 'enrollStudents'])->name('subjects.enrollStudents');
-});
+// Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
+//     Route::resource('subjects', SubjectController::class);
+//     Route::post('subjects/{subject}/enroll-students', [SubjectController::class, 'enrollStudents'])->name('subjects.enrollStudents');
+// });
 
 // ============================================
 // NOTIFICATION ROUTES (View Only for Accounting/Admin)
@@ -174,13 +152,10 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('admin'
 });
 
 // ============================================
-// NEW: WORKFLOW MANAGEMENT ROUTES
+// WORKFLOW MANAGEMENT ROUTES
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
-    // Workflow CRUD
     Route::resource('workflows', WorkflowController::class);
-    
-    // Workflow Approvals
     Route::get('/approvals', [WorkflowApprovalController::class, 'index'])->name('approvals.index');
     Route::get('/approvals/{approval}', [WorkflowApprovalController::class, 'show'])->name('approvals.show');
     Route::post('/approvals/{approval}/approve', [WorkflowApprovalController::class, 'approve'])->name('approvals.approve');
@@ -209,7 +184,6 @@ Route::middleware('auth')->prefix('settings')->group(function () {
 
 require __DIR__ . '/settings.php';
 
-// Debug routes (only in local environment)
 if (app()->environment('local')) {
     Route::middleware('auth')->get('/debug/csrf-token', [\App\Http\Controllers\Debug\DebugController::class, 'csrfToken']);
 }

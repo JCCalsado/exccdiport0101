@@ -155,12 +155,7 @@ const getColorClass = (color: string) => {
                 View Students
               </Button>
             </Link>
-            <Link :href="route('fees.index')" as="button" class="w-full">
-              <Button variant="outline" class="w-full justify-start">
-                <FileText class="w-4 h-4 mr-2" />
-                Manage Fees
-              </Button>
-            </Link>
+            <!-- Fee Management link removed (Fee Management disabled) -->
           </CardContent>
         </Card>
 
