@@ -38,7 +38,10 @@ class ProfileUpdateTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame('Test User', $user->name);
+        // 'name' is a computed accessor: "last_name, first_name"
+        // prepareForValidation splits "Test User" → first_name=Test, last_name=User
+        $this->assertSame('Test', $user->first_name);
+        $this->assertSame('User', $user->last_name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
     }

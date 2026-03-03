@@ -29,23 +29,21 @@ class AdminService
 
         // Create the admin user
         $admin = User::create([
-            'last_name' => $validated['last_name'],
-            'first_name' => $validated['first_name'],
+            'last_name'      => $validated['last_name'],
+            'first_name'     => $validated['first_name'],
             'middle_initial' => $validated['middle_initial'] ?? null,
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => UserRoleEnum::ADMIN,
-            'admin_type' => $validated['admin_type'],
-            'department' => $validated['department'] ?? null,
-            'is_active' => $validated['is_active'] ?? true,
-            'created_by' => $createdBy?->id,
-            'updated_by' => $createdBy?->id,
+            'email'          => $validated['email'],
+            'password'       => Hash::make($validated['password']),
+            'role'           => UserRoleEnum::ADMIN,
+            'admin_type'     => $validated['admin_type'],
+            'department'     => $validated['department'] ?? null,
+            'is_active'      => $validated['is_active'] ?? true,
+            'created_by'     => $createdBy?->id,
+            'updated_by'     => $createdBy?->id,
         ]);
 
-        // If terms were accepted in the data, record it
-        if ($validated['terms_accepted'] ?? false) {
-            $admin->acceptTerms();
-        }
+        // Always record terms acceptance on creation
+        $admin->acceptTerms();
 
         return $admin;
     }
@@ -60,16 +58,21 @@ class AdminService
             $updatedBy = User::find($updatedBy);
         }
 
-        $validated = $this->validateAdminData($data, $admin->id);
+        // Auto-populate password_confirmation if not provided
+        if (isset($data['password']) && !isset($data['password_confirmation'])) {
+            $data['password_confirmation'] = $data['password'];
+        }
+
+        $validated = $this->validateAdminUpdateData($data, $admin->id);
 
         $updateData = [
-            'last_name' => $validated['last_name'] ?? $admin->last_name,
-            'first_name' => $validated['first_name'] ?? $admin->first_name,
+            'last_name'      => $validated['last_name']    ?? $admin->last_name,
+            'first_name'     => $validated['first_name']   ?? $admin->first_name,
             'middle_initial' => $validated['middle_initial'] ?? $admin->middle_initial,
-            'admin_type' => $validated['admin_type'] ?? $admin->admin_type,
-            'department' => $validated['department'] ?? $admin->department,
-            'is_active' => isset($validated['is_active']) ? $validated['is_active'] : $admin->is_active,
-            'updated_by' => $updatedBy?->id,
+            'admin_type'     => $validated['admin_type']   ?? $admin->admin_type,
+            'department'     => array_key_exists('department', $validated) ? $validated['department'] : $admin->department,
+            'is_active'      => $validated['is_active']    ?? $admin->is_active,
+            'updated_by'     => $updatedBy?->id,
         ];
 
         // Only update password if provided
@@ -92,14 +95,13 @@ class AdminService
         }
 
         if ($admin->admin_type === User::ADMIN_TYPE_SUPER && $admin->is_active) {
-            // Check if there are other active super admins
             $activeSuperAdmins = User::admins()
                 ->where('admin_type', User::ADMIN_TYPE_SUPER)
                 ->where('is_active', true)
                 ->count();
 
             if ($activeSuperAdmins <= 1) {
-                throw new \InvalidArgumentException('Cannot deactivate the only super admin');
+                throw new \InvalidArgumentException('Cannot deactivate the last super admin');
             }
         }
 
@@ -155,13 +157,33 @@ class AdminService
     }
 
     /**
-     * Validate admin data
+     * Validate admin data for creation (all fields required)
      */
     private function validateAdminData(array $data, ?int $userId = null): array
     {
         $rules = User::getAdminValidationRules($userId);
 
         return validator($data, $rules)->validate();
+    }
+
+    /**
+     * Validate admin data for updates (all fields optional with sometimes)
+     */
+    private function validateAdminUpdateData(array $data, int $userId): array
+    {
+        $rules = User::getAdminValidationRules($userId);
+
+        // Wrap every rule with 'sometimes' so only supplied fields are validated
+        $updateRules = [];
+        foreach ($rules as $field => $rule) {
+            $ruleString = is_array($rule) ? implode('|', $rule) : $rule;
+            // Replace 'required' with 'sometimes' but keep everything else
+            $ruleString = preg_replace('/\brequired\b\|?/', '', $ruleString);
+            $ruleString = ltrim($ruleString, '|');
+            $updateRules[$field] = 'sometimes|' . $ruleString;
+        }
+
+        return validator($data, $updateRules)->validate();
     }
 
     /**
@@ -172,12 +194,12 @@ class AdminService
         $admins = User::admins()->where('is_active', true)->get();
 
         return [
-            'total_admins' => $admins->count(),
+            'total_admins'        => $admins->count(),
             'total_active_admins' => $admins->count(),
-            'super_admins' => $admins->where('admin_type', User::ADMIN_TYPE_SUPER)->count(),
-            'managers' => $admins->where('admin_type', User::ADMIN_TYPE_MANAGER)->count(),
-            'operators' => $admins->where('admin_type', User::ADMIN_TYPE_OPERATOR)->count(),
-            'terms_accepted' => $admins->filter(fn($a) => $a->terms_accepted_at !== null)->count(),
+            'super_admins'        => $admins->where('admin_type', User::ADMIN_TYPE_SUPER)->count(),
+            'managers'            => $admins->where('admin_type', User::ADMIN_TYPE_MANAGER)->count(),
+            'operators'           => $admins->where('admin_type', User::ADMIN_TYPE_OPERATOR)->count(),
+            'terms_accepted'      => $admins->filter(fn($a) => $a->terms_accepted_at !== null)->count(),
             'last_login_avg_days' => $this->calculateAverageLastLogin($admins),
         ];
     }
@@ -199,9 +221,9 @@ class AdminService
     }
 
     /**
-     * Log admin action (for audit trail - implement as needed)
+     * Log admin action (for audit trail)
      */
-    public function logAdminAction(User $admin, string $action, array $details = []): void
+    public function logAdminAction(int|User $admin, string $action, string $model = '', int $modelId = 0, array $details = []): void
     {
         // Implement audit logging if needed
     }

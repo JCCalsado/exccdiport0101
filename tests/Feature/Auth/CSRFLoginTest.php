@@ -58,6 +58,6 @@ class CSRFLoginTest extends TestCase
         ]);
 
         // Should either show validation errors or proceed
-        $this->assertIn($response->status(), [302, 422, 419]);
+        $this->assertContains($response->status(), [302, 422, 419]);
     }
 }

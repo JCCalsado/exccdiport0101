@@ -198,14 +198,14 @@ class User extends Authenticatable
      */
     public function hasPermission(string $permission): bool
     {
+        // Inactive users have no permissions regardless of role
+        if (!$this->is_active) {
+            return false;
+        }
+
         // Super admins have all permissions
         if ($this->isSuperAdmin()) {
             return true;
-        }
-
-        // Check if user is active
-        if (!$this->is_active) {
-            return false;
         }
 
         // Check role-based permissions (implement based on admin_type)
