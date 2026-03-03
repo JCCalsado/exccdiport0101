@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Download, Wallet, CreditCard, TrendingDown, TrendingUp, CheckCircle2,
-         AlertCircle, Clock, Receipt, ChevronDown, Eye } from 'lucide-vue-next';
-import { ref, computed, watch } from 'vue';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { AlertCircle, ArrowLeft, CheckCircle2, ChevronDown, CreditCard, Download, Plus, Receipt, TrendingDown, TrendingUp } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 interface PaymentTerm {
     id: number;
@@ -86,7 +85,7 @@ const paymentTimingStatus = computed((): 'behind' | 'on_track' | 'paid' => {
     const first = sorted[0];
 
     const firstBalance = parseFloat(String(first.balance));
-    const firstAmount  = parseFloat(String(first.amount));
+    const firstAmount = parseFloat(String(first.amount));
 
     // Behind if the first term hasn't been touched at all
     if (first.status === 'pending' && firstBalance >= firstAmount * 0.99) return 'behind';
@@ -145,9 +144,7 @@ const allTermsSorted = computed((): PaymentTerm[] => {
     return [...(props.assessment?.paymentTerms ?? [])].sort((a, b) => a.term_order - b.term_order);
 });
 
-const paidTermsCount = computed(() =>
-    allTermsSorted.value.filter(t => t.status === 'paid').length
-);
+const paidTermsCount = computed(() => allTermsSorted.value.filter((t) => t.status === 'paid').length);
 
 // ─── Fee breakdown enrichment ──────────────────────────────────────────────────
 /**
@@ -156,22 +153,28 @@ const paidTermsCount = computed(() =>
  */
 const feeLineItems = computed(() => {
     const labelMap: Record<string, string> = {
-        Tuition:       'Tuition Fee',
+        Tuition: 'Tuition Fee',
         Miscellaneous: 'Miscellaneous Fee',
-        Laboratory:    'Laboratory Fee',
-        Library:       'Library Fee',
-        Athletic:      'Athletic Fee',
-        Registration:  'Registration Fee',
+        Laboratory: 'Laboratory Fee',
+        Library: 'Library Fee',
+        Athletic: 'Athletic Fee',
+        Registration: 'Registration Fee',
     };
 
-    return props.feeBreakdown.map(item => ({
+    return props.feeBreakdown.map((item) => ({
         ...item,
         displayLabel: labelMap[item.category] ?? item.category,
     }));
 });
 
 // ─── Transaction History (term-grouped, styled like Transactions/Index) ────────
-interface TxGroup { key: string; transactions: any[]; totalCharges: number; totalPaid: number; balance: number }
+interface TxGroup {
+    key: string;
+    transactions: any[];
+    totalCharges: number;
+    totalPaid: number;
+    balance: number;
+}
 
 const transactionsByTerm = computed((): TxGroup[] => {
     const groups: Record<string, any[]> = {};
@@ -183,8 +186,8 @@ const transactionsByTerm = computed((): TxGroup[] => {
     }
 
     return Object.entries(groups).map(([key, txns]) => {
-        const totalCharges = txns.filter(t => t.kind === 'charge').reduce((s, t) => s + parseFloat(t.amount), 0);
-        const totalPaidAmt = txns.filter(t => t.kind === 'payment' && t.status === 'paid').reduce((s, t) => s + parseFloat(t.amount), 0);
+        const totalCharges = txns.filter((t) => t.kind === 'charge').reduce((s, t) => s + parseFloat(t.amount), 0);
+        const totalPaidAmt = txns.filter((t) => t.kind === 'payment' && t.status === 'paid').reduce((s, t) => s + parseFloat(t.amount), 0);
         return { key, transactions: txns, totalCharges, totalPaid: totalPaidAmt, balance: totalCharges - totalPaidAmt };
     });
 });
@@ -212,9 +215,7 @@ const selectedAssessmentId = ref<number | null>(props.assessment?.id ?? null);
 
 const exportUrl = computed(() => {
     const base = route('student-fees.export-pdf', props.student.id);
-    return selectedAssessmentId.value
-        ? `${base}?assessment_id=${selectedAssessmentId.value}`
-        : base;
+    return selectedAssessmentId.value ? `${base}?assessment_id=${selectedAssessmentId.value}` : base;
 });
 
 const showPaymentDialog = ref(false);
@@ -226,14 +227,10 @@ const paymentForm = useForm({
     payment_date: new Date().toISOString().split('T')[0],
 });
 
-const firstUnpaidTerm = computed(() =>
-    availableTermsForPayment.value.find((t: any) => t.isSelectable) ?? null
-);
+const firstUnpaidTerm = computed(() => availableTermsForPayment.value.find((t: any) => t.isSelectable) ?? null);
 
 const selectedTerm = computed(() =>
-    paymentForm.term_id
-        ? availableTermsForPayment.value.find((t: any) => t.id === paymentForm.term_id) ?? null
-        : null
+    paymentForm.term_id ? (availableTermsForPayment.value.find((t: any) => t.id === paymentForm.term_id) ?? null) : null,
 );
 
 const projectedRemainingBalance = computed(() => {
@@ -265,17 +262,20 @@ const getTermStatusConfig = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string }> = {
         pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Unpaid' },
         partial: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Partial' },
-        paid:    { bg: 'bg-green-100',  text: 'text-green-800',  label: 'Paid'   },
-        overdue: { bg: 'bg-red-100',    text: 'text-red-800',    label: 'Overdue' },
+        paid: { bg: 'bg-green-100', text: 'text-green-800', label: 'Paid' },
+        overdue: { bg: 'bg-red-100', text: 'text-red-800', label: 'Overdue' },
     };
     return map[status] ?? { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
 };
 
-watch(() => showPaymentDialog.value, (isOpen) => {
-    if (isOpen && firstUnpaidTerm.value && !paymentForm.term_id) {
-        paymentForm.term_id = firstUnpaidTerm.value.id;
-    }
-});
+watch(
+    () => showPaymentDialog.value,
+    (isOpen) => {
+        if (isOpen && firstUnpaidTerm.value && !paymentForm.term_id) {
+            paymentForm.term_id = firstUnpaidTerm.value.id;
+        }
+    },
+);
 
 const submitPayment = () => {
     if (!canSubmitPayment.value) {
@@ -285,26 +285,27 @@ const submitPayment = () => {
     }
     paymentForm.post(route('student-fees.payments.store', props.student.id), {
         preserveScroll: true,
-        onSuccess: () => { showPaymentDialog.value = false; paymentForm.reset(); paymentForm.clearErrors(); },
+        onSuccess: () => {
+            showPaymentDialog.value = false;
+            paymentForm.reset();
+            paymentForm.clearErrors();
+        },
         onError: (errors) => console.error('Payment errors:', errors),
     });
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 
-const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-const formatDateShort = (date: string) =>
-    new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+const formatDateShort = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
 const getStudentStatusColor = (status: string) => {
     const map: Record<string, string> = {
-        active:    'bg-green-100 text-green-800',
+        active: 'bg-green-100 text-green-800',
         graduated: 'bg-blue-100 text-blue-800',
-        dropped:   'bg-red-100 text-red-800',
+        dropped: 'bg-red-100 text-red-800',
     };
     return map[status] ?? 'bg-gray-100 text-gray-800';
 };
@@ -314,45 +315,43 @@ const getStudentStatusColor = (status: string) => {
     <Head :title="`Fee Details — ${student.name}`" />
 
     <AppLayout>
-        <div class="space-y-6 max-w-6xl mx-auto p-6">
+        <div class="mx-auto max-w-6xl space-y-6 p-6">
             <Breadcrumbs :items="breadcrumbs" />
 
             <!-- ── Header ── -->
-            <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-4">
                     <Link :href="route('student-fees.index')">
                         <Button variant="outline" size="sm">
-                            <ArrowLeft class="w-4 h-4 mr-2" />
+                            <ArrowLeft class="mr-2 h-4 w-4" />
                             Back
                         </Button>
                     </Link>
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900">{{ student.name }}</h1>
-                        <p class="text-sm text-gray-500 mt-0.5">{{ student.student_id }} · {{ student.course }} · {{ student.year_level }}</p>
+                        <p class="mt-0.5 text-sm text-gray-500">{{ student.student_id }} · {{ student.course }} · {{ student.year_level }}</p>
                     </div>
                 </div>
-                <div class="flex gap-2 items-center">
+                <div class="flex items-center gap-2">
                     <!-- Semester selector: only shown when student has more than one assessment -->
                     <select
                         v-if="allAssessments.length > 1"
                         v-model.number="selectedAssessmentId"
-                        class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                        class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         title="Select semester to export"
                     >
-                        <option v-for="a in allAssessments" :key="a.id" :value="a.id">
-                            {{ a.semester }} {{ a.school_year }}
-                        </option>
+                        <option v-for="a in allAssessments" :key="a.id" :value="a.id">{{ a.semester }} {{ a.school_year }}</option>
                     </select>
                     <a :href="exportUrl" target="_blank">
                         <Button variant="outline" size="sm">
-                            <Download class="w-4 h-4 mr-2" />
+                            <Download class="mr-2 h-4 w-4" />
                             Export PDF
                         </Button>
                     </a>
                     <Dialog v-model:open="showPaymentDialog">
                         <DialogTrigger as-child>
                             <Button size="sm">
-                                <Plus class="w-4 h-4 mr-2" />
+                                <Plus class="mr-2 h-4 w-4" />
                                 Record Payment
                             </Button>
                         </DialogTrigger>
@@ -362,9 +361,7 @@ const getStudentStatusColor = (status: string) => {
                                 <DialogDescription>
                                     <div class="space-y-1">
                                         <p>Add a payment for {{ student.name }}</p>
-                                        <p class="text-base font-semibold text-slate-900">
-                                            Current Balance: {{ formatCurrency(remainingBalance) }}
-                                        </p>
+                                        <p class="text-base font-semibold text-slate-900">Current Balance: {{ formatCurrency(remainingBalance) }}</p>
                                     </div>
                                 </DialogDescription>
                             </DialogHeader>
@@ -372,10 +369,18 @@ const getStudentStatusColor = (status: string) => {
                                 <!-- Amount -->
                                 <div class="space-y-2">
                                     <Label for="amount">Amount *</Label>
-                                    <Input id="amount" v-model="paymentForm.amount" type="number" step="0.01"
-                                        min="0.01" :max="remainingBalance" required placeholder="0.00"
-                                        :class="{ 'border-red-500': paymentAmountError }" />
-                                    <p v-if="paymentAmountError" class="text-sm text-red-500 font-medium">{{ paymentAmountError }}</p>
+                                    <Input
+                                        id="amount"
+                                        v-model="paymentForm.amount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        :max="remainingBalance"
+                                        required
+                                        placeholder="0.00"
+                                        :class="{ 'border-red-500': paymentAmountError }"
+                                    />
+                                    <p v-if="paymentAmountError" class="text-sm font-medium text-red-500">{{ paymentAmountError }}</p>
                                     <p v-else class="text-xs text-gray-500">Maximum: {{ formatCurrency(remainingBalance) }}</p>
                                     <p v-if="paymentForm.errors.amount" class="text-sm text-red-500">{{ paymentForm.errors.amount }}</p>
                                 </div>
@@ -386,7 +391,7 @@ const getStudentStatusColor = (status: string) => {
                                         id="payment_method"
                                         v-model="paymentForm.payment_method"
                                         required
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                                        class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                     >
                                         <option value="cash">Cash</option>
                                         <option value="gcash">GCash</option>
@@ -394,7 +399,9 @@ const getStudentStatusColor = (status: string) => {
                                         <option value="credit_card">Credit Card</option>
                                         <option value="debit_card">Debit Card</option>
                                     </select>
-                                    <p v-if="paymentForm.errors.payment_method" class="text-sm text-red-500">{{ paymentForm.errors.payment_method }}</p>
+                                    <p v-if="paymentForm.errors.payment_method" class="text-sm text-red-500">
+                                        {{ paymentForm.errors.payment_method }}
+                                    </p>
                                 </div>
                                 <!-- Payment Date -->
                                 <div class="space-y-2">
@@ -405,31 +412,45 @@ const getStudentStatusColor = (status: string) => {
                                 <!-- Select Term -->
                                 <div class="space-y-2">
                                     <Label for="term_id">Select Term <span class="text-xs text-red-500">*</span></Label>
-                                    <select id="term_id" v-model.number="paymentForm.term_id" required
+                                    <select
+                                        id="term_id"
+                                        v-model.number="paymentForm.term_id"
+                                        required
                                         :disabled="remainingBalance <= 0 || availableTermsForPayment.length === 0"
-                                        class="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed text-sm">
+                                        class="w-full rounded-lg border px-4 py-2 text-sm shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+                                    >
                                         <option :value="null">-- Choose a payment term --</option>
-                                        <option v-for="term in availableTermsForPayment" :key="term.id"
-                                            :value="term.id" :disabled="!term.isSelectable">
+                                        <option
+                                            v-for="term in availableTermsForPayment"
+                                            :key="term.id"
+                                            :value="term.id"
+                                            :disabled="!term.isSelectable"
+                                        >
                                             {{ term.term_name }} — {{ formatCurrency(term.balance) }}
                                             {{ !term.isSelectable ? '(Not yet available)' : '' }}
                                         </option>
                                     </select>
                                     <p class="text-xs text-gray-500">Only the first unpaid term can be selected. Overpayments carry over.</p>
-                                    <p v-if="paymentForm.errors.term_id" class="text-red-600 text-sm">{{ paymentForm.errors.term_id }}</p>
+                                    <p v-if="paymentForm.errors.term_id" class="text-sm text-red-600">{{ paymentForm.errors.term_id }}</p>
                                 </div>
                                 <!-- Selected Term Details -->
-                                <div v-if="selectedTerm" class="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm">
-                                    <div class="flex justify-between items-start">
+                                <div v-if="selectedTerm" class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
+                                    <div class="flex items-start justify-between">
                                         <div>
-                                            <p class="text-xs text-gray-500 font-medium uppercase">Selected Term</p>
-                                            <p class="font-semibold text-gray-900 mt-0.5">{{ selectedTerm.term_name }}</p>
+                                            <p class="text-xs font-medium text-gray-500 uppercase">Selected Term</p>
+                                            <p class="mt-0.5 font-semibold text-gray-900">{{ selectedTerm.term_name }}</p>
                                         </div>
-                                        <span :class="['text-xs px-2 py-0.5 rounded font-medium', getTermStatusConfig(selectedTerm.status).bg, getTermStatusConfig(selectedTerm.status).text]">
+                                        <span
+                                            :class="[
+                                                'rounded px-2 py-0.5 text-xs font-medium',
+                                                getTermStatusConfig(selectedTerm.status).bg,
+                                                getTermStatusConfig(selectedTerm.status).text,
+                                            ]"
+                                        >
                                             {{ getTermStatusConfig(selectedTerm.status).label }}
                                         </span>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-blue-200">
+                                    <div class="mt-2 grid grid-cols-2 gap-2 border-t border-blue-200 pt-2">
                                         <div>
                                             <p class="text-xs text-gray-500">Term Balance</p>
                                             <p class="font-semibold text-blue-700">{{ formatCurrency(selectedTerm.balance) }}</p>
@@ -441,8 +462,8 @@ const getStudentStatusColor = (status: string) => {
                                     </div>
                                 </div>
                                 <!-- Payment Preview -->
-                                <div v-if="parseFloat(paymentForm.amount) > 0" class="p-3 bg-green-50 rounded-lg border border-green-200 text-sm">
-                                    <p class="text-xs text-gray-500 font-medium uppercase mb-2">Payment Preview</p>
+                                <div v-if="parseFloat(paymentForm.amount) > 0" class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm">
+                                    <p class="mb-2 text-xs font-medium text-gray-500 uppercase">Payment Preview</p>
                                     <div class="grid grid-cols-2 gap-2">
                                         <div>
                                             <p class="text-xs text-gray-500">Current Balance</p>
@@ -452,8 +473,8 @@ const getStudentStatusColor = (status: string) => {
                                             <p class="text-xs text-gray-500">Payment Amount</p>
                                             <p class="font-semibold text-blue-600">− {{ formatCurrency(parseFloat(paymentForm.amount)) }}</p>
                                         </div>
-                                        <div class="col-span-2 pt-2 border-t border-green-200 flex justify-between">
-                                            <span class="text-xs text-gray-500 font-medium">Balance After Payment</span>
+                                        <div class="col-span-2 flex justify-between border-t border-green-200 pt-2">
+                                            <span class="text-xs font-medium text-gray-500">Balance After Payment</span>
                                             <span :class="['font-bold', projectedRemainingBalance > 0 ? 'text-red-600' : 'text-green-600']">
                                                 {{ formatCurrency(projectedRemainingBalance) }}
                                             </span>
@@ -462,8 +483,11 @@ const getStudentStatusColor = (status: string) => {
                                 </div>
                                 <DialogFooter>
                                     <Button type="button" variant="outline" @click="showPaymentDialog = false">Cancel</Button>
-                                    <Button type="submit" :disabled="!canSubmitPayment"
-                                        :class="{ 'opacity-50 cursor-not-allowed': !canSubmitPayment }">
+                                    <Button
+                                        type="submit"
+                                        :disabled="!canSubmitPayment"
+                                        :class="{ 'cursor-not-allowed opacity-50': !canSubmitPayment }"
+                                    >
                                         <span v-if="paymentForm.processing">Recording…</span>
                                         <span v-else-if="!canSubmitPayment && remainingBalance <= 0">No Balance to Pay</span>
                                         <span v-else-if="!canSubmitPayment && availableTermsForPayment.length === 0">No Unpaid Terms</span>
@@ -482,39 +506,41 @@ const getStudentStatusColor = (status: string) => {
                     <CardTitle>Personal Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                         <div>
                             <Label class="text-xs text-gray-500">Full Name</Label>
-                            <p class="font-medium mt-0.5">{{ student.name }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.name }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Email</Label>
-                            <p class="font-medium mt-0.5">{{ student.email }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.email }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Birthday</Label>
-                            <p class="font-medium mt-0.5">{{ student.birthday ? formatDate(student.birthday) : 'N/A' }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.birthday ? formatDate(student.birthday) : 'N/A' }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Phone</Label>
-                            <p class="font-medium mt-0.5">{{ student.phone || 'N/A' }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.phone || 'N/A' }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Student ID</Label>
-                            <p class="font-medium mt-0.5">{{ student.student_id }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.student_id }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Course</Label>
-                            <p class="font-medium mt-0.5">{{ student.course }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.course }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Year Level</Label>
-                            <p class="font-medium mt-0.5">{{ student.year_level }}</p>
+                            <p class="mt-0.5 font-medium">{{ student.year_level }}</p>
                         </div>
                         <div>
                             <Label class="text-xs text-gray-500">Status</Label>
-                            <span class="inline-block mt-0.5 px-2 py-0.5 text-xs font-semibold rounded-full"
-                                :class="getStudentStatusColor(student.status)">
+                            <span
+                                class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                                :class="getStudentStatusColor(student.status)"
+                            >
                                 {{ student.status }}
                             </span>
                         </div>
@@ -531,24 +557,24 @@ const getStudentStatusColor = (status: string) => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-5">
-
                     <!-- Individual fee line items -->
                     <div class="space-y-2">
-                        <div v-for="item in feeLineItems" :key="item.category"
-                            class="flex items-center justify-between py-2.5 px-4 rounded-lg bg-gray-50 border border-gray-100">
+                        <div
+                            v-for="item in feeLineItems"
+                            :key="item.category"
+                            class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5"
+                        >
                             <div class="flex items-center gap-2">
-                                <Receipt class="w-4 h-4 text-gray-400" />
+                                <Receipt class="h-4 w-4 text-gray-400" />
                                 <span class="text-sm font-medium text-gray-700">{{ item.displayLabel }}</span>
                             </div>
                             <span class="text-sm font-semibold text-gray-900">{{ formatCurrency(item.total) }}</span>
                         </div>
-                        <div v-if="feeLineItems.length === 0" class="text-sm text-gray-400 text-center py-4">
-                            No fee items on record
-                        </div>
+                        <div v-if="feeLineItems.length === 0" class="py-4 text-center text-sm text-gray-400">No fee items on record</div>
                     </div>
 
                     <!-- Divider + Total -->
-                    <div class="flex justify-between items-center pt-2 border-t-2 border-gray-200 px-1">
+                    <div class="flex items-center justify-between border-t-2 border-gray-200 px-1 pt-2">
                         <span class="font-semibold text-gray-700">Total Assessment</span>
                         <span class="text-lg font-bold text-gray-900">{{ formatCurrency(totalAssessment) }}</span>
                     </div>
@@ -559,34 +585,48 @@ const getStudentStatusColor = (status: string) => {
                             <span>Payment Progress</span>
                             <span>{{ totalAssessment > 0 ? Math.round((totalPaid / totalAssessment) * 100) : 0 }}%</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                            <div class="h-2.5 rounded-full transition-all duration-500"
-                                :class="paymentTimingStatus === 'behind' ? 'bg-red-500' : paymentTimingStatus === 'on_track' ? 'bg-blue-500' : 'bg-green-500'"
-                                :style="{ width: totalAssessment > 0 ? `${Math.min(100, (totalPaid / totalAssessment) * 100)}%` : '0%' }">
-                            </div>
+                        <div class="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                            <div
+                                class="h-2.5 rounded-full transition-all duration-500"
+                                :class="
+                                    paymentTimingStatus === 'behind'
+                                        ? 'bg-red-500'
+                                        : paymentTimingStatus === 'on_track'
+                                          ? 'bg-blue-500'
+                                          : 'bg-green-500'
+                                "
+                                :style="{ width: totalAssessment > 0 ? `${Math.min(100, (totalPaid / totalAssessment) * 100)}%` : '0%' }"
+                            ></div>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-500 pt-0.5">
-                            <span>Paid: <strong class="text-green-600">{{ formatCurrency(totalPaid) }}</strong></span>
-                            <span>Remaining: <strong :class="paymentTimingStatus === 'paid' ? 'text-green-600' : 'text-red-600'">{{ formatCurrency(remainingBalance) }}</strong></span>
+                        <div class="flex justify-between pt-0.5 text-xs text-gray-500">
+                            <span
+                                >Paid: <strong class="text-green-600">{{ formatCurrency(totalPaid) }}</strong></span
+                            >
+                            <span
+                                >Remaining:
+                                <strong :class="paymentTimingStatus === 'paid' ? 'text-green-600' : 'text-red-600'">{{
+                                    formatCurrency(remainingBalance)
+                                }}</strong></span
+                            >
                         </div>
                     </div>
 
                     <!-- Balance status card -->
-                    <div :class="['rounded-xl border-2 p-4 flex items-center gap-4 mt-2', balanceCardConfig.bg]">
-                        <div :class="['p-3 rounded-xl', balanceCardConfig.iconBg]">
-                            <component :is="balanceCardConfig.icon" :class="['w-6 h-6', balanceCardConfig.iconColor]" />
+                    <div :class="['mt-2 flex items-center gap-4 rounded-xl border-2 p-4', balanceCardConfig.bg]">
+                        <div :class="['rounded-xl p-3', balanceCardConfig.iconBg]">
+                            <component :is="balanceCardConfig.icon" :class="['h-6 w-6', balanceCardConfig.iconColor]" />
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
                                 <p class="text-sm" :class="balanceCardConfig.labelColor">Remaining Balance</p>
-                                <span class="text-xs font-bold px-2 py-0.5 rounded-full" :class="balanceCardConfig.badge.cls">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-bold" :class="balanceCardConfig.badge.cls">
                                     {{ balanceCardConfig.badge.label }}
                                 </span>
                             </div>
-                            <p class="text-3xl font-extrabold mt-0.5" :class="balanceCardConfig.amountColor">
+                            <p class="mt-0.5 text-3xl font-extrabold" :class="balanceCardConfig.amountColor">
                                 {{ formatCurrency(remainingBalance) }}
                             </p>
-                            <p v-if="assessment?.paymentTerms?.length" class="text-xs mt-1" :class="balanceCardConfig.labelColor">
+                            <p v-if="assessment?.paymentTerms?.length" class="mt-1 text-xs" :class="balanceCardConfig.labelColor">
                                 {{ paidTermsCount }} of {{ allTermsSorted.length }} terms paid
                             </p>
                         </div>
@@ -594,21 +634,36 @@ const getStudentStatusColor = (status: string) => {
 
                     <!-- Payment terms progress (pills) -->
                     <div v-if="allTermsSorted.length > 0" class="space-y-2 pt-1">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Payment Terms</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
-                            <div v-for="term in allTermsSorted" :key="term.id"
-                                :class="['rounded-lg border p-2.5 text-center text-xs transition-all',
-                                    term.status === 'paid'    ? 'bg-green-50 border-green-200' :
-                                    term.status === 'partial' ? 'bg-orange-50 border-orange-200' :
-                                    term.status === 'overdue' ? 'bg-red-100 border-red-300' :
-                                                                'bg-gray-50 border-gray-200']">
-                                <p class="font-semibold text-gray-700 truncate">{{ term.term_name }}</p>
-                                <p class="font-bold mt-0.5"
-                                    :class="term.status === 'paid' ? 'text-green-600' : term.status === 'overdue' ? 'text-red-600' : 'text-gray-800'">
+                        <p class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Payment Terms</p>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-5">
+                            <div
+                                v-for="term in allTermsSorted"
+                                :key="term.id"
+                                :class="[
+                                    'rounded-lg border p-2.5 text-center text-xs transition-all',
+                                    term.status === 'paid'
+                                        ? 'border-green-200 bg-green-50'
+                                        : term.status === 'partial'
+                                          ? 'border-orange-200 bg-orange-50'
+                                          : term.status === 'overdue'
+                                            ? 'border-red-300 bg-red-100'
+                                            : 'border-gray-200 bg-gray-50',
+                                ]"
+                            >
+                                <p class="truncate font-semibold text-gray-700">{{ term.term_name }}</p>
+                                <p
+                                    class="mt-0.5 font-bold"
+                                    :class="term.status === 'paid' ? 'text-green-600' : term.status === 'overdue' ? 'text-red-600' : 'text-gray-800'"
+                                >
                                     {{ formatCurrency(parseFloat(String(term.balance))) }}
                                 </p>
-                                <span :class="['inline-block mt-1 px-1.5 py-0.5 rounded-full font-medium',
-                                    getTermStatusConfig(term.status).bg, getTermStatusConfig(term.status).text]">
+                                <span
+                                    :class="[
+                                        'mt-1 inline-block rounded-full px-1.5 py-0.5 font-medium',
+                                        getTermStatusConfig(term.status).bg,
+                                        getTermStatusConfig(term.status).text,
+                                    ]"
+                                >
                                     {{ getTermStatusConfig(term.status).label }}
                                 </span>
                             </div>
@@ -626,43 +681,44 @@ const getStudentStatusColor = (status: string) => {
                 <CardContent class="p-0">
                     <div class="overflow-x-auto">
                         <table class="min-w-full">
-                            <thead class="bg-gray-50 border-b border-gray-200">
+                            <thead class="border-b border-gray-200 bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Method</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase">Reference</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase">Method</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase">Description</th>
+                                    <th class="px-6 py-3 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase">Amount</th>
+                                    <th class="px-6 py-3 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 <tr v-if="payments.length === 0">
                                     <td colspan="6" class="px-6 py-10 text-center text-gray-400">
-                                        <CreditCard class="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                        <CreditCard class="mx-auto mb-2 h-8 w-8 opacity-30" />
                                         <p>No payment history found</p>
                                     </td>
                                 </tr>
-                                <tr v-for="payment in payments" :key="payment.id"
-                                    class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">
+                                <tr v-for="payment in payments" :key="payment.id" class="transition-colors hover:bg-gray-50">
+                                    <td class="px-6 py-3 text-sm whitespace-nowrap text-gray-600">
                                         {{ formatDateShort(payment.paid_at) }}
                                     </td>
                                     <td class="px-6 py-3 whitespace-nowrap">
                                         <span class="font-mono text-xs text-gray-700">{{ payment.reference_number }}</span>
                                     </td>
                                     <td class="px-6 py-3 whitespace-nowrap">
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 font-medium capitalize">
+                                        <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 capitalize">
                                             {{ payment.payment_method }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-3 text-sm text-gray-600">{{ payment.description }}</td>
-                                    <td class="px-6 py-3 whitespace-nowrap text-sm text-right font-semibold text-green-600">
+                                    <td class="px-6 py-3 text-right text-sm font-semibold whitespace-nowrap text-green-600">
                                         + {{ formatCurrency(payment.amount) }}
                                     </td>
-                                    <td class="px-6 py-3 whitespace-nowrap text-center">
-                                        <span class="px-2 py-0.5 text-xs rounded-full font-semibold"
-                                            :class="payment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'">
+                                    <td class="px-6 py-3 text-center whitespace-nowrap">
+                                        <span
+                                            class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                            :class="payment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                        >
                                             {{ payment.status }}
                                         </span>
                                     </td>
@@ -675,58 +731,61 @@ const getStudentStatusColor = (status: string) => {
 
             <!-- ── Transaction History (styled like Transactions/Index) ── -->
             <div>
-                <div class="flex items-center justify-between mb-3 px-1">
+                <div class="mb-3 flex items-center justify-between px-1">
                     <div>
                         <h2 class="text-xl font-bold text-gray-900">Transaction History</h2>
                         <p class="text-sm text-gray-500">All charges and payments grouped by term</p>
                     </div>
                 </div>
 
-                <div v-if="transactionsByTerm.length === 0" class="bg-white border rounded-xl p-10 text-center text-gray-400">
-                    <AlertCircle class="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <div v-if="transactionsByTerm.length === 0" class="rounded-xl border bg-white p-10 text-center text-gray-400">
+                    <AlertCircle class="mx-auto mb-2 h-8 w-8 opacity-30" />
                     <p>No transactions found</p>
                 </div>
 
-                <div v-for="group in transactionsByTerm" :key="group.key"
-                    class="border rounded-xl shadow-sm bg-white overflow-hidden mb-4">
-
+                <div v-for="group in transactionsByTerm" :key="group.key" class="mb-4 overflow-hidden rounded-xl border bg-white shadow-sm">
                     <!-- Term header (collapsible) -->
-                    <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50 transition-colors select-none"
-                        @click="toggleTerm(group.key)">
+                    <div
+                        class="flex cursor-pointer items-center justify-between p-5 transition-colors select-none hover:bg-gray-50"
+                        @click="toggleTerm(group.key)"
+                    >
                         <div>
-                            <h3 class="font-bold text-lg text-gray-900">{{ group.key }}</h3>
-                            <p class="text-sm text-gray-400 mt-0.5">
+                            <h3 class="text-lg font-bold text-gray-900">{{ group.key }}</h3>
+                            <p class="mt-0.5 text-sm text-gray-400">
                                 {{ group.transactions.length }} transaction{{ group.transactions.length !== 1 ? 's' : '' }}
                             </p>
                         </div>
 
                         <!-- Summary numbers -->
-                        <div class="flex items-center gap-8 md:gap-12 text-right">
+                        <div class="flex items-center gap-8 text-right md:gap-12">
                             <div>
                                 <p class="text-xs text-gray-400">Total Assessed</p>
-                                <p class="font-bold text-red-600 text-sm">₱{{ new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(group.totalCharges) }}</p>
+                                <p class="text-sm font-bold text-red-600">
+                                    ₱{{ new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(group.totalCharges) }}
+                                </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400">Total Paid</p>
-                                <p class="font-bold text-green-600 text-sm">₱{{ new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(group.totalPaid) }}</p>
+                                <p class="text-sm font-bold text-green-600">
+                                    ₱{{ new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(group.totalPaid) }}
+                                </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400">Balance</p>
-                                <p class="font-bold text-sm" :class="group.balance > 0 ? 'text-red-600' : 'text-green-600'">
+                                <p class="text-sm font-bold" :class="group.balance > 0 ? 'text-red-600' : 'text-green-600'">
                                     ₱{{ new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(Math.abs(group.balance)) }}
                                 </p>
                             </div>
-                            <ChevronDown class="w-5 h-5 text-gray-400 transition-transform"
-                                :class="{ 'rotate-180': expandedTerms[group.key] }" />
+                            <ChevronDown class="h-5 w-5 text-gray-400 transition-transform" :class="{ 'rotate-180': expandedTerms[group.key] }" />
                         </div>
                     </div>
 
                     <!-- Expanded rows -->
                     <div v-if="expandedTerms[group.key]" class="border-t">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
+                            <table class="w-full border-collapse text-left">
                                 <thead>
-                                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase">
+                                    <tr class="bg-gray-50 text-xs text-gray-500 uppercase">
                                         <th class="px-4 py-3 font-semibold">Reference</th>
                                         <th class="px-4 py-3 font-semibold">Type</th>
                                         <th class="px-4 py-3 font-semibold">Category</th>
@@ -737,14 +796,17 @@ const getStudentStatusColor = (status: string) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="t in group.transactions" :key="t.id"
-                                        class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <tr
+                                        v-for="t in group.transactions"
+                                        :key="t.id"
+                                        class="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                                    >
                                         <td class="px-4 py-3 font-mono text-xs text-gray-700">{{ t.reference }}</td>
                                         <td class="px-4 py-3">
-                                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full"
-                                                :class="t.kind === 'charge'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-green-100 text-green-800'">
+                                            <span
+                                                class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                                :class="t.kind === 'charge' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'"
+                                            >
                                                 {{ t.kind }}
                                             </span>
                                         </td>
@@ -756,19 +818,22 @@ const getStudentStatusColor = (status: string) => {
                                             </div>
                                             <span v-else class="text-gray-400">—</span>
                                         </td>
-                                        <td class="px-4 py-3 font-semibold text-sm"
-                                            :class="t.kind === 'charge' ? 'text-red-600' : 'text-green-600'">
-                                            {{ t.kind === 'charge' ? '+' : '−' }}₱{{ new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(t.amount) }}
+                                        <td class="px-4 py-3 text-sm font-semibold" :class="t.kind === 'charge' ? 'text-red-600' : 'text-green-600'">
+                                            {{ t.kind === 'charge' ? '+' : '−' }}₱{{
+                                                new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2 }).format(t.amount)
+                                            }}
                                         </td>
                                         <td class="px-4 py-3">
-                                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full"
+                                            <span
+                                                class="rounded-full px-2 py-0.5 text-xs font-semibold"
                                                 :class="{
-                                                    'bg-green-100 text-green-800':  t.status === 'paid',
+                                                    'bg-green-100 text-green-800': t.status === 'paid',
                                                     'bg-yellow-100 text-yellow-800': t.status === 'pending',
-                                                    'bg-blue-100 text-blue-800':    t.status === 'awaiting_approval',
-                                                    'bg-red-100 text-red-800':      t.status === 'failed',
-                                                    'bg-gray-100 text-gray-700':    t.status === 'cancelled',
-                                                }">
+                                                    'bg-blue-100 text-blue-800': t.status === 'awaiting_approval',
+                                                    'bg-red-100 text-red-800': t.status === 'failed',
+                                                    'bg-gray-100 text-gray-700': t.status === 'cancelled',
+                                                }"
+                                            >
                                                 {{ t.status === 'awaiting_approval' ? 'Awaiting Verification' : t.status }}
                                             </span>
                                         </td>
@@ -780,7 +845,6 @@ const getStudentStatusColor = (status: string) => {
                     </div>
                 </div>
             </div>
-
         </div>
     </AppLayout>
 </template>

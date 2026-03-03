@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trash2, ArrowLeft, Save } from 'lucide-vue-next';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ArrowLeft, Save, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 interface Student {
@@ -109,7 +109,7 @@ const grandTotal = computed(() => {
 
 // Subject management
 const addSubject = (subject: Subject) => {
-    const exists = selectedSubjects.value.find(s => s.id === subject.id);
+    const exists = selectedSubjects.value.find((s) => s.id === subject.id);
     if (!exists) {
         selectedSubjects.value.push({
             id: subject.id,
@@ -120,20 +120,20 @@ const addSubject = (subject: Subject) => {
 };
 
 const removeSubject = (subjectId: number) => {
-    selectedSubjects.value = selectedSubjects.value.filter(s => s.id !== subjectId);
+    selectedSubjects.value = selectedSubjects.value.filter((s) => s.id !== subjectId);
 };
 
 const getSubjectDetails = (subjectId: number) => {
-    return props.subjects.find(s => s.id === subjectId);
+    return props.subjects.find((s) => s.id === subjectId);
 };
 
 const isSubjectSelected = (subjectId: number) => {
-    return selectedSubjects.value.some(s => s.id === subjectId);
+    return selectedSubjects.value.some((s) => s.id === subjectId);
 };
 
 // Fee management
 const addFee = (fee: Fee) => {
-    const exists = selectedFees.value.find(f => f.id === fee.id);
+    const exists = selectedFees.value.find((f) => f.id === fee.id);
     if (!exists) {
         selectedFees.value.push({
             id: fee.id,
@@ -143,22 +143,26 @@ const addFee = (fee: Fee) => {
 };
 
 const removeFee = (feeId: number) => {
-    selectedFees.value = selectedFees.value.filter(f => f.id !== feeId);
+    selectedFees.value = selectedFees.value.filter((f) => f.id !== feeId);
 };
 
 const getFeeDetails = (feeId: number) => {
-    return props.fees.find(f => f.id === feeId);
+    return props.fees.find((f) => f.id === feeId);
 };
 
 const isFeeSelected = (feeId: number) => {
-    return selectedFees.value.some(f => f.id === feeId);
+    return selectedFees.value.some((f) => f.id === feeId);
 };
 
 // Watch for changes to update form
-watch([selectedSubjects, selectedFees], () => {
-    form.subjects = selectedSubjects.value;
-    form.other_fees = selectedFees.value;
-}, { deep: true });
+watch(
+    [selectedSubjects, selectedFees],
+    () => {
+        form.subjects = selectedSubjects.value;
+        form.other_fees = selectedFees.value;
+    },
+    { deep: true },
+);
 
 // Submit form
 const submit = () => {
@@ -194,32 +198,30 @@ const getStatusColor = (status: string) => {
     <Head :title="`Edit Assessment - ${student.name}`" />
 
     <AppLayout>
-        <div class="space-y-6 max-w-7xl mx-auto p-6">
+        <div class="mx-auto max-w-7xl space-y-6 p-6">
             <Breadcrumbs :items="breadcrumbs" />
 
             <!-- Header -->
             <div class="flex items-center gap-4">
                 <Link :href="route('student-fees.show', student.id)">
                     <Button variant="outline" size="sm" class="flex items-center gap-2">
-                        <ArrowLeft class="w-4 h-4" />
+                        <ArrowLeft class="h-4 w-4" />
                         Back
                     </Button>
                 </Link>
                 <div>
                     <h1 class="text-3xl font-bold">Edit Assessment</h1>
-                    <p class="text-gray-600 mt-2">
-                        Modify the assessment for {{ student.name }}
-                    </p>
+                    <p class="mt-2 text-gray-600">Modify the assessment for {{ student.name }}</p>
                 </div>
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
                 <!-- Student Info -->
-                <div class="bg-blue-50 rounded-lg border-2 border-blue-200 p-6">
+                <div class="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">Student Information</h3>
-                            <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div class="mt-2 grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                                 <div>
                                     <span class="text-gray-600">Student ID:</span>
                                     <p class="font-medium">{{ student.student_id }}</p>
@@ -241,10 +243,7 @@ const getStatusColor = (status: string) => {
                         <div class="text-right">
                             <p class="text-sm text-gray-600">Assessment Number</p>
                             <p class="text-lg font-bold text-blue-600">{{ assessment.assessment_number }}</p>
-                            <span 
-                                class="inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full"
-                                :class="getStatusColor(assessment.status)"
-                            >
+                            <span class="mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold" :class="getStatusColor(assessment.status)">
                                 {{ assessment.status }}
                             </span>
                         </div>
@@ -252,8 +251,8 @@ const getStatusColor = (status: string) => {
                 </div>
 
                 <!-- Term Information -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold mb-4">Term Information</h2>
+                <div class="rounded-lg border bg-white p-6 shadow-sm">
+                    <h2 class="mb-4 text-lg font-semibold">Term Information</h2>
                     <div class="grid grid-cols-3 gap-4">
                         <div class="space-y-2">
                             <Label for="year_level">Year Level</Label>
@@ -261,14 +260,10 @@ const getStatusColor = (status: string) => {
                                 id="year_level"
                                 v-model="form.year_level"
                                 required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Select year level</option>
-                                <option
-                                    v-for="year in yearLevels"
-                                    :key="year"
-                                    :value="year"
-                                >
+                                <option v-for="year in yearLevels" :key="year" :value="year">
                                     {{ year }}
                                 </option>
                             </select>
@@ -283,14 +278,10 @@ const getStatusColor = (status: string) => {
                                 id="semester"
                                 v-model="form.semester"
                                 required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Select semester</option>
-                                <option
-                                    v-for="sem in semesters"
-                                    :key="sem"
-                                    :value="sem"
-                                >
+                                <option v-for="sem in semesters" :key="sem" :value="sem">
                                     {{ sem }}
                                 </option>
                             </select>
@@ -301,12 +292,7 @@ const getStatusColor = (status: string) => {
 
                         <div class="space-y-2">
                             <Label for="school_year">School Year</Label>
-                            <Input
-                                id="school_year"
-                                v-model="form.school_year"
-                                placeholder="2025-2026"
-                                required
-                            />
+                            <Input id="school_year" v-model="form.school_year" placeholder="2025-2026" required />
                             <p v-if="form.errors?.school_year" class="text-sm text-red-500">
                                 {{ form.errors.school_year }}
                             </p>
@@ -315,18 +301,18 @@ const getStatusColor = (status: string) => {
                 </div>
 
                 <!-- Subjects Section -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold mb-4">Subjects</h2>
-                    
+                <div class="rounded-lg border bg-white p-6 shadow-sm">
+                    <h2 class="mb-4 text-lg font-semibold">Subjects</h2>
+
                     <!-- Available Subjects -->
-                    <div class="space-y-2 mb-4">
+                    <div class="mb-4 space-y-2">
                         <Label>Available Subjects</Label>
-                        <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                        <div class="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-lg border p-2">
                             <div
                                 v-for="subject in subjects"
                                 :key="subject.id"
-                                class="flex items-center justify-between p-3 rounded border transition-colors"
-                                :class="isSubjectSelected(subject.id) ? 'bg-green-50 border-green-200' : 'hover:bg-gray-50 cursor-pointer'"
+                                class="flex items-center justify-between rounded border p-3 transition-colors"
+                                :class="isSubjectSelected(subject.id) ? 'border-green-200 bg-green-50' : 'cursor-pointer hover:bg-gray-50'"
                                 @click="!isSubjectSelected(subject.id) && addSubject(subject)"
                             >
                                 <div>
@@ -340,14 +326,10 @@ const getStatusColor = (status: string) => {
                                     <span class="font-medium text-blue-600">
                                         {{ formatCurrency(subject.total_cost) }}
                                     </span>
-                                    <span v-if="isSubjectSelected(subject.id)" class="text-green-600 text-sm font-medium">
-                                        ✓ Added
-                                    </span>
+                                    <span v-if="isSubjectSelected(subject.id)" class="text-sm font-medium text-green-600"> ✓ Added </span>
                                 </div>
                             </div>
-                            <div v-if="subjects.length === 0" class="text-center py-4 text-gray-500">
-                                No subjects available
-                            </div>
+                            <div v-if="subjects.length === 0" class="py-4 text-center text-gray-500">No subjects available</div>
                         </div>
                     </div>
 
@@ -358,29 +340,27 @@ const getStatusColor = (status: string) => {
                             <div
                                 v-for="selected in selectedSubjects"
                                 :key="selected.id"
-                                class="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                                class="flex items-center justify-between rounded-lg border bg-gray-50 p-3"
                             >
                                 <div class="flex-1">
                                     <p class="font-medium">
-                                        {{ getSubjectDetails(selected.id)?.code }} - 
+                                        {{ getSubjectDetails(selected.id)?.code }} -
                                         {{ getSubjectDetails(selected.id)?.name }}
                                     </p>
-                                    <p class="text-sm text-gray-600">
-                                        {{ selected.units }} units
-                                    </p>
+                                    <p class="text-sm text-gray-600">{{ selected.units }} units</p>
                                 </div>
                                 <div class="flex items-center gap-4">
                                     <span class="font-medium">{{ formatCurrency(selected.amount) }}</span>
                                     <button
                                         type="button"
-                                        class="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                                        class="rounded p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
                                         @click="removeSubject(selected.id)"
                                     >
-                                        <Trash2 class="w-4 h-4" />
+                                        <Trash2 class="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>
-                            <div v-if="selectedSubjects.length === 0" class="text-center py-8 text-gray-500 border rounded-lg bg-gray-50">
+                            <div v-if="selectedSubjects.length === 0" class="rounded-lg border bg-gray-50 py-8 text-center text-gray-500">
                                 No subjects selected. Click on subjects above to add them.
                             </div>
                         </div>
@@ -390,25 +370,25 @@ const getStatusColor = (status: string) => {
                     </div>
 
                     <!-- Tuition Total -->
-                    <div class="flex justify-between items-center p-4 bg-blue-50 rounded-lg mt-4 border border-blue-200">
-                        <span class="font-medium text-lg">Total Tuition Fee</span>
+                    <div class="mt-4 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">
+                        <span class="text-lg font-medium">Total Tuition Fee</span>
                         <span class="text-2xl font-bold text-blue-600">{{ formatCurrency(tuitionTotal) }}</span>
                     </div>
                 </div>
 
                 <!-- Other Fees Section -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold mb-4">Other Fees</h2>
-                    
+                <div class="rounded-lg border bg-white p-6 shadow-sm">
+                    <h2 class="mb-4 text-lg font-semibold">Other Fees</h2>
+
                     <!-- Available Fees -->
-                    <div class="space-y-2 mb-4">
+                    <div class="mb-4 space-y-2">
                         <Label>Available Fees</Label>
-                        <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                        <div class="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-lg border p-2">
                             <div
                                 v-for="fee in fees"
                                 :key="fee.id"
-                                class="flex items-center justify-between p-3 rounded border transition-colors"
-                                :class="isFeeSelected(fee.id) ? 'bg-green-50 border-green-200' : 'hover:bg-gray-50 cursor-pointer'"
+                                class="flex items-center justify-between rounded border p-3 transition-colors"
+                                :class="isFeeSelected(fee.id) ? 'border-green-200 bg-green-50' : 'cursor-pointer hover:bg-gray-50'"
                                 @click="!isFeeSelected(fee.id) && addFee(fee)"
                             >
                                 <div>
@@ -419,14 +399,10 @@ const getStatusColor = (status: string) => {
                                     <span class="font-medium text-blue-600">
                                         {{ formatCurrency(fee.amount) }}
                                     </span>
-                                    <span v-if="isFeeSelected(fee.id)" class="text-green-600 text-sm font-medium">
-                                        ✓ Added
-                                    </span>
+                                    <span v-if="isFeeSelected(fee.id)" class="text-sm font-medium text-green-600"> ✓ Added </span>
                                 </div>
                             </div>
-                            <div v-if="fees.length === 0" class="text-center py-4 text-gray-500">
-                                No fees available
-                            </div>
+                            <div v-if="fees.length === 0" class="py-4 text-center text-gray-500">No fees available</div>
                         </div>
                     </div>
 
@@ -437,7 +413,7 @@ const getStatusColor = (status: string) => {
                             <div
                                 v-for="selected in selectedFees"
                                 :key="selected.id"
-                                class="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                                class="flex items-center justify-between rounded-lg border bg-gray-50 p-3"
                             >
                                 <div class="flex-1">
                                     <p class="font-medium">{{ getFeeDetails(selected.id)?.name }}</p>
@@ -449,71 +425,63 @@ const getStatusColor = (status: string) => {
                                     <span class="font-medium">{{ formatCurrency(selected.amount) }}</span>
                                     <button
                                         type="button"
-                                        class="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                                        class="rounded p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
                                         @click="removeFee(selected.id)"
                                     >
-                                        <Trash2 class="w-4 h-4" />
+                                        <Trash2 class="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>
-                            <div v-if="selectedFees.length === 0" class="text-center py-8 text-gray-500 border rounded-lg bg-gray-50">
+                            <div v-if="selectedFees.length === 0" class="rounded-lg border bg-gray-50 py-8 text-center text-gray-500">
                                 No fees selected. Click on fees above to add them.
                             </div>
                         </div>
                     </div>
 
                     <!-- Other Fees Total -->
-                    <div class="flex justify-between items-center p-4 bg-blue-50 rounded-lg mt-4 border border-blue-200">
-                        <span class="font-medium text-lg">Total Other Fees</span>
+                    <div class="mt-4 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">
+                        <span class="text-lg font-medium">Total Other Fees</span>
                         <span class="text-2xl font-bold text-blue-600">{{ formatCurrency(otherFeesTotal) }}</span>
                     </div>
                 </div>
 
                 <!-- Grand Total -->
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white shadow-lg">
-                    <div class="flex justify-between items-center">
+                <div class="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-blue-100 text-sm uppercase tracking-wide mb-1">Total Assessment Fee Amount</p>
+                            <p class="mb-1 text-sm tracking-wide text-blue-100 uppercase">Total Assessment Fee Amount</p>
                             <p class="text-4xl font-bold">{{ formatCurrency(grandTotal) }}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-blue-100 text-sm">Tuition: {{ formatCurrency(tuitionTotal) }}</p>
-                            <p class="text-blue-100 text-sm">Other Fees: {{ formatCurrency(otherFeesTotal) }}</p>
+                            <p class="text-sm text-blue-100">Tuition: {{ formatCurrency(tuitionTotal) }}</p>
+                            <p class="text-sm text-blue-100">Other Fees: {{ formatCurrency(otherFeesTotal) }}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Change Summary (if amounts changed) -->
-                <div 
-                    v-if="grandTotal !== assessment.total_assessment"
-                    class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4"
-                >
-                    <p class="font-medium text-yellow-800 mb-2">⚠️ Assessment Amount Changed</p>
-                    <div class="text-sm text-yellow-700 space-y-1">
+                <div v-if="grandTotal !== assessment.total_assessment" class="rounded-lg border-2 border-yellow-200 bg-yellow-50 p-4">
+                    <p class="mb-2 font-medium text-yellow-800">⚠️ Assessment Amount Changed</p>
+                    <div class="space-y-1 text-sm text-yellow-700">
                         <p>Previous Total: {{ formatCurrency(assessment.total_assessment) }}</p>
                         <p>New Total: {{ formatCurrency(grandTotal) }}</p>
                         <p class="font-medium">
-                            Difference: 
+                            Difference:
                             <span :class="grandTotal > assessment.total_assessment ? 'text-red-600' : 'text-green-600'">
-                                {{ grandTotal > assessment.total_assessment ? '+' : '' }}{{ formatCurrency(grandTotal - assessment.total_assessment) }}
+                                {{ grandTotal > assessment.total_assessment ? '+' : ''
+                                }}{{ formatCurrency(grandTotal - assessment.total_assessment) }}
                             </span>
                         </p>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex items-center justify-between gap-4 pt-4 border-t">
+                <div class="flex items-center justify-between gap-4 border-t pt-4">
                     <Link :href="route('student-fees.show', student.id)">
-                        <Button type="button" variant="outline">
-                            Cancel
-                        </Button>
+                        <Button type="button" variant="outline"> Cancel </Button>
                     </Link>
-                    <Button 
-                        type="submit" 
-                        :disabled="form.processing || selectedSubjects.length === 0"
-                        class="min-w-[200px] flex items-center gap-2"
-                    >
-                        <Save class="w-4 h-4" />
+                    <Button type="submit" :disabled="form.processing || selectedSubjects.length === 0" class="flex min-w-[200px] items-center gap-2">
+                        <Save class="h-4 w-4" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
                 </div>

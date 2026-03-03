@@ -27,8 +27,8 @@ declare module 'vue' {
 }
 
 declare global {
-  interface Window {
-    // extend with custom properties if you’re attaching stuff to window
-    MyApp?: unknown;
-  }
+    interface Window {
+        // extend with custom properties if you’re attaching stuff to window
+        MyApp?: unknown;
+    }
 }
