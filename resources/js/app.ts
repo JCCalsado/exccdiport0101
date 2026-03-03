@@ -1,11 +1,11 @@
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/vue3';
+import axios from 'axios';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { initializeTheme } from './composables/useAppearance';
-import axios from 'axios';
 
 import { ZiggyVue } from 'ziggy-js';
 
@@ -19,11 +19,11 @@ const getCsrfToken = (): string => {
     // Try meta tag first
     const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (metaToken) return metaToken;
-    
+
     // Try from input field (fallback)
     const inputToken = (document.querySelector('input[name="_token"]') as HTMLInputElement)?.value;
     if (inputToken) return inputToken;
-    
+
     return '';
 };
 
@@ -44,20 +44,16 @@ axios.interceptors.request.use((config) => {
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) =>
-        resolvePageComponent(
-            `./pages/${name}.vue`,
-            import.meta.glob<DefineComponent>('./pages/**/*.vue')
-        ),
+    resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         // Explicitly set axios as the HTTP client for Inertia
         const app = createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue);
-        
+
         // Make axios available to the Inertia app via a provide
         app.provide('$http', axios);
-        
+
         app.mount(el);
     },
     progress: {

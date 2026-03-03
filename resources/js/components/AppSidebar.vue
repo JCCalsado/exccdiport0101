@@ -5,11 +5,10 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Folder, LayoutGrid, CreditCard, History, Users, Receipt, Banknote, GraduationCap, User, Bell, CheckCircle2 } from 'lucide-vue-next';
+import { Banknote, Bell, CheckCircle2, CreditCard, GraduationCap, History, LayoutGrid, Receipt, User, Users } from 'lucide-vue-next';
 // REMOVED: BookOpen — was used for Subject Management (now disabled)
-import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
-import { StudentUser } from '@/types/user';
+import AppLogo from './AppLogo.vue';
 
 const page = usePage();
 const userRole = computed(() => page.props.auth?.user?.role || 'student');

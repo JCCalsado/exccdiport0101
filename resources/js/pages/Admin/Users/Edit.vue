@@ -1,48 +1,48 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import AppLayout from '@/layouts/AppLayout.vue'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import AdminForm from './Form.vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head } from '@inertiajs/vue3';
+import AdminForm from './Form.vue';
 
 interface Props {
-  admin: any
-  adminTypes: Array<{ value: string; label: string }>
+    admin: any;
+    adminTypes: Array<{ value: string; label: string }>;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const breadcrumbs = [
-  { title: 'Admin', href: route('admin.dashboard') },
-  { title: 'Users', href: route('users.index') },
-  {
-    title: `Edit: ${props.admin.last_name}, ${props.admin.first_name}`,
-    href: route('users.edit', props.admin.id),
-  },
-]
+    { title: 'Admin', href: route('admin.dashboard') },
+    { title: 'Users', href: route('users.index') },
+    {
+        title: `Edit: ${props.admin.last_name}, ${props.admin.first_name}`,
+        href: route('users.edit', props.admin.id),
+    },
+];
 </script>
 
 <template>
-  <Head title="Edit Admin User" />
+    <Head title="Edit Admin User" />
 
-  <AppLayout>
-    <div class="w-full p-6">
-      <Breadcrumbs :items="breadcrumbs" />
+    <AppLayout>
+        <div class="w-full p-6">
+            <Breadcrumbs :items="breadcrumbs" />
 
-      <div class="max-w-2xl">
-        <div class="bg-white overflow-hidden shadow-md rounded-lg p-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-6">Edit Admin User</h1>
+            <div class="max-w-2xl">
+                <div class="overflow-hidden rounded-lg bg-white p-6 shadow-md">
+                    <h1 class="mb-6 text-2xl font-bold text-gray-900">Edit Admin User</h1>
 
-          <div class="mb-4 p-4 bg-gray-50 rounded-lg">
-            <div class="text-sm text-gray-600">
-              <p><strong>Admin ID:</strong> {{ admin.id }}</p>
-              <p><strong>Created:</strong> {{ new Date(admin.created_at).toLocaleDateString() }}</p>
-              <p v-if="admin.updated_by"><strong>Last Updated:</strong> {{ new Date(admin.updated_at).toLocaleDateString() }}</p>
+                    <div class="mb-4 rounded-lg bg-gray-50 p-4">
+                        <div class="text-sm text-gray-600">
+                            <p><strong>Admin ID:</strong> {{ admin.id }}</p>
+                            <p><strong>Created:</strong> {{ new Date(admin.created_at).toLocaleDateString() }}</p>
+                            <p v-if="admin.updated_by"><strong>Last Updated:</strong> {{ new Date(admin.updated_at).toLocaleDateString() }}</p>
+                        </div>
+                    </div>
+
+                    <AdminForm :admin="admin" :is-editing="true" />
+                </div>
             </div>
-          </div>
-
-          <AdminForm :admin="admin" :is-editing="true" />
         </div>
-      </div>
-    </div>
-  </AppLayout>
+    </AppLayout>
 </template>

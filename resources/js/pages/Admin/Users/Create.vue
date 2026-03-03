@@ -1,40 +1,40 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import AppLayout from '@/layouts/AppLayout.vue'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import AdminForm from './Form.vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head } from '@inertiajs/vue3';
+import AdminForm from './Form.vue';
 
 interface Props {
-  adminTypes: Array<{ value: string; label: string }>
+    adminTypes: Array<{ value: string; label: string }>;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const breadcrumbs = [
-  { title: 'Admin', href: route('admin.dashboard') },
-  { title: 'Users', href: route('users.index') },
-  { title: 'Create New User', href: route('users.create') },
-]
+    { title: 'Admin', href: route('admin.dashboard') },
+    { title: 'Users', href: route('users.index') },
+    { title: 'Create New User', href: route('users.create') },
+];
 </script>
 
 <template>
-  <Head title="Create Admin User" />
+    <Head title="Create Admin User" />
 
-  <AppLayout>
-    <div class="w-full p-6">
-      <Breadcrumbs :items="breadcrumbs" />
+    <AppLayout>
+        <div class="w-full p-6">
+            <Breadcrumbs :items="breadcrumbs" />
 
-      <div class="max-w-2xl">
-        <div class="bg-white overflow-hidden shadow-md rounded-lg p-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-6">Create New Admin User</h1>
+            <div class="max-w-2xl">
+                <div class="overflow-hidden rounded-lg bg-white p-6 shadow-md">
+                    <h1 class="mb-6 text-2xl font-bold text-gray-900">Create New Admin User</h1>
 
-          <div class="text-sm text-gray-600 mb-6 p-4 bg-blue-50 rounded-lg">
-            <strong>Note:</strong> New admin accounts require acceptance of Terms & Conditions before the account is fully activated.
-          </div>
+                    <div class="mb-6 rounded-lg bg-blue-50 p-4 text-sm text-gray-600">
+                        <strong>Note:</strong> New admin accounts require acceptance of Terms & Conditions before the account is fully activated.
+                    </div>
 
-          <AdminForm :is-editing="false" />
+                    <AdminForm :is-editing="false" />
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </AppLayout>
+    </AppLayout>
 </template>

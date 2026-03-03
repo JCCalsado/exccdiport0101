@@ -39,7 +39,7 @@ const resetForm = () => {
     form.reset();
     form.clearErrors();
 };
-
+</script>
 
 <template>
     <div class="space-y-6">
@@ -71,13 +71,7 @@ const resetForm = () => {
 
                         <DialogFooter class="gap-2">
                             <DialogClose as-child>
-                                <Button
-                                    variant="secondary"
-                                    @click="resetForm"
-                                    type="button"
-                                >
-                                    Cancel
-                                </Button>
+                                <Button variant="secondary" @click="resetForm" type="button"> Cancel </Button>
                             </DialogClose>
 
                             <Button type="submit" variant="destructive" :disabled="form.processing"> Delete account </Button>

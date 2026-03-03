@@ -12,7 +12,7 @@ defineProps<{
     <div class="flex min-h-screen flex-col items-center justify-center bg-muted px-4 py-12 sm:px-6 lg:px-8">
         <div class="w-full max-w-md">
             <!-- Logo -->
-            <Link href="/" class="flex justify-center mb-8">
+            <Link href="/" class="mb-8 flex justify-center">
                 <AppLogo class="h-12 w-auto" />
             </Link>
 
@@ -29,9 +29,7 @@ defineProps<{
                 <slot />
             </div>
 
-            <p class="mt-6 text-center text-xs text-muted-foreground">
-                © {{ new Date().getFullYear() }} CCDI Account Portal. All rights reserved.
-            </p>
+            <p class="mt-6 text-center text-xs text-muted-foreground">© {{ new Date().getFullYear() }} CCDI Account Portal. All rights reserved.</p>
         </div>
     </div>
 </template>
