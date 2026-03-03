@@ -19,6 +19,11 @@ class AdminService
             $createdBy = User::find($createdBy);
         }
 
+        // Auto-populate password_confirmation if not provided (service-layer calls)
+        if (isset($data['password']) && !isset($data['password_confirmation'])) {
+            $data['password_confirmation'] = $data['password'];
+        }
+
         // Validate input
         $validated = $this->validateAdminData($data);
 
@@ -48,8 +53,13 @@ class AdminService
     /**
      * Update an admin user
      */
-    public function updateAdmin(User $admin, array $data, ?User $updatedBy = null): User
+    public function updateAdmin(User $admin, array $data, int|User|null $updatedBy = null): User
     {
+        // Resolve to User model if int given
+        if (is_int($updatedBy)) {
+            $updatedBy = User::find($updatedBy);
+        }
+
         $validated = $this->validateAdminData($data, $admin->id);
 
         $updateData = [
@@ -162,6 +172,7 @@ class AdminService
         $admins = User::admins()->where('is_active', true)->get();
 
         return [
+            'total_admins' => $admins->count(),
             'total_active_admins' => $admins->count(),
             'super_admins' => $admins->where('admin_type', User::ADMIN_TYPE_SUPER)->count(),
             'managers' => $admins->where('admin_type', User::ADMIN_TYPE_MANAGER)->count(),
@@ -193,12 +204,5 @@ class AdminService
     public function logAdminAction(User $admin, string $action, array $details = []): void
     {
         // Implement audit logging if needed
-        // Example: AdminAuditLog::create([
-        //     'admin_id' => $admin->id,
-        //     'action' => $action,
-        //     'details' => $details,
-        //     'ip_address' => request()->ip(),
-        //     'user_agent' => request()->userAgent(),
-        // ]);
     }
 }

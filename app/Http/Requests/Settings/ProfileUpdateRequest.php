@@ -16,13 +16,14 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         $user = $this->user();
-        
+
         // Base rules for all users
         $rules = [
-            'last_name' => ['required', 'string', 'max:255'],
-            'first_name' => ['required', 'string', 'max:255'],
+            'name'           => ['nullable', 'string', 'max:255'],
+            'last_name'      => ['nullable', 'string', 'max:255'],
+            'first_name'     => ['nullable', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:10'],
-            'email' => [
+            'email'          => [
                 'required',
                 'string',
                 'lowercase',
@@ -31,8 +32,8 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class)->ignore($user->id),
             ],
             'birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
-            'address' => ['nullable', 'string', 'max:500'],
+            'phone'    => ['nullable', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
+            'address'  => ['nullable', 'string', 'max:500'],
         ];
 
         // Add student-specific fields
@@ -43,9 +44,9 @@ class ProfileUpdateRequest extends FormRequest
                 'max:50',
                 Rule::unique('users', 'student_id')->ignore($user->id),
             ];
-            $rules['course'] = ['required', 'string', 'max:255'];
+            $rules['course']     = ['required', 'string', 'max:255'];
             $rules['year_level'] = ['required', 'string', 'max:50', 'in:1st Year,2nd Year,3rd Year,4th Year'];
-            
+
             // Only admin can change student status
             if (optional($this->user())->role === 'admin') {
                 $rules['status'] = ['nullable', Rule::in(['active', 'graduated', 'dropped'])];
@@ -61,6 +62,22 @@ class ProfileUpdateRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     * If only a `name` field is supplied (legacy tests / simple forms),
+     * split it into first_name / last_name so the model is populated.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('name') && !$this->filled('first_name') && !$this->filled('last_name')) {
+            $parts = explode(' ', trim($this->input('name')), 2);
+            $this->merge([
+                'first_name' => $parts[0] ?? '',
+                'last_name'  => $parts[1] ?? $parts[0] ?? '',
+            ]);
+        }
+    }
+
+    /**
      * Get custom attributes for validator errors.
      *
      * @return array<string, string>
@@ -68,11 +85,11 @@ class ProfileUpdateRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'last_name' => 'last name',
-            'first_name' => 'first name',
+            'last_name'      => 'last name',
+            'first_name'     => 'first name',
             'middle_initial' => 'middle initial',
-            'student_id' => 'student ID',
-            'year_level' => 'year level',
+            'student_id'     => 'student ID',
+            'year_level'     => 'year level',
         ];
     }
 
@@ -84,10 +101,10 @@ class ProfileUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.regex' => 'The phone number format is invalid.',
-            'birthday.before' => 'The birthday must be a date before today.',
-            'email.unique' => 'This email address is already in use.',
-            'student_id.unique' => 'This student ID is already in use.',
+            'phone.regex'      => 'The phone number format is invalid.',
+            'birthday.before'  => 'The birthday must be a date before today.',
+            'email.unique'     => 'This email address is already in use.',
+            'student_id.unique'=> 'This student ID is already in use.',
         ];
     }
 }
