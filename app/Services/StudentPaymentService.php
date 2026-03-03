@@ -1,409 +1,700 @@
 <?php
 
-namespace App\Services;
+namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Student;
 use App\Models\StudentAssessment;
 use App\Models\StudentPaymentTerm;
+use App\Models\Subject;
+use App\Models\Fee;
 use App\Models\Transaction;
-use App\Models\User;
-use App\Models\Workflow;
-use App\Models\WorkflowInstance;
-use Illuminate\Support\Str;
+use App\Models\Payment;
+use App\Services\StudentPaymentService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
-use Exception;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
-class StudentPaymentService
+class StudentFeeController extends Controller
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_PARTIAL = 'partial';
-    const STATUS_PAID = 'paid';
+    /**
+     * Display listing of students for fee management
+     */
+    public function index(Request $request)
+    {
+        $query = User::with(['student', 'account', 'latestAssessment.paymentTerms'])
+            ->where('role', 'student');
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('student_id', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(last_name, ', ', first_name, ' ', COALESCE(middle_initial, '')) like ?", ["%{$search}%"]);
+            });
+        }
+
+        // Filter by course
+        if ($request->filled('course')) {
+            $query->where('course', $request->course);
+        }
+
+        // Filter by year level
+        if ($request->filled('year_level')) {
+            $query->where('year_level', $request->year_level);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $students = $query->paginate(15)->withQueryString();
+
+        // Get filter options
+        $courses = User::where('role', 'student')
+            ->whereNotNull('course')
+            ->distinct()
+            ->pluck('course');
+
+        $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+        $statuses = [
+            User::STATUS_ACTIVE => 'Active',
+            User::STATUS_GRADUATED => 'Graduated',
+            User::STATUS_DROPPED => 'Dropped',
+        ];
+
+        return Inertia::render('StudentFees/Index', [
+            'students' => $students,
+            'filters' => $request->only(['search', 'course', 'year_level', 'status']),
+            'courses' => $courses,
+            'yearLevels' => $yearLevels,
+            'statuses' => $statuses,
+        ]);
+    }
 
     /**
-     * Process payment and automatically apply carryover logic
-     * 
-     * @param User $user
-     * @param float $paymentAmount
-     * @param array $data Payment details (payment_method, paid_at, description, selected_term_id, term_name)
-     * @param bool $requiresApproval Whether this payment needs accounting approval
-     * @return array Payment result with carryover info and workflow details
-     * @throws Exception
+     * Show create assessment form
      */
-    public function processPayment(User $user, float $paymentAmount, array $data, bool $requiresApproval = false): array
+    public function create(Request $request)
     {
-        return DB::transaction(function () use ($user, $paymentAmount, $data, $requiresApproval) {
-            // Get latest assessment
-            $assessment = StudentAssessment::where('user_id', $user->id)
-                ->latest('created_at')
-                ->first();
+        // If this is an AJAX request for getting student data
+        if ($request->has('get_data') && $request->has('student_id')) {
+            $student = User::where('role', 'student')->findOrFail($request->student_id);
+            
+            // Get subjects for this student
+            $subjects = Subject::active()
+                ->where('course', $student->course)
+                ->where('year_level', $student->year_level)
+                ->get()
+                ->map(function ($subject) {
+                    return [
+                        'id' => $subject->id,
+                        'code' => $subject->code,
+                        'name' => $subject->name,
+                        'units' => $subject->units,
+                        'price_per_unit' => $subject->price_per_unit,
+                        'has_lab' => $subject->has_lab,
+                        'lab_fee' => $subject->lab_fee,
+                        'total_cost' => $subject->total_cost,
+                    ];
+                });
 
-            if (!$assessment) {
-                throw new Exception('No active assessment found for student.');
-            }
+            // Get fees
+            $fees = Fee::active()
+                ->whereIn('category', ['Laboratory', 'Library', 'Athletic', 'Miscellaneous'])
+                ->get()
+                ->map(function ($fee) {
+                    return [
+                        'id' => $fee->id,
+                        'name' => $fee->name,
+                        'category' => $fee->category,
+                        'amount' => $fee->amount,
+                    ];
+                });
 
-            // GUARD: Check if a pending approval already exists for this term
-            // This prevents the race condition where a student submits multiple payments
-            // for the same term before accounting approves the first one
-            if ($requiresApproval && isset($data['selected_term_id'])) {
-                $selectedTermId = $data['selected_term_id'];
-                
-                // Check for existing awaiting_approval transaction for this term
-                $existingPendingPayment = Transaction::where('user_id', $user->id)
-                    ->where('status', 'awaiting_approval')
-                    ->whereJsonContains('meta->selected_term_id', $selectedTermId)
-                    ->exists();
-                
-                if ($existingPendingPayment) {
-                    throw new Exception(
-                        'A payment for this term is already awaiting accounting approval. ' .
-                        'Please wait for approval to complete before submitting another payment.'
-                    );
-                }
-
-                // Also validate that the payment amount doesn't exceed remaining balance
-                // accounting for already-pending payments
-                $selectedTerm = $assessment->paymentTerms()
-                    ->where('id', $selectedTermId)
-                    ->first();
-
-                if ($selectedTerm) {
-                    // Calculate pending amounts for this term
-                    $pendingAmounts = Transaction::where('user_id', $user->id)
-                        ->where('kind', 'payment')
-                        ->where('status', 'awaiting_approval')
-                        ->whereJsonContains('meta->selected_term_id', $selectedTermId)
-                        ->sum('amount');
-
-                    $effectiveBalance = max(0, $selectedTerm->balance - $pendingAmounts);
-
-                    if ($paymentAmount > $effectiveBalance) {
-                        throw new Exception(
-                            'Payment amount exceeds available balance. ' .
-                            'Available: ₱' . number_format($effectiveBalance, 2) . ', ' .
-                            'Pending approval: ₱' . number_format($pendingAmounts, 2) . '.'
-                        );
-                    }
-                }
-            }
-
-            // Determine transaction status based on approval requirement
-            $transactionStatus = $requiresApproval ? 'awaiting_approval' : 'paid';
-
-            // Record transaction
-            $transaction = Transaction::create([
-                'user_id' => $user->id,
-                'reference' => 'PAY-' . strtoupper(Str::random(8)),
-                'kind' => 'payment',
-                'type' => 'Payment: ' . ($data['term_name'] ?? 'General'),
-                'amount' => $paymentAmount,
-                'status' => $transactionStatus,
-                'payment_channel' => $data['payment_method'] ?? 'cash',
-                'paid_at' => $transactionStatus === 'paid' ? ($data['paid_at'] ?? now()) : null,
-                'meta' => [
-                    'description' => $data['description'] ?? 'Payment',
-                    'term_name' => $data['term_name'] ?? null,
-                    'selected_term_id' => $data['selected_term_id'] ?? null,
-                    'payment_method' => $data['payment_method'] ?? null,
-                ],
+            return response()->json([
+                'subjects' => $subjects,
+                'fees' => $fees,
             ]);
-
-            // Only update payment terms and balance if payment is immediately approved
-            $paymentBreakdown = [];
-            if (!$requiresApproval) {
-                $paymentBreakdown = $this->applyPaymentWithCarryover($assessment, $paymentAmount, $data['selected_term_id'] ?? null);
-                $this->updateStudentBalance($user);
-            }
-            // If requiresApproval=true, terms are NOT updated yet.
-            // They will be updated in finalizeApprovedPayment() after accounting approves.
-
-            // Start workflow if approval is required
-            $workflowInstance = null;
-            if ($requiresApproval) {
-                $workflowInstance = $this->startPaymentApprovalWorkflow($transaction, $user->id, $data);
-            }
-
-            return [
-                'success'              => true,
-                'transaction_id'       => $transaction->id,
-                'transaction_reference' => $transaction->reference,
-                'payment_breakdown'    => $paymentBreakdown,
-                'requires_approval'    => $requiresApproval,
-                'workflow_instance_id' => $workflowInstance?->id,
-                'message'              => $requiresApproval
-                    ? 'Payment submitted successfully. Awaiting accounting verification.'
-                    : ($paymentBreakdown ? $this->generatePaymentMessage($paymentBreakdown) : 'Payment recorded successfully.'),
-            ];
-        });
-    }
-
-    /**
-     * Apply payment across terms with carryover logic
-     * 
-     * Payment prioritizes:
-     * 1. Selected term (if specified) - applies full payment to this term first
-     * 2. Earlier unpaid terms with carryover (if overpayment)
-     * 3. Remaining balance in subsequent terms (if still overpayment)
-     * 
-     * @param StudentAssessment $assessment
-     * @param float $paymentAmount
-     * @param int|null $selectedTermId - specific term to apply payment to
-     * @return array
-     */
-    private function applyPaymentWithCarryover(StudentAssessment $assessment, float $paymentAmount, ?int $selectedTermId = null): array
-    {
-        $breakdown = [];
-        $remainingPayment = $paymentAmount;
-
-        // If specific term is selected, apply payment to that term first
-        if ($selectedTermId) {
-            $selectedTerm = $assessment->paymentTerms()
-                ->where('id', $selectedTermId)
-                ->first();
-
-            if ($selectedTerm && $selectedTerm->balance > 0) {
-                $previousBalance = (float) $selectedTerm->balance;
-                $amountApplied = min($remainingPayment, $previousBalance);
-                $newBalance = $previousBalance - $amountApplied;
-                $newStatus = $newBalance <= 0 ? self::STATUS_PAID : self::STATUS_PARTIAL;
-
-                // Update selected term
-                $selectedTerm->update([
-                    'balance' => max(0, $newBalance),
-                    'status' => $newStatus,
-                    'paid_date' => $newStatus === self::STATUS_PAID ? now() : $selectedTerm->paid_date,
-                ]);
-
-                $breakdown[] = [
-                    'term_id' => $selectedTerm->id,
-                    'term_name' => $selectedTerm->term_name,
-                    'term_order' => $selectedTerm->term_order,
-                    'previous_balance' => $previousBalance,
-                    'amount_applied' => $amountApplied,
-                    'new_balance' => max(0, $newBalance),
-                    'status' => $newStatus,
-                    'has_carryover' => $newBalance > 0,
-                ];
-
-                $remainingPayment -= $amountApplied;
-            }
         }
 
-        // Apply remaining payment to other unpaid terms in order (carryover)
-        if ($remainingPayment > 0) {
-            $terms = $assessment->paymentTerms()
-                ->where('balance', '>', 0)
-                ->when($selectedTermId, function ($query) use ($selectedTermId) {
-                    // Skip the selected term if already processed
-                    return $query->where('id', '!=', $selectedTermId);
-                })
-                ->orderBy('term_order')
-                ->get();
-
-            foreach ($terms as $term) {
-                if ($remainingPayment <= 0) break;
-
-                $previousBalance = (float) $term->balance;
-                $amountApplied = min($remainingPayment, $previousBalance);
-                $newBalance = $previousBalance - $amountApplied;
-                $newStatus = $newBalance <= 0 ? self::STATUS_PAID : self::STATUS_PARTIAL;
-
-                // Update term
-                $term->update([
-                    'balance' => max(0, $newBalance),
-                    'status' => $newStatus,
-                    'paid_date' => $newStatus === self::STATUS_PAID ? now() : $term->paid_date,
-                ]);
-
-                $breakdown[] = [
-                    'term_id' => $term->id,
-                    'term_name' => $term->term_name,
-                    'term_order' => $term->term_order,
-                    'previous_balance' => $previousBalance,
-                    'amount_applied' => $amountApplied,
-                    'new_balance' => max(0, $newBalance),
-                    'status' => $newStatus,
-                    'has_carryover' => $newBalance > 0,
-                ];
-
-                $remainingPayment -= $amountApplied;
-            }
-        }
-
-        // Handle overpayment (if any payment remains after all terms paid)
-        if ($remainingPayment > 0) {
-            $breakdown[] = [
-                'overpayment' => $remainingPayment,
-                'note' => 'Overpayment applied to future assessments',
-            ];
-        }
-
-        // If no breakdown (shouldn't happen), return error info
-        if (empty($breakdown)) {
-            return [
-                [
-                    'note' => 'No outstanding balance to apply payment to',
-                    'overpayment' => $paymentAmount,
-                ]
-            ];
-        }
-
-        return $breakdown;
-    }
-
-    /**
-     * Update student account balance after payment
-     */
-    private function updateStudentBalance(User $user): void
-    {
-        $charges = $user->transactions()
-            ->where('kind', 'charge')
-            ->sum('amount');
-
-        $payments = $user->transactions()
-            ->where('kind', 'payment')
-            ->where('status', 'paid')
-            ->sum('amount');
-
-        $balance = $charges - $payments;
-        $account = $user->account ?? $user->account()->create();
-        $account->update(['balance' => $balance]);
-    }
-
-    /**
-     * Generate user-friendly payment message
-     */
-    private function generatePaymentMessage(array $breakdown): string
-    {
-        $appliedToTerms = array_filter(
-            array_map(fn($b) => $b['term_name'] ?? null, $breakdown),
-            fn($v) => $v !== null
-        );
-        
-        if (empty($appliedToTerms)) {
-            return 'Payment recorded successfully.';
-        }
-
-        return sprintf(
-            'Payment successfully applied to: %s',
-            implode(', ', $appliedToTerms)
-        );
-    }
-
-    /**
-     * Get payment terms for student with current balance
-     */
-    public function getPaymentTermsForStudent(User $user): array
-    {
-        $assessment = StudentAssessment::where('user_id', $user->id)
-            ->latest('created_at')
-            ->first();
-
-        if (!$assessment) {
-            return [];
-        }
-
-        return $assessment->paymentTerms()
-            ->orderBy('term_order')
+        // Get all active students for selection
+        $students = User::where('role', 'student')
+            ->where('status', User::STATUS_ACTIVE)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
             ->get()
-            ->map(fn($term) => [
-                'id' => $term->id,
-                'name' => $term->term_name,
-                'order' => $term->term_order,
-                'amount' => (float) $term->amount,
-                'balance' => (float) $term->balance,
-                'status' => $term->status,
-                'due_date' => $term->due_date?->format('Y-m-d'),
-                'is_overdue' => $term->isOverdue(),
-                'has_carryover' => $term->hasCarryover(),
-            ])
-            ->toArray();
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'student_id' => $user->student_id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'course' => $user->course,
+                    'year_level' => $user->year_level,
+                    'status' => $user->status,
+                ];
+            });
+
+        $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+        $semesters = ['1st Sem', '2nd Sem', 'Summer'];
+        $currentYear = now()->year;
+        $schoolYears = [
+            "{$currentYear}-" . ($currentYear + 1),
+            ($currentYear - 1) . "-{$currentYear}",
+        ];
+
+        return Inertia::render('StudentFees/Create', [
+            'students' => $students,
+            'yearLevels' => $yearLevels,
+            'semesters' => $semesters,
+            'schoolYears' => $schoolYears,
+        ]);
     }
 
     /**
-     * Get total outstanding balance for student
+     * Store new assessment
      */
-    public function getTotalOutstandingBalance(User $user): float
+    public function store(Request $request)
     {
-        $assessment = StudentAssessment::where('user_id', $user->id)
-            ->latest('created_at')
-            ->first();
-
-        if (!$assessment) {
-            return 0;
-        }
-
-        return (float) $assessment->paymentTerms()->sum('balance');
-    }
-
-    /**
-     * Start the payment approval workflow for a student-submitted transaction
-     */
-    private function startPaymentApprovalWorkflow(Transaction $transaction, int $userId, array $data): WorkflowInstance
-    {
-        $workflow = Workflow::where('type', 'payment_approval')
-            ->where('is_active', true)
-            ->firstOrFail();
-
-        $workflowService = app(WorkflowService::class);
-        
-        $instance = $workflowService->startWorkflow($workflow, $transaction, $userId);
-        
-        // Store payment data in instance metadata for accounting to see during review
-        $instance->update([
-            'metadata' => [
-                'transaction_id'   => $transaction->id,
-                'amount'           => $transaction->amount,
-                'payment_method'   => $data['payment_method'] ?? null,
-                'selected_term_id' => $data['selected_term_id'] ?? null,
-                'term_name'        => $data['term_name'] ?? null,
-                'student_user_id'  => $userId,
-                'submitted_at'     => now()->toIso8601String(),
-            ],
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'year_level' => 'required|string',
+            'semester' => 'required|string',
+            'school_year' => 'required|string',
+            'subjects' => 'required|array|min:1',
+            'subjects.*.id' => 'required|exists:subjects,id',
+            'subjects.*.units' => 'required|numeric|min:0',
+            'subjects.*.amount' => 'required|numeric|min:0',
+            'other_fees' => 'nullable|array',
+            'other_fees.*.id' => 'required|exists:fees,id',
+            'other_fees.*.amount' => 'required|numeric|min:0',
         ]);
 
-        return $instance->fresh();
-    }
+        DB::beginTransaction();
+        try {
+            // Calculate tuition fee
+            $tuitionFee = collect($validated['subjects'])->sum('amount');
+            
+            // Calculate other fees
+            $otherFeesTotal = isset($validated['other_fees']) 
+                ? collect($validated['other_fees'])->sum('amount') 
+                : 0;
 
-    /**
-     * Finalize a payment after accounting approval.
-     * Called by WorkflowService after the last approval is granted.
-     * Updates payment terms, balance, marks transaction as paid.
-     */
-    public function finalizeApprovedPayment(Transaction $transaction): void
-    {
-        DB::transaction(function () use ($transaction) {
-            $user = $transaction->user;
-
-            $assessment = StudentAssessment::where('user_id', $user->id)
-                ->latest('created_at')
-                ->first();
-
-            if (!$assessment) {
-                throw new Exception('Assessment not found during payment finalization.');
-            }
-
-            // Get term ID from transaction meta
-            $selectedTermId = $transaction->meta['selected_term_id'] ?? null;
-
-            // Apply payment to terms
-            $this->applyPaymentWithCarryover($assessment, (float) $transaction->amount, $selectedTermId);
-
-            // Mark transaction as paid
-            $transaction->update([
-                'status'  => 'paid',
-                'paid_at' => now(),
+            // Create assessment
+            $assessment = StudentAssessment::create([
+                'user_id' => $validated['user_id'],
+                'assessment_number' => StudentAssessment::generateAssessmentNumber(),
+                'year_level' => $validated['year_level'],
+                'semester' => $validated['semester'],
+                'school_year' => $validated['school_year'],
+                'tuition_fee' => $tuitionFee,
+                'other_fees' => $otherFeesTotal,
+                'total_assessment' => $tuitionFee + $otherFeesTotal,
+                'subjects' => $validated['subjects'],
+                'fee_breakdown' => $validated['other_fees'] ?? [],
+                'created_by' => auth()->id(),
+                'status' => 'active',
             ]);
 
-            // Update student account balance
-            $this->updateStudentBalance($user);
-        });
+            // Create transactions for each subject
+            foreach ($validated['subjects'] as $subject) {
+                Transaction::create([
+                    'user_id' => $validated['user_id'],
+                    'reference' => 'SUBJ-' . strtoupper(Str::random(8)),
+                    'kind' => 'charge',
+                    'type' => 'Tuition',
+                    'year' => explode('-', $validated['school_year'])[0],
+                    'semester' => $validated['semester'],
+                    'amount' => $subject['amount'],
+                    'status' => 'pending',
+                    'meta' => [
+                        'assessment_id' => $assessment->id,
+                        'subject_id' => $subject['id'],
+                        'description' => 'Tuition Fee - Subject',
+                    ],
+                ]);
+            }
+
+            // Create transactions for other fees
+            if (isset($validated['other_fees'])) {
+                foreach ($validated['other_fees'] as $fee) {
+                    $feeModel = Fee::find($fee['id']);
+                    Transaction::create([
+                        'user_id' => $validated['user_id'],
+                        'fee_id' => $fee['id'],
+                        'reference' => 'FEE-' . strtoupper(Str::random(8)),
+                        'kind' => 'charge',
+                        'type' => $feeModel->category,
+                        'year' => explode('-', $validated['school_year'])[0],
+                        'semester' => $validated['semester'],
+                        'amount' => $fee['amount'],
+                        'status' => 'pending',
+                        'meta' => [
+                            'assessment_id' => $assessment->id,
+                            'fee_code' => $feeModel->code,
+                            'fee_name' => $feeModel->name,
+                        ],
+                    ]);
+                }
+            }
+
+            // Recalculate student balance
+            $user = User::find($validated['user_id']);
+            \App\Services\AccountService::recalculate($user);
+
+            DB::commit();
+
+            return redirect()
+                ->route('student-fees.show', $validated['user_id'])
+                ->with('success', 'Student fee assessment created successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to create assessment: ' . $e->getMessage()]);
+        }
     }
 
     /**
-     * Cancel a pending payment after accounting rejection.
-     * Marks transaction as cancelled. Terms are NOT updated (payment never applied).
+     * Show student fee details
      */
-    public function cancelRejectedPayment(Transaction $transaction): void
+    public function show($userId)
     {
-        $transaction->update(['status' => 'cancelled']);
+        $student = User::with(['student', 'account'])
+            ->where('role', 'student')
+            ->findOrFail($userId);
+
+        // Get latest assessment with payment terms
+        $latestAssessment = StudentAssessment::where('user_id', $userId)
+            ->where('status', 'active')
+            ->with('paymentTerms')
+            ->latest()
+            ->first();
+
+        // Get all transactions
+        $transactions = Transaction::where('user_id', $userId)
+            ->with('fee')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get payments
+        $payments = Payment::where('student_id', $student->student->id ?? null)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        // ── FIX: Build feeBreakdown from the assessment record first. ─────────────
+        // Previously this was derived only from transactions, which meant students
+        // without charge transactions (like jcdc742713) showed an empty fee breakdown.
+        // Now we derive from the assessment's stored amounts, falling back to
+        // transactions if no assessment exists.
+        if ($latestAssessment) {
+            $feeBreakdown = collect();
+
+            if ($latestAssessment->tuition_fee > 0) {
+                $feeBreakdown->push([
+                    'category' => 'Tuition',
+                    'total'    => (float) $latestAssessment->tuition_fee,
+                    'items'    => 1,
+                ]);
+            }
+
+            if ($latestAssessment->other_fees > 0) {
+                // Try to further break down other_fees from stored fee_breakdown JSON
+                $storedBreakdown = $latestAssessment->fee_breakdown ?? [];
+                if (!empty($storedBreakdown)) {
+                    $grouped = collect($storedBreakdown)->groupBy('category');
+                    foreach ($grouped as $category => $items) {
+                        $feeBreakdown->push([
+                            'category' => $category,
+                            'total'    => $items->sum('amount'),
+                            'items'    => $items->count(),
+                        ]);
+                    }
+                } else {
+                    // No detailed breakdown stored — show as Miscellaneous
+                    $feeBreakdown->push([
+                        'category' => 'Miscellaneous',
+                        'total'    => (float) $latestAssessment->other_fees,
+                        'items'    => 1,
+                    ]);
+                }
+            }
+        } else {
+            // Fallback: derive from transactions (original behavior)
+            $feeBreakdown = $transactions->where('kind', 'charge')
+                ->groupBy('type')
+                ->map(function ($group) {
+                    return [
+                        'category' => $group->first()->type,
+                        'total'    => $group->sum('amount'),
+                        'items'    => $group->count(),
+                    ];
+                });
+        }
+
+        return Inertia::render('StudentFees/Show', [
+            'student'          => $student,
+            'student_model_id' => $student->student->id ?? null,
+            'assessment'       => $latestAssessment,
+            'transactions'     => $transactions,
+            'payments'         => $payments,
+            'feeBreakdown'     => $feeBreakdown->values(),
+        ]);
+    }
+
+    /**
+     * Store payment for student
+     * Validates:
+     * - Amount doesn't exceed total outstanding balance
+     * - Selected term exists and is unpaid
+     * - Only first unpaid term is selected
+     * - All operations are atomic (DB transactions)
+     */
+    public function storePayment(Request $request, $userId)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|string|in:cash,gcash,bank_transfer,credit_card,debit_card',
+            'term_id' => 'required|exists:student_payment_terms,id',
+            'payment_date' => 'required|date',
+        ]);
+
+        $student = User::with('student', 'account')->where('role', 'student')->findOrFail($userId);
+
+        // Ensure student has a student record
+        if (!$student->student) {
+            return back()->withErrors(['error' => 'Student record not found. Please contact administrator.']);
+        }
+
+        // Get the payment term
+        $paymentTerm = StudentPaymentTerm::findOrFail($validated['term_id']);
+
+        // Get the payment service
+        $paymentService = new StudentPaymentService();
+        $outstandingBalance = $paymentService->getTotalOutstandingBalance($student);
+
+        // Validation: Amount cannot exceed total outstanding balance (overpayment protection)
+        if ((float) $validated['amount'] > $outstandingBalance) {
+            return back()->withErrors([
+                'amount' => sprintf(
+                    'Payment amount cannot exceed outstanding balance of ₱%s',
+                    number_format($outstandingBalance, 2)
+                )
+            ]);
+        }
+
+        // Validation: Selected term must have outstanding balance
+        if ((float) $paymentTerm->balance <= 0) {
+            return back()->withErrors([
+                'term_id' => 'This payment term has already been paid. Please select another term.'
+            ]);
+        }
+
+        // Validation: Only the first unpaid term of that term's own assessment can be selected.
+        // We scope to $paymentTerm->student_assessment_id so multi-assessment students
+        // (e.g. 1st Sem + 2nd Sem) are not blocked by the sibling assessment's terms.
+        $firstUnpaidTerm = StudentPaymentTerm::where('student_assessment_id', $paymentTerm->student_assessment_id)
+            ->where('balance', '>', 0)
+            ->orderBy('term_order')
+            ->first();
+
+        if ($firstUnpaidTerm && (int) $paymentTerm->id !== (int) $firstUnpaidTerm->id) {
+            return back()->withErrors([
+                'term_id' => sprintf(
+                    'You must pay "%s" before paying other terms in this semester. Please select that term.',
+                    $firstUnpaidTerm->term_name
+                ),
+            ]);
+        }
+
+        try {
+            // Process payment using service (atomic transaction)
+            $result = $paymentService->processPayment($student, (float) $validated['amount'], [
+                'payment_method' => $validated['payment_method'],
+                'paid_at'        => $validated['payment_date'],
+                'description'    => 'Payment recorded by accounting',
+                'selected_term_id' => (int) $validated['term_id'],
+                'term_name'      => $paymentTerm->term_name,
+                'year'           => optional($paymentTerm->assessment)->school_year
+                                        ? explode('-', $paymentTerm->assessment->school_year)[0]
+                                        : now()->year,
+                'semester'       => optional($paymentTerm->assessment)->semester,
+            ]);
+
+            // Bug 1 fix: processPayment() only creates a Transaction record.
+            // The "Payment History" table on Show.vue reads from the payments table
+            // via Payment::where('student_id', ...). We must create a Payment record
+            // here so the accounting-recorded payment actually appears in that table.
+            Payment::create([
+                'student_id'       => $student->student->id,
+                'amount'           => (float) $validated['amount'],
+                'payment_method'   => $validated['payment_method'],
+                'reference_number' => $result['transaction_reference'],
+                'description'      => 'Payment recorded by accounting — ' . $paymentTerm->term_name,
+                'status'           => Payment::STATUS_COMPLETED,
+                'paid_at'          => $validated['payment_date'],
+            ]);
+
+            return back()->with('success', 'Payment recorded successfully! ' . $result['message']);
+
+        } catch (\Exception $e) {
+            Log::error('Payment recording failed', [
+                'user_id' => $userId,
+                'term_id' => $validated['term_id'],
+                'amount' => $validated['amount'],
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors([
+                'error' => 'Failed to record payment. Please try again or contact support.'
+            ]);
+        }
+    }
+
+    /**
+     * Edit assessment
+     */
+    public function edit($userId)
+    {
+        $student = User::with(['student', 'account'])
+            ->where('role', 'student')
+            ->findOrFail($userId);
+
+        $assessment = StudentAssessment::where('user_id', $userId)
+            ->where('status', 'active')
+            ->latest()
+            ->first();
+
+        // If no active assessment exists, redirect to create one
+        if (!$assessment) {
+            return redirect()
+                ->route('student-fees.create')
+                ->with('info', 'Please create an assessment for this student first.');
+        }
+
+        $subjects = Subject::active()
+            ->where('course', $student->course)
+            ->where('year_level', $student->year_level)
+            ->get();
+
+        $fees = Fee::active()
+            ->whereIn('category', ['Laboratory', 'Library', 'Athletic', 'Miscellaneous'])
+            ->get();
+
+        return Inertia::render('StudentFees/Edit', [
+            'student' => $student,
+            'assessment' => $assessment,
+            'subjects' => $subjects,
+            'fees' => $fees,
+        ]);
+    }
+
+    /**
+     * Update student assessment
+     */
+    public function update(Request $request, $userId)
+    {
+        $validated = $request->validate([
+            'year_level' => 'required|string',
+            'semester' => 'required|string',
+            'school_year' => 'required|string',
+            'subjects' => 'required|array',
+            'other_fees' => 'required|array',
+        ]);
+
+        $assessment = StudentAssessment::where('user_id', $userId)
+            ->where('status', 'active')
+            ->latest()
+            ->firstOrFail();
+
+        $tuitionTotal = collect($validated['subjects'])->sum('amount') ?? 0;
+        $otherFeesTotal = collect($validated['other_fees'])->sum('amount') ?? 0;
+
+        $assessment->update([
+            'year_level' => $validated['year_level'],
+            'semester' => $validated['semester'],
+            'school_year' => $validated['school_year'],
+            'subjects' => $validated['subjects'],
+            'fee_breakdown' => $validated['other_fees'],
+            'tuition_fee' => $tuitionTotal,
+            'other_fees' => $otherFeesTotal,
+            'total_assessment' => $tuitionTotal + $otherFeesTotal,
+        ]);
+
+        return redirect()
+            ->route('student-fees.show', $userId)
+            ->with('success', 'Assessment updated successfully!');
+    }
+
+    /**
+     * Export assessment to PDF
+     */
+    public function exportPdf($userId)
+    {
+        $student = User::with(['student', 'account'])
+            ->where('role', 'student')
+            ->findOrFail($userId);
+
+        $assessment = StudentAssessment::where('user_id', $userId)
+            ->where('status', 'active')
+            ->latest()
+            ->firstOrFail();
+
+        $transactions = Transaction::where('user_id', $userId)
+            ->with('fee')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $payments = Payment::where('student_id', $student->student->id ?? null)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.student-assessment', [
+            'student' => $student,
+            'assessment' => $assessment,
+            'transactions' => $transactions,
+            'payments' => $payments,
+        ]);
+
+        return $pdf->download("assessment-{$student->student_id}.pdf");
+    }
+
+    /**
+     * Show create student form
+     */
+    public function createStudent()
+    {
+        // ✅ Get unique courses from existing students
+        $courses = User::where('role', 'student')
+            ->whereNotNull('course')
+            ->distinct()
+            ->pluck('course')
+            ->sort()
+            ->values();
+        
+        // ✅ If no students exist yet, provide default courses
+        if ($courses->isEmpty()) {
+            $courses = collect([
+                'BS Electrical Engineering Technology',
+                'BS Electronics Engineering Technology',
+                'BS Computer Science',
+                'BS Information Technology',
+                'BS Accountancy',
+                'BS Business Administration',
+            ]);
+        }
+        
+        $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+        
+        return Inertia::render('StudentFees/CreateStudent', [
+            'courses' => $courses,
+            'yearLevels' => $yearLevels,
+        ]);
+    }
+
+    /**
+     * Store new student
+     */
+    public function storeStudent(Request $request)
+    {
+        $validated = $request->validate([
+            'last_name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'middle_initial' => 'nullable|string|max:10',
+            'email' => 'required|email|unique:users,email',
+            'birthday' => 'required|date',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:255',
+            'year_level' => 'required|string',
+            'course' => 'required|string',
+            'student_id' => 'nullable|string|unique:users,student_id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Auto-generate ID if empty
+            $studentId = $validated['student_id'] ?: $this->generateUniqueStudentId();
+
+            // Create user record
+            $user = User::create([
+                'last_name' => $validated['last_name'],
+                'first_name' => $validated['first_name'],
+                'middle_initial' => $validated['middle_initial'],
+                'email' => $validated['email'],
+                'birthday' => $validated['birthday'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'year_level' => $validated['year_level'],
+                'course' => $validated['course'],
+                'student_id' => $studentId,
+                'role' => 'student',
+                'status' => User::STATUS_ACTIVE,
+                'password' => Hash::make('password'),
+            ]);
+
+            // ✅ FIX: Create Student model entry
+            Student::create([
+                'user_id' => $user->id,
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('student-fees.show', $user->id)
+                ->with('success', 'Student created successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors([
+                'error' => 'Failed to create student: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function generateUniqueStudentId(): string
+    {
+        $year = now()->year;
+        
+        // Use database transaction to prevent race conditions
+        return DB::transaction(function () use ($year) {
+            // Lock the table to prevent concurrent ID generation
+            $lastStudent = User::where('student_id', 'like', "{$year}-%")
+                ->lockForUpdate()
+                ->orderByRaw('CAST(SUBSTRING(student_id, 6) AS UNSIGNED) DESC')
+                ->first();
+
+            if ($lastStudent) {
+                // Extract the number part and increment
+                $lastNumber = intval(substr($lastStudent->student_id, -4));
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '0001';
+            }
+
+            $newStudentId = "{$year}-{$newNumber}";
+            
+            // Double-check uniqueness
+            $attempts = 0;
+            while (User::where('student_id', $newStudentId)->exists() && $attempts < 10) {
+                $lastNumber = intval($newNumber);
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+                $newStudentId = "{$year}-{$newNumber}";
+                $attempts++;
+            }
+            
+            if ($attempts >= 10) {
+                throw new \Exception('Unable to generate unique student ID after multiple attempts.');
+            }
+            
+            return $newStudentId;
+        });
     }
 }

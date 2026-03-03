@@ -26,6 +26,7 @@ interface PaymentTerm {
 interface Props {
     student: any;
     assessment: any;
+    allAssessments: Array<{ id: number; assessment_number: string; semester: string; school_year: string; year_level: string }>;
     transactions: any[];
     payments: any[];
     feeBreakdown: Array<{ category: string; total: number; items: number }>;
@@ -204,6 +205,18 @@ const breadcrumbs = [
     { title: props.student.name },
 ];
 
+// ─── Semester / Assessment selector ───────────────────────────────────────────
+// When a student has multiple assessments (e.g. 1st Sem + 2nd Sem), the accounting
+// user can pick which one to export. Defaults to the currently shown assessment.
+const selectedAssessmentId = ref<number | null>(props.assessment?.id ?? null);
+
+const exportUrl = computed(() => {
+    const base = route('student-fees.export-pdf', props.student.id);
+    return selectedAssessmentId.value
+        ? `${base}?assessment_id=${selectedAssessmentId.value}`
+        : base;
+});
+
 const showPaymentDialog = ref(false);
 
 const paymentForm = useForm({
@@ -318,13 +331,24 @@ const getStudentStatusColor = (status: string) => {
                         <p class="text-sm text-gray-500 mt-0.5">{{ student.student_id }} · {{ student.course }} · {{ student.year_level }}</p>
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    <Link :href="route('student-fees.export-pdf', student.id)" target="_blank">
+                <div class="flex gap-2 items-center">
+                    <!-- Semester selector: only shown when student has more than one assessment -->
+                    <select
+                        v-if="allAssessments.length > 1"
+                        v-model.number="selectedAssessmentId"
+                        class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                        title="Select semester to export"
+                    >
+                        <option v-for="a in allAssessments" :key="a.id" :value="a.id">
+                            {{ a.semester }} {{ a.school_year }}
+                        </option>
+                    </select>
+                    <a :href="exportUrl" target="_blank">
                         <Button variant="outline" size="sm">
                             <Download class="w-4 h-4 mr-2" />
                             Export PDF
                         </Button>
-                    </Link>
+                    </a>
                     <Dialog v-model:open="showPaymentDialog">
                         <DialogTrigger as-child>
                             <Button size="sm">
@@ -357,11 +381,20 @@ const getStudentStatusColor = (status: string) => {
                                 </div>
                                 <!-- Payment Method -->
                                 <div class="space-y-2">
-                                    <Label>Payment Method</Label>
-                                    <div class="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                                        <p class="text-gray-700 font-medium">Cash</p>
-                                        <p class="text-xs text-gray-500">On-campus, in-person payment</p>
-                                    </div>
+                                    <Label for="payment_method">Payment Method *</Label>
+                                    <select
+                                        id="payment_method"
+                                        v-model="paymentForm.payment_method"
+                                        required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
+                                    >
+                                        <option value="cash">Cash</option>
+                                        <option value="gcash">GCash</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                        <option value="credit_card">Credit Card</option>
+                                        <option value="debit_card">Debit Card</option>
+                                    </select>
+                                    <p v-if="paymentForm.errors.payment_method" class="text-sm text-red-500">{{ paymentForm.errors.payment_method }}</p>
                                 </div>
                                 <!-- Payment Date -->
                                 <div class="space-y-2">

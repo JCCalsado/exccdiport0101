@@ -23,10 +23,11 @@ class DatabaseSeeder extends Seeder
         // Existing table clears
         DB::table('payments')->delete();
         DB::table('transactions')->delete();
+        DB::table('student_payment_terms')->delete();
         DB::table('student_assessments')->delete();
         DB::table('students')->delete();
         DB::table('accounts')->delete();
-        // NOTE: subjects and fees tables are left intact but not seeded
+        DB::table('fees')->delete();
         DB::table('notifications')->delete();
 
         $this->command->info('✓ Existing data cleared');
@@ -95,6 +96,7 @@ class DatabaseSeeder extends Seeder
         $fourthYear = \App\Models\User::where('role', 'student')->where('year_level', '4th Year')->count();
 
         $assessmentCount  = \App\Models\StudentAssessment::count();
+        $paymentTermCount = \App\Models\StudentPaymentTerm::count();
         $transactionCount = \App\Models\Transaction::count();
         $paymentCount     = \App\Models\Payment::count();
 
@@ -124,7 +126,9 @@ class DatabaseSeeder extends Seeder
                 ['└─ 4th Year', $fourthYear],
                 ['', ''],
                 ['Academic Data', ''],
+                ['├─ Fee Records',     \App\Models\Fee::count()],
                 ['├─ Student Assessments', $assessmentCount],
+                ['├─ Payment Terms (5 per assessment)', $paymentTermCount],
                 ['├─ Transactions', $transactionCount],
                 ['└─ Payment Records', $paymentCount],
                 ['', ''],
@@ -176,11 +180,12 @@ class DatabaseSeeder extends Seeder
         $this->command->newLine();
         $this->command->info('💡 TIPS');
         $this->command->info('═══════════════════════════════════════════════════════');
-        $this->command->info('• Fee Management and Subject Management have been disabled');
-        $this->command->info('• All students have complete assessments and transactions');
-        $this->command->info('• Students with balances have payment history');
-        $this->command->info('• Graduated students (4th year) have zero balance');
-        $this->command->info('• Workflow templates are ready for student enrollment processes');
+        $this->command->info('• Fee Management seeded with detailed breakdowns per Year × Semester');
+        $this->command->info('• Each student has 2 assessments (1st Sem + 2nd Sem) for their year level');
+        $this->command->info('• Each assessment has a full fee_breakdown (Academic, Lab, Misc, Other)');
+        $this->command->info('• Each assessment has 5 Payment Terms: Upon Registration, Prelim, Midterm, Semi-Final, Final');
+        $this->command->info('• All payment terms start at PENDING with full balance (no payments yet)');
+        $this->command->info('• Graduated students still have assessments but can be marked completed');
         $this->command->info('• Sample workflow instances created for testing');
         $this->command->info('• Check /approvals to see pending approval requests');
         $this->command->info('• Run: php artisan db:seed --class=DatabaseSeeder to re-seed');

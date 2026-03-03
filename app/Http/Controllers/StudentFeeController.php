@@ -11,13 +11,13 @@ use App\Models\Fee;
 use App\Models\Transaction;
 use App\Models\Payment;
 use App\Services\StudentPaymentService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class StudentFeeController extends Controller
 {
@@ -271,7 +271,22 @@ class StudentFeeController extends Controller
             ->where('role', 'student')
             ->findOrFail($userId);
 
-        // Get latest assessment with payment terms
+        // All active assessments — used to show per-semester download buttons
+        $allAssessments = StudentAssessment::where('user_id', $userId)
+            ->where('status', 'active')
+            ->with('paymentTerms')
+            ->orderBy('school_year')
+            ->orderByRaw("FIELD(semester, '1st Sem', '2nd Sem', 'Summer')")
+            ->get()
+            ->map(fn ($a) => [
+                'id'              => $a->id,
+                'semester'        => $a->semester,
+                'school_year'     => $a->school_year,
+                'year_level'      => $a->year_level,
+                'total_assessment'=> (float) $a->total_assessment,
+            ]);
+
+        // Get latest assessment with payment terms (used for the main display)
         $latestAssessment = StudentAssessment::where('user_id', $userId)
             ->where('status', 'active')
             ->with('paymentTerms')
@@ -343,6 +358,7 @@ class StudentFeeController extends Controller
             'student'          => $student,
             'student_model_id' => $student->student->id ?? null,
             'assessment'       => $latestAssessment,
+            'allAssessments'   => $allAssessments,
             'transactions'     => $transactions,
             'payments'         => $payments,
             'feeBreakdown'     => $feeBreakdown->values(),
@@ -397,11 +413,10 @@ class StudentFeeController extends Controller
             ]);
         }
 
-        // Validation: Only first unpaid term can be selected (sequential enforcement)
-        $firstUnpaidTerm = StudentAssessment::where('user_id', $userId)
-            ->latest('created_at')
-            ->first()
-            ->paymentTerms()
+        // Validation: Only the first unpaid term of that term's own assessment can be selected.
+        // We scope to $paymentTerm->student_assessment_id so multi-assessment students
+        // (e.g. 1st Sem + 2nd Sem) are not blocked by the sibling assessment's terms.
+        $firstUnpaidTerm = StudentPaymentTerm::where('student_assessment_id', $paymentTerm->student_assessment_id)
             ->where('balance', '>', 0)
             ->orderBy('term_order')
             ->first();
@@ -409,9 +424,9 @@ class StudentFeeController extends Controller
         if ($firstUnpaidTerm && (int) $paymentTerm->id !== (int) $firstUnpaidTerm->id) {
             return back()->withErrors([
                 'term_id' => sprintf(
-                    'You must pay %s before paying other terms. Please select that term.',
+                    'You must pay "%s" before paying other terms in this semester. Please select that term.',
                     $firstUnpaidTerm->term_name
-                )
+                ),
             ]);
         }
 
@@ -419,10 +434,28 @@ class StudentFeeController extends Controller
             // Process payment using service (atomic transaction)
             $result = $paymentService->processPayment($student, (float) $validated['amount'], [
                 'payment_method' => $validated['payment_method'],
-                'paid_at' => $validated['payment_date'],
-                'description' => 'Payment recorded by accounting',
+                'paid_at'        => $validated['payment_date'],
+                'description'    => 'Payment recorded by accounting',
                 'selected_term_id' => (int) $validated['term_id'],
-                'term_name' => $paymentTerm->term_name,
+                'term_name'      => $paymentTerm->term_name,
+                'year'           => optional($paymentTerm->assessment)->school_year
+                                        ? explode('-', $paymentTerm->assessment->school_year)[0]
+                                        : now()->year,
+                'semester'       => optional($paymentTerm->assessment)->semester,
+            ]);
+
+            // Bug 1 fix: processPayment() only creates a Transaction record.
+            // The "Payment History" table on Show.vue reads from the payments table
+            // via Payment::where('student_id', ...). We must create a Payment record
+            // here so the accounting-recorded payment actually appears in that table.
+            Payment::create([
+                'student_id'       => $student->student->id,
+                'amount'           => (float) $validated['amount'],
+                'payment_method'   => $validated['payment_method'],
+                'reference_number' => $result['transaction_reference'],
+                'description'      => 'Payment recorded by accounting — ' . $paymentTerm->term_name,
+                'status'           => Payment::STATUS_COMPLETED,
+                'paid_at'          => $validated['payment_date'],
             ]);
 
             return back()->with('success', 'Payment recorded successfully! ' . $result['message']);
@@ -518,7 +551,11 @@ class StudentFeeController extends Controller
     }
 
     /**
-     * Export assessment to PDF
+     * Export assessment receipt as a printable HTML page.
+     *
+     * Returns a fully self-contained HTML file that the browser opens in a new
+     * tab. A "Print / Save as PDF" bar at the top lets the user save it via
+     * the browser's built-in print dialog — no server-side PDF library required.
      */
     public function exportPdf($userId)
     {
@@ -526,12 +563,28 @@ class StudentFeeController extends Controller
             ->where('role', 'student')
             ->findOrFail($userId);
 
-        $assessment = StudentAssessment::where('user_id', $userId)
+        // Support selecting a specific assessment by ID (from the semester dropdown in Vue)
+        // or fall back to semester filter, then latest active.
+        $assessmentId    = request('assessment_id');
+        $semesterFilter  = request('semester');
+
+        $assessmentQuery = StudentAssessment::where('user_id', $userId)
             ->where('status', 'active')
-            ->latest()
-            ->firstOrFail();
+            ->with('paymentTerms');
+
+        if ($assessmentId) {
+            $assessmentQuery->where('id', $assessmentId);
+        } elseif ($semesterFilter) {
+            $assessmentQuery->where('semester', $semesterFilter);
+        }
+
+        $assessment = $assessmentQuery->latest()->firstOrFail();
 
         $transactions = Transaction::where('user_id', $userId)
+            ->where(function ($q) use ($assessment) {
+                $q->where('semester', $assessment->semester)
+                  ->orWhereNull('semester');
+            })
             ->with('fee')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -540,14 +593,23 @@ class StudentFeeController extends Controller
             ->orderBy('paid_at', 'desc')
             ->get();
 
+        $paymentTerms = $assessment->paymentTerms()->orderBy('term_order')->get();
+
         $pdf = Pdf::loadView('pdf.student-assessment', [
-            'student' => $student,
-            'assessment' => $assessment,
+            'student'      => $student,
+            'assessment'   => $assessment,
             'transactions' => $transactions,
-            'payments' => $payments,
+            'payments'     => $payments,
+            'paymentTerms' => $paymentTerms,
         ]);
 
-        return $pdf->download("assessment-{$student->student_id}.pdf");
+        $pdf->setPaper('A4', 'portrait');
+
+        $filename = "receipt-{$student->student_id}-{$assessment->semester}-{$assessment->school_year}.pdf";
+        // Replace spaces so the filename is clean
+        $filename = str_replace([' ', '/'], '-', $filename);
+
+        return $pdf->download($filename);
     }
 
     /**
