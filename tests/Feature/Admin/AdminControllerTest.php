@@ -403,6 +403,9 @@ class AdminControllerTest extends TestCase
             'terms_accepted_at' => now(),
         ]);
 
+        // Travel 1 second so updated_at is guaranteed to differ from originalUpdatedAt
+        $this->travel(1)->seconds();
+
         $this->actingAs($updatingAdmin)->put(route('users.update', $admin->id), $data);
 
         $admin->refresh();

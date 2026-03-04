@@ -36,7 +36,7 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
 
         // Redirect based on role
-        switch ($user->role) {
+        switch ($user->role?->value ?? $user->role) {
             case 'student':
                 return redirect()->route('student.dashboard');
 
