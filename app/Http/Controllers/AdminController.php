@@ -61,6 +61,11 @@ class AdminController extends Controller
     {
         $this->authorize('create', User::class);
 
+        // Validate terms acceptance at the HTTP layer (only when provided)
+        $request->validate([
+            'accept_terms' => 'sometimes|accepted',
+        ]);
+
         try {
             $admin = $this->adminService->createAdmin(
                 $request->all(),

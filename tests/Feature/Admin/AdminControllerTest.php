@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Enums\UserRoleEnum;
 use App\Services\AdminService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 
 class AdminControllerTest extends TestCase
 {
@@ -44,7 +45,7 @@ class AdminControllerTest extends TestCase
         $response = $this->actingAs($this->superAdmin)->get(route('users.index'));
 
         $response->assertStatus(200);
-        $response->assertViewIs('Admin/Users/Index');
+        $response->assertInertia(fn (Assert $page) => $page->component('Admin/Users/Index'));
     }
 
     /** @test */
@@ -86,7 +87,7 @@ class AdminControllerTest extends TestCase
         $response = $this->actingAs($this->superAdmin)->get(route('users.create'));
 
         $response->assertStatus(200);
-        $response->assertViewIs('Admin/Users/Create');
+        $response->assertInertia(fn (Assert $page) => $page->component('Admin/Users/Create'));
     }
 
     /** @test */
@@ -193,7 +194,7 @@ class AdminControllerTest extends TestCase
         $response = $this->actingAs($this->superAdmin)->get(route('users.show', $admin->id));
 
         $response->assertStatus(200);
-        $response->assertViewIs('Admin/Users/Show');
+        $response->assertInertia(fn (Assert $page) => $page->component('Admin/Users/Show'));
     }
 
     /** @test */
@@ -207,7 +208,7 @@ class AdminControllerTest extends TestCase
         $response = $this->actingAs($this->superAdmin)->get(route('users.edit', $admin->id));
 
         $response->assertStatus(200);
-        $response->assertViewIs('Admin/Users/Edit');
+        $response->assertInertia(fn (Assert $page) => $page->component('Admin/Users/Edit'));
     }
 
     /** @test */

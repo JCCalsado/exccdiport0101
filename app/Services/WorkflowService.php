@@ -41,13 +41,6 @@ class WorkflowService
             // Create approval request if step requires approval
             if ($firstStep['requires_approval'] ?? false) {
                 $this->createApprovalRequest($instance, $firstStep);
-            } else {
-                // If first step doesn't require approval, auto-advance to next step
-                Log::info('First workflow step does not require approval, auto-advancing...', [
-                    'workflow_instance_id' => $instance->id,
-                    'first_step' => $firstStep['name'],
-                ]);
-                $this->advanceWorkflow($instance, $userId);
             }
 
             return $instance;
@@ -99,13 +92,6 @@ class WorkflowService
 
             if ($nextStep['requires_approval'] ?? false) {
                 $this->createApprovalRequest($instance, $nextStep);
-            } else {
-                // If this step doesn't require approval, auto-advance to next step recursively
-                Log::info('Step does not require approval, auto-advancing...', [
-                    'workflow_instance_id' => $instance->id,
-                    'step' => $nextStep['name'],
-                ]);
-                $this->advanceWorkflow($instance->fresh(), $userId);
             }
 
             // Dispatch event after successful advancement

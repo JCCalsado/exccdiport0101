@@ -45,9 +45,26 @@ class User extends Authenticatable
         'permissions',
         'department',
         'admin_type',
+        'created_by',
         'updated_by',
         'last_login_at',
     ];
+
+    /**
+     * Boot method to protect audit immutability:
+     * Once created_by is set, it cannot be changed via mass-assignment update().
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::updating(function (self $user) {
+            // Prevent created_by from being changed once set
+            if ($user->isDirty('created_by') && $user->getOriginal('created_by') !== null) {
+                $user->created_by = $user->getOriginal('created_by');
+            }
+        });
+    }
 
     protected $hidden = [
         'password',
