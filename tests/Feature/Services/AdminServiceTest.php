@@ -305,9 +305,9 @@ class AdminServiceTest extends TestCase
 
         $stats = $this->adminService->getAdminStats();
 
-        $this->assertEqual($stats['total_admins'], 6); // 3 managers + 2 operators + 1 from setUp
-        $this->assertEqual($stats['managers'], 3);
-        $this->assertEqual($stats['operators'], 2);
+        $this->assertEquals(6, $stats['total_admins']); // 3 managers + 2 operators + 1 from setUp
+        $this->assertEquals(3, $stats['managers']);
+        $this->assertEquals(2, $stats['operators']);
     }
 
     /** @test */

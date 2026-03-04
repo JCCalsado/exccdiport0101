@@ -18,7 +18,7 @@ class RoleMiddleware
     {
         $user = Auth::user();
 
-        if (!$user || !in_array($user->role->value, $roles)) {
+        if (!$user || !in_array($user->role?->value, $roles)) {
             // Abort or redirect if user doesn't have the required role
             abort(403, 'Unauthorized action.');
         }

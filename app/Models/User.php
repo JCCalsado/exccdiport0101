@@ -42,7 +42,6 @@ class User extends Authenticatable
         'status',
         'role',
         'is_active',
-        'terms_accepted_at',
         'permissions',
         'department',
         'admin_type',
@@ -187,9 +186,7 @@ class User extends Authenticatable
      */
     public function acceptTerms(): void
     {
-        $this->update([
-            'terms_accepted_at' => now(),
-        ]);
+        $this->forceFill(['terms_accepted_at' => now()])->save();
     }
 
     /**

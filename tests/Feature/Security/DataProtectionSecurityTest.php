@@ -12,6 +12,7 @@ class DataProtectionSecurityTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+    protected User $superAdmin;
 
     protected function setUp(): void
     {
@@ -23,6 +24,8 @@ class DataProtectionSecurityTest extends TestCase
             'is_active' => true,
             'terms_accepted_at' => now(),
         ]);
+
+        $this->superAdmin = $this->admin;
     }
 
     /** @test */
