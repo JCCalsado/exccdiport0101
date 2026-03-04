@@ -10,9 +10,15 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use App\Services\AccountService;
+use App\Services\WorkflowService;
+use App\Models\Workflow;
 
 class TransactionController extends Controller
 {
+    public function __construct(protected WorkflowService $workflowService)
+    {
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -275,6 +281,31 @@ class TransactionController extends Controller
                 'selected_term_id' => (int) $data['selected_term_id'],
                 'term_name'        => \App\Models\StudentPaymentTerm::find($data['selected_term_id'])?->term_name,
             ], $requiresApproval);  // ← pass the flag
+
+            // ✅ BUG FIX: Start payment approval workflow for student payments
+            // Previously, processPayment() only created a Transaction with status='pending'
+            // but never started the workflow — so accounting never saw any approval request.
+            if ($requiresApproval) {
+                $paymentWorkflow = Workflow::where('type', 'payment_approval')
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($paymentWorkflow) {
+                    $transaction = \App\Models\Transaction::find($result['transaction_id']);
+                    try {
+                        $this->workflowService->startWorkflow(
+                            $paymentWorkflow,
+                            $transaction,
+                            $user->id
+                        );
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Failed to start payment approval workflow', [
+                            'transaction_id' => $result['transaction_id'],
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
 
             // Trigger payment recorded event for notifications (for verified payments only)
             if (!$requiresApproval) {

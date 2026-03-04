@@ -15,12 +15,18 @@ class WorkflowApprovalController extends Controller
 
     public function index(Request $request)
     {
+        $user = auth()->user();
+
+        // Show approvals directly assigned to this user OR assigned to their role
+        // (the workflow engine assigns approvals to all users with the approver_role
+        //  at the time the workflow is started, but we also show pending ones for
+        //  their role so no approval falls through the cracks).
         $approvals = WorkflowApproval::query()
             ->with([
                 'workflowInstance.workflow',
-                'workflowInstance.workflowable.user', // load transaction → student user
+                'workflowInstance.workflowable.user',
             ])
-            ->where('approver_id', auth()->id())
+            ->where('approver_id', $user->id)
             ->when($request->status, fn($q, $status) => $q->where('status', $status))
             ->latest()
             ->paginate(15);
