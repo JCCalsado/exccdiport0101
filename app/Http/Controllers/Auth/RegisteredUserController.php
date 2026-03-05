@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Student;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,25 +45,85 @@ class RegisteredUserController extends Controller
             'phone' => 'required|string|max:20',
         ]);
 
-        $user = User::create([
-            'last_name' => $request->last_name,
-            'first_name' => $request->first_name,
-            'middle_initial' => $request->middle_initial,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'birthday' => $request->birthday,
-            'year_level' => $request->year_level,
-            'course' => $request->course,
-            'address' => $request->address,
-            'phone' => $request->phone,
-            'status' => User::STATUS_ACTIVE,
-            'role' => 'student', // default new users to student role
-        ]);
+        DB::beginTransaction();
+        try {
+            // Auto-generate Account ID
+            $studentId = $this->generateUniqueStudentId();
 
-        event(new Registered($user));
+            // Create user record
+            $user = User::create([
+                'last_name' => $request->last_name,
+                'first_name' => $request->first_name,
+                'middle_initial' => $request->middle_initial,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'birthday' => $request->birthday,
+                'year_level' => $request->year_level,
+                'course' => $request->course,
+                'address' => $request->address,
+                'phone' => $request->phone,
+                'student_id' => $studentId,
+                'status' => User::STATUS_ACTIVE,
+                'role' => 'student', // default new users to student role
+            ]);
 
-        Auth::login($user);
+            // Create Student record
+            Student::create([
+                'user_id' => $user->id,
+            ]);
 
-        return to_route('dashboard');
+            DB::commit();
+
+            event(new Registered($user));
+
+            Auth::login($user);
+
+            return to_route('dashboard');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Generate unique student account ID
+     */
+    private function generateUniqueStudentId(): string
+    {
+        $year = now()->year;
+        
+        // Use database transaction to prevent race conditions
+        return DB::transaction(function () use ($year) {
+            // Lock the table to prevent concurrent ID generation
+            $lastStudent = User::where('student_id', 'like', "{$year}-%")
+                ->lockForUpdate()
+                ->orderByRaw('CAST(SUBSTRING(student_id, 6) AS UNSIGNED) DESC')
+                ->first();
+
+            if ($lastStudent) {
+                // Extract the number part and increment
+                $lastNumber = intval(substr($lastStudent->student_id, -4));
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '0001';
+            }
+
+            $newStudentId = "{$year}-{$newNumber}";
+            
+            // Double-check uniqueness
+            $attempts = 0;
+            while (User::where('student_id', $newStudentId)->exists() && $attempts < 10) {
+                $lastNumber = intval($newNumber);
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+                $newStudentId = "{$year}-{$newNumber}";
+                $attempts++;
+            }
+            
+            if ($attempts >= 10) {
+                throw new \Exception('Unable to generate unique student ID after multiple attempts.');
+            }
+            
+            return $newStudentId;
+        });
     }
 }

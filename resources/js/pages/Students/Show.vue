@@ -42,7 +42,7 @@ const remainingBalance = computed(() => {
             <!-- Header -->
             <div class="mb-6">
                 <h1 class="text-2xl font-semibold text-gray-800">{{ student.name }}</h1>
-                <p class="text-gray-500">Student ID: {{ student.student_id }}</p>
+                <p class="text-gray-500">Account ID: {{ student.student_id }}</p>
             </div>
 
             <!-- Student Info -->

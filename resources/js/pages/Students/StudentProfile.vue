@@ -51,7 +51,7 @@ const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 
             <Breadcrumbs :items="breadcrumbs" />
             <div class="mb-6">
                 <h1 class="text-2xl font-semibold text-gray-800">My Student Profile</h1>
-                <p class="text-gray-500">Student ID: {{ student.student_id }}</p>
+                <p class="text-gray-500">Account ID: {{ student.student_id }}</p>
             </div>
 
             <!-- Student Info Card -->
@@ -59,7 +59,7 @@ const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 
                 <h2 class="mb-4 text-xl font-medium text-gray-800">Personal Information</h2>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div><span class="font-medium">Full Name:</span> {{ student.name }}</div>
-                    <div><span class="font-medium">Student ID:</span> {{ student.student_id }}</div>
+                    <div><span class="font-medium">Account ID:</span> {{ student.student_id }}</div>
                     <div><span class="font-medium">Email:</span> {{ student.email }}</div>
                     <div><span class="font-medium">Course:</span> {{ student.course }}</div>
                     <div><span class="font-medium">Year:</span> {{ student.year_level }}</div>

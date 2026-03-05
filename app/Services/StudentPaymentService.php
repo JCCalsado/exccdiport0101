@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\Payment;
 use App\Models\StudentPaymentTerm;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class StudentPaymentService
@@ -113,6 +114,119 @@ class StudentPaymentService
                 'transaction_reference' => $reference,
                 'message'               => $message,
             ];
+        });
+    }
+
+    /**
+     * Finalize an approved payment by updating the transaction and payment term.
+     * Called when a payment approval workflow is completed.
+     *
+     * @param  Transaction $transaction The approved payment transaction
+     * @return void
+     * @throws \Exception on processing failure
+     */
+    public function finalizeApprovedPayment(Transaction $transaction): void
+    {
+        if ($transaction->kind !== 'payment') {
+            throw new \Exception('Transaction is not a payment.');
+        }
+
+        if ($transaction->status === 'paid') {
+            // Already finalized, skip
+            return;
+        }
+
+        DB::transaction(function () use ($transaction) {
+            $user = $transaction->user;
+            $amount = $transaction->amount;
+            
+            // Get the term name from transaction meta or type
+            $termName = $transaction->meta['term_name'] ?? $transaction->type;
+
+            // Find the associated StudentPaymentTerm by user_id and term_name
+            // StudentPaymentTerm is directly linked to User, not through Student
+            $term = StudentPaymentTerm::where('user_id', $user->id)
+                ->where('term_name', $termName)
+                ->first();
+
+            if (!$term) {
+                // Fallback: find any unpaid or partial term with this name for this user
+                $term = StudentPaymentTerm::where('user_id', $user->id)
+                    ->where('term_name', $termName)
+                    ->whereIn('status', ['pending', 'partial'])
+                    ->orderBy('due_date', 'desc')
+                    ->first();
+            }
+
+            if (!$term) {
+                throw new \Exception(
+                    "Could not find StudentPaymentTerm for '{$termName}' for user {$user->id}. " .
+                    "Payment cannot be finalized without term reference."
+                );
+            }
+
+            // Update the payment term balance and status
+            $newBalance = max(0, (float) $term->balance - $amount);
+            $newStatus = $newBalance <= 0
+                ? StudentPaymentTerm::STATUS_PAID
+                : StudentPaymentTerm::STATUS_PARTIAL;
+
+            $term->update([
+                'balance'   => $newBalance,
+                'status'    => $newStatus,
+                'paid_date' => $newStatus === StudentPaymentTerm::STATUS_PAID ? now() : $term->paid_date,
+            ]);
+
+            // Create a Payment record for history
+            if ($user->student) {
+                Payment::create([
+                    'student_id'       => $user->student->id,
+                    'amount'           => $amount,
+                    'payment_method'   => $transaction->payment_channel,
+                    'reference_number' => $transaction->reference,
+                    'description'      => $transaction->meta['description'] ?? $termName,
+                    'status'           => Payment::STATUS_COMPLETED,
+                    'paid_at'          => $transaction->paid_at,
+                ]);
+            }
+
+            // Update the transaction status to 'paid'
+            $transaction->update([
+                'status' => 'paid',
+            ]);
+
+            // Recalculate the account balance
+            AccountService::recalculate($user);
+        });
+    }
+
+    /**
+     * Cancel a rejected payment by updating the transaction status.
+     * Called when a payment approval workflow is rejected.
+     *
+     * @param  Transaction $transaction The rejected payment transaction
+     * @return void
+     * @throws \Exception on processing failure
+     */
+    public function cancelRejectedPayment(Transaction $transaction): void
+    {
+        if ($transaction->kind !== 'payment') {
+            throw new \Exception('Transaction is not a payment.');
+        }
+
+        DB::transaction(function () use ($transaction) {
+            // Update the transaction status to 'cancelled'
+            $transaction->update([
+                'status' => 'cancelled',
+            ]);
+
+            // No need to update term balance since it was never deducted
+            // (payment was pending, not yet applied)
+
+            Log::info('Payment cancelled due to workflow rejection', [
+                'transaction_id' => $transaction->id,
+                'amount' => $transaction->amount,
+            ]);
         });
     }
 }

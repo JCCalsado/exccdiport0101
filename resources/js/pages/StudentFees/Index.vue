@@ -279,7 +279,7 @@ const behindCount = computed(() => props.students.data.filter((s) => getBalanceT
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Student ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Account ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Course</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Year Level</th>

@@ -49,6 +49,7 @@ use Illuminate\Support\Str;
  */
 class StudentTransactionHistorySeeder extends Seeder
 {
+    private static $accountIdCounter = 201;
     private const EMAIL = 'transaction.history@ccdi.edu.ph';
     private const COURSE = 'Computer Science';
     private const TOTAL_ASSESSMENT_PER_TERM = 15000;
@@ -175,6 +176,9 @@ class StudentTransactionHistorySeeder extends Seeder
         // Try to find user
         $user = User::where('email', self::EMAIL)->first();
 
+        // Generate proper Account ID
+        $accountId = '2025-' . str_pad(self::$accountIdCounter++, 4, '0', STR_PAD_LEFT);
+
         if (!$user) {
             $user = User::create([
                 'first_name' => 'Transaction',
@@ -183,6 +187,7 @@ class StudentTransactionHistorySeeder extends Seeder
                 'password' => bcrypt('password'),
                 'email_verified_at' => now(),
                 'role' => UserRoleEnum::STUDENT->value,
+                'student_id' => $accountId,
             ]);
 
             // Create account
@@ -199,7 +204,7 @@ class StudentTransactionHistorySeeder extends Seeder
             'first_name' => 'Transaction',
             'last_name' => 'History',
             'middle_initial' => 'S',
-            'student_id' => 'TH' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT),
+            'student_id' => $accountId,
             'student_number' => 'STU-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT),
             'course' => self::COURSE,
             'year_level' => '3rd Year',

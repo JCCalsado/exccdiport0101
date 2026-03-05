@@ -59,8 +59,23 @@ class WorkflowApprovalController extends Controller
             'workflowInstance.approvals',
         ]);
 
+        // Get the transaction's student and their unpaid payment terms
+        $transaction = $approval->workflowInstance->workflowable;
+        $student = null;
+        $unpaidTerms = null;
+
+        if ($transaction instanceof \App\Models\Transaction && $transaction->user && $transaction->user->student) {
+            $student = $transaction->user->student;
+            // Get all unpaid or partial payment terms for this student
+            $unpaidTerms = \App\Models\StudentPaymentTerm::where('user_id', $transaction->user_id)
+                ->whereIn('status', ['pending', 'partial'])
+                ->orderBy('due_date', 'asc')
+                ->get();
+        }
+
         return Inertia::render('Approvals/Show', [
             'approval' => $approval,
+            'unpaidTerms' => $unpaidTerms,
         ]);
     }
 

@@ -43,9 +43,9 @@ function submit() {
 
             <!-- Form -->
             <form @submit.prevent="submit" class="space-y-4 rounded-xl bg-white p-6 shadow-md">
-                <!-- Student ID -->
+                <!-- Account ID -->
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Student ID *</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Account ID *</label>
                     <input v-model="form.student_id" required class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500" />
                 </div>
 

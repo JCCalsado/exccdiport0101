@@ -223,7 +223,7 @@ const getStatusColor = (status: string) => {
                             <h3 class="text-lg font-semibold text-gray-900">Student Information</h3>
                             <div class="mt-2 grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                                 <div>
-                                    <span class="text-gray-600">Student ID:</span>
+                                    <span class="text-gray-600">Account ID:</span>
                                     <p class="font-medium">{{ student.student_id }}</p>
                                 </div>
                                 <div>

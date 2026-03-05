@@ -14,9 +14,15 @@ use App\Events\WorkflowStepAdvanced;
 
 class WorkflowService
 {
+    /**
+     * Start a workflow instance for the given entity.
+     * 
+     * ✅ FIX: Notifications are sent AFTER the transaction commits, so if the mail
+     * server is down, the workflow is already safely stored in the database.
+     */
     public function startWorkflow(Workflow $workflow, Model $entity, int $userId): WorkflowInstance
     {
-        return DB::transaction(function () use ($workflow, $entity, $userId) {
+        $instance = DB::transaction(function () use ($workflow, $entity, $userId) {
             $firstStep = $workflow->steps[0] ?? null;
             
             if (!$firstStep) {
@@ -50,11 +56,26 @@ class WorkflowService
 
             return $instance->fresh();
         });
+
+        // Send notifications AFTER the transaction is committed.
+        // This ensures the approval records are safe in the database even if mail fails.
+        $instance->refresh();
+        try {
+            $this->notifyApproversForStep($instance, $workflow->steps[0]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to send approval notifications', [
+                'workflow_instance_id' => $instance->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't re-throw; approvals are already in the database
+        }
+
+        return $instance;
     }
 
     public function advanceWorkflow(WorkflowInstance $instance, int $userId): void
     {
-        DB::transaction(function () use ($instance, $userId) {
+        $nextStepData = DB::transaction(function () use ($instance, $userId) {
             $workflow = $instance->workflow;
             $currentStepIndex = $this->getStepIndex($workflow, $instance->current_step);
             $previousStep = $instance->current_step; // Store previous step
@@ -81,7 +102,7 @@ class WorkflowService
                     'final_step' => $previousStep,
                 ]);
                 
-                return;
+                return null;
             }
 
             $nextStep = $workflow->steps[$nextStepIndex];
@@ -101,7 +122,31 @@ class WorkflowService
 
             // Dispatch event after successful advancement
             WorkflowStepAdvanced::dispatch($instance, $previousStep, $nextStep['name']);
+
+            // Return the next step if approvals are needed (for notification after transaction)
+            return ($nextStep['requires_approval'] ?? false) ? $nextStep : null;
         });
+
+        // Send notifications AFTER the transaction is committed
+        if ($nextStepData !== null) {
+            $instance->refresh();
+            try {
+                $this->notifyApproversForStep($instance, $nextStepData);
+            } catch (\Exception $e) {
+                Log::warning('Failed to send approval notifications after step advance', [
+                    'workflow_instance_id' => $instance->id,
+                    'error' => $e->getMessage(),
+                ]);
+                // Don't re-throw; approvals are already in the database
+            }
+        } else {
+            // If the step we just advanced to doesn't require approval,
+            // continue advancing until we hit an approval-required step or complete
+            $instance->refresh();
+            if (!$instance->isCompleted()) {
+                $this->advanceWorkflow($instance, $userId);
+            }
+        }
     }
 
     public function approveStep(WorkflowApproval $approval, int $userId, ?string $comments = null): void
@@ -181,19 +226,42 @@ class WorkflowService
         }
 
         foreach ($approverIds as $approverId) {
-            $approval = WorkflowApproval::create([
+            WorkflowApproval::create([
                 'workflow_instance_id' => $instance->id,
                 'step_name' => $step['name'],
                 'approver_id' => $approverId,
                 'status' => 'pending',
             ]);
+            // NOTE: Approval notifications are sent AFTER the transaction commits
+            // by the notifyApproversForStep() method. This ensures that even if
+            // the mail server is unavailable, the approval records exist in the database.
+        }
+    }
 
-            // Notify the assigned approver so accounting sees the request immediately
-            // Skip notification in testing to avoid database schema conflicts
-            if (!app()->environment('testing')) {
-                $approver = User::find($approverId);
-                if ($approver) {
+    /**
+     * Send notifications to approvers for a specific workflow step.
+     * Called AFTER the database transaction completes to prevent rollback on notification errors.
+     */
+    protected function notifyApproversForStep(WorkflowInstance $instance, array $step): void
+    {
+        // Find all pending approvals for this step
+        $pendingApprovals = WorkflowApproval::where('workflow_instance_id', $instance->id)
+            ->where('step_name', $step['name'])
+            ->where('status', 'pending')
+            ->get();
+
+        foreach ($pendingApprovals as $approval) {
+            $approver = User::find($approval->approver_id);
+            if ($approver && !app()->environment('testing')) {
+                try {
                     $approver->notify(new \App\Notifications\ApprovalRequired($approval));
+                } catch (\Exception $e) {
+                    Log::warning('Failed to send approval notification', [
+                        'approval_id' => $approval->id,
+                        'approver_id' => $approver->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Continue sending to other approvers even if one fails
                 }
             }
         }

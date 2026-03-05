@@ -53,6 +53,8 @@ use Illuminate\Support\Str;
  */
 class StudentFirstPaymentSeeder extends Seeder
 {
+    private static $accountIdCounter = 101;
+
     public function run(): void
     {
         DB::transaction(function () {
@@ -163,12 +165,13 @@ class StudentFirstPaymentSeeder extends Seeder
 
         if ($user) {
             // User exists but no student record - create one
+            $accountId = '2025-' . str_pad(self::$accountIdCounter++, 4, '0', STR_PAD_LEFT);
             $student = Student::create([
                 'user_id' => $user->id,
                 'email' => $email,
                 'first_name' => 'Test',
                 'last_name' => 'Student',
-                'student_id' => 'TS' . str_pad(rand(1, 99999), 5, '0', STR_PAD_LEFT),
+                'student_id' => $accountId,
                 'course' => 'Computer Science',
                 'year_level' => '2nd Year',
                 'total_balance' => 15000,
@@ -179,6 +182,7 @@ class StudentFirstPaymentSeeder extends Seeder
         }
 
         // Create new user and student
+        $accountId = '2025-' . str_pad(self::$accountIdCounter++, 4, '0', STR_PAD_LEFT);
         $user = User::create([
             'first_name' => 'Test',
             'last_name' => 'Student',
@@ -186,6 +190,7 @@ class StudentFirstPaymentSeeder extends Seeder
             'password' => bcrypt('password'),
             'email_verified_at' => now(),
             'role' => UserRoleEnum::STUDENT->value,
+            'student_id' => $accountId,
         ]);
 
         // Ensure user has an account
@@ -201,7 +206,7 @@ class StudentFirstPaymentSeeder extends Seeder
             'email' => $email,
             'first_name' => 'Test',
             'last_name' => 'Student',
-            'student_id' => 'TS' . str_pad(rand(1, 99999), 5, '0', STR_PAD_LEFT),
+            'student_id' => $accountId,
             'course' => 'Computer Science',
             'year_level' => '2nd Year',
             'total_balance' => 15000,

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Search } from 'lucide-vue-next';
+import { Search, RotateCcw, CheckCircle2, XCircle } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface WorkflowMeta {
@@ -66,7 +66,7 @@ const uniqueYears = computed(() => {
     });
 });
 
-// Extract unique semesters from approvals
+// Extract unique semesters from approvals (for filtering reference)
 const uniqueSemesters = computed(() => {
     const semesters = new Set<string>();
     props.approvals.data.forEach((approval) => {
@@ -95,6 +95,9 @@ const getStudentName = (approval: Approval) => {
     return 'Unknown Student';
 };
 
+// Predefined term options
+const termOptions = ['Upon Registration', 'Prelim', 'Midterm', 'Final'];
+
 // Filter approvals by search query, year, semester, and status
 const filteredApprovals = computed(() => {
     let result = props.approvals.data;
@@ -104,9 +107,12 @@ const filteredApprovals = computed(() => {
         result = result.filter((approval) => String(approval.workflow_instance.metadata?.year) === filters.value.year);
     }
 
-    // Filter by semester
+    // Filter by term (payment term)
     if (filters.value.semester) {
-        result = result.filter((approval) => approval.workflow_instance.metadata?.semester === filters.value.semester);
+        result = result.filter((approval) => {
+            const termName = approval.workflow_instance.workflowable.meta?.term_name ?? approval.workflow_instance.workflowable.type;
+            return termName === filters.value.semester;
+        });
     }
 
     // Filter by search query
@@ -153,6 +159,10 @@ const submitRejection = () => {
         },
     });
 };
+
+const refreshApprovals = () => {
+    router.reload();
+};
 </script>
 
 <template>
@@ -167,6 +177,13 @@ const submitRejection = () => {
                         <h1 class="text-3xl font-bold">Payment Approvals</h1>
                         <p class="text-gray-500">Review and verify student payment submissions</p>
                     </div>
+                    <button
+                        @click="refreshApprovals"
+                        title="Refresh approvals"
+                        class="rounded-lg border border-gray-300 bg-white p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                    >
+                        <RotateCcw :size="20" />
+                    </button>
                 </div>
 
                 <!-- Filters Row -->
@@ -186,7 +203,7 @@ const submitRejection = () => {
                     <select
                         v-model="filters.year"
                         @change="applyFilter"
-                        class="min-w-[120px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                        class="min-w-[140px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Years</option>
                         <option v-for="year in uniqueYears" :key="year" :value="String(year)">
@@ -194,15 +211,15 @@ const submitRejection = () => {
                         </option>
                     </select>
 
-                    <!-- Semester Dropdown -->
+                    <!-- Term Dropdown -->
                     <select
                         v-model="filters.semester"
                         @change="applyFilter"
-                        class="min-w-[120px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                        class="min-w-[180px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="">All Semesters</option>
-                        <option v-for="semester in uniqueSemesters" :key="semester" :value="semester">
-                            {{ semester }}
+                        <option value="">All Terms</option>
+                        <option v-for="term in termOptions" :key="term" :value="term">
+                            {{ term }}
                         </option>
                     </select>
 
@@ -252,14 +269,14 @@ const submitRejection = () => {
                     <div class="mt-3 grid grid-cols-2 gap-3 text-sm text-gray-600 md:grid-cols-4">
                         <div>
                             <p class="text-xs tracking-wide text-gray-400 uppercase">Term</p>
-                            <p>{{ approval.workflow_instance.metadata?.term_name ?? '—' }}</p>
+                            <p>{{ approval.workflow_instance.workflowable.meta?.term_name ?? approval.workflow_instance.workflowable.type ?? '—' }}</p>
                         </div>
                         <div>
                             <p class="text-xs tracking-wide text-gray-400 uppercase">Method</p>
-                            <p>{{ formatMethod(approval.workflow_instance.metadata?.payment_method ?? '') }}</p>
+                            <p>{{ formatMethod(approval.workflow_instance.workflowable.payment_channel ?? '') }}</p>
                         </div>
                         <div>
-                            <p class="text-xs tracking-wide text-gray-400 uppercase">Student ID</p>
+                            <p class="text-xs tracking-wide text-gray-400 uppercase">Account ID</p>
                             <p>{{ approval.workflow_instance.workflowable.user?.student_id ?? '—' }}</p>
                         </div>
                         <div>
@@ -268,11 +285,21 @@ const submitRejection = () => {
                         </div>
                     </div>
 
-                    <div v-if="approval.status === 'pending'" class="mt-4 flex gap-3">
-                        <Button @click="approve(approval.id)" class="bg-green-600 text-white hover:bg-green-700"> ✓ Approve </Button>
-                        <Button variant="outline" @click="openRejectDialog(approval.id)" class="border-red-300 text-red-600 hover:bg-red-50">
-                            ✗ Declined
-                        </Button>
+                    <div v-if="approval.status === 'pending'" class="mt-4 grid grid-cols-2 gap-3 sm:flex">
+                        <button
+                            @click="approve(approval.id)"
+                            class="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 font-semibold text-white shadow-md transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-300"
+                        >
+                            <CheckCircle2 :size="18" class="transition-transform group-hover:scale-110" />
+                            <span>Approve</span>
+                        </button>
+                        <button
+                            @click="openRejectDialog(approval.id)"
+                            class="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 font-semibold text-white shadow-md transition-all duration-200 hover:from-red-600 hover:to-red-700 hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300"
+                        >
+                            <XCircle :size="18" class="transition-transform group-hover:scale-110" />
+                            <span>Decline</span>
+                        </button>
                     </div>
                 </div>
             </div>

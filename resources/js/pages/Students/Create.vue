@@ -35,9 +35,9 @@ function submit() {
             <h1 class="mb-6 text-2xl font-semibold text-gray-800">Add New Student</h1>
 
             <form @submit.prevent="submit" class="space-y-4 rounded-xl bg-white p-6 shadow-md">
-                <!-- Student ID -->
+                <!-- Account ID -->
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Student ID *</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Account ID *</label>
                     <input
                         v-model="form.student_id"
                         required

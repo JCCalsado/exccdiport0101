@@ -144,7 +144,7 @@ const formatDate = (date: string | null) => {
                 <input
                     v-model="filterStudentId"
                     type="text"
-                    placeholder="Filter by student ID..."
+                    placeholder="Filter by account ID..."
                     class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 />
 

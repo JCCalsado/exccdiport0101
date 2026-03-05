@@ -492,7 +492,7 @@ const payNow = () => {
                                     <p class="font-medium">{{ selectedTransaction.user.name }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600">Student ID</p>
+                                    <p class="text-sm text-gray-600">Account ID</p>
                                     <p class="font-medium">{{ selectedTransaction.user.student_id }}</p>
                                 </div>
                                 <div>

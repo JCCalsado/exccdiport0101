@@ -305,7 +305,7 @@ const getStatusColor = (status: string) => {
                 <div class="rounded-lg border bg-white p-6 shadow-sm">
                     <div class="relative">
                         <Search class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
-                        <Input v-model="studentSearch" placeholder="Search by Student ID, Name, Email, or Course..." class="pl-10" />
+                        <Input v-model="studentSearch" placeholder="Search by Account ID, Name, Email, or Course..." class="pl-10" />
                     </div>
                 </div>
 
@@ -320,7 +320,7 @@ const getStatusColor = (status: string) => {
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year Level</th>
@@ -381,7 +381,7 @@ const getStatusColor = (status: string) => {
                             <h3 class="text-lg font-semibold text-gray-900">Selected Student</h3>
                             <div class="mt-2 grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                                 <div>
-                                    <span class="text-gray-600">Student ID:</span>
+                                    <span class="text-gray-600">Account ID:</span>
                                     <p class="font-medium">{{ selectedStudent?.student_id }}</p>
                                 </div>
                                 <div>

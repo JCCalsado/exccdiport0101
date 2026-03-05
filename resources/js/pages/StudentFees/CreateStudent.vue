@@ -25,7 +25,6 @@ const form = useForm({
     course: '',
     address: '',
     phone: '',
-    student_id: '',
 });
 
 const yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
@@ -138,12 +137,11 @@ const submit = () => {
                     <h2 class="mb-4 text-lg font-semibold">Academic Information</h2>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div class="space-y-2">
-                            <Label for="student_id">Student ID (Optional)</Label>
-                            <Input id="student_id" v-model="form.student_id" placeholder="Auto-generated if empty" />
-                            <p class="text-xs text-gray-500">Leave empty to auto-generate</p>
-                            <p v-if="form.errors.student_id" class="text-sm text-red-500">
-                                {{ form.errors.student_id }}
-                            </p>
+                            <Label>Account ID</Label>
+                            <div class="flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-600">
+                                <span class="text-sm">Auto-generated upon registration</span>
+                            </div>
+                            <p class="text-xs text-gray-500">Account ID will be automatically generated when the student is created</p>
                         </div>
 
                         <div class="space-y-2">

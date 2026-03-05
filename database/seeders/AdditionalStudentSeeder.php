@@ -77,6 +77,7 @@ class AdditionalStudentSeeder extends Seeder
                 'password' => bcrypt('password'),
                 'email_verified_at' => now(),
                 'role' => UserRoleEnum::STUDENT->value,
+                'student_id' => $studentId,
             ]);
 
             // Create account

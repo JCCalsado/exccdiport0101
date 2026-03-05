@@ -524,7 +524,7 @@ const getStudentStatusColor = (status: string) => {
                             <p class="mt-0.5 font-medium">{{ student.phone || 'N/A' }}</p>
                         </div>
                         <div>
-                            <Label class="text-xs text-gray-500">Student ID</Label>
+                            <Label class="text-xs text-gray-500">Account ID</Label>
                             <p class="mt-0.5 font-medium">{{ student.student_id }}</p>
                         </div>
                         <div>

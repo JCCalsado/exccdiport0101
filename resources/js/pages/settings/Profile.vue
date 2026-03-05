@@ -247,11 +247,12 @@ const yearLevelOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
                         <InputError class="mt-2" :message="errors.middle_initial" />
                     </div>
 
-                    <!-- Student ID (Students Only) -->
+                    <!-- Account ID (Students Only) - Read Only -->
                     <div v-if="isStudent" class="grid gap-2">
-                        <Label for="student_id">Student ID</Label>
-                        <Input id="student_id" name="student_id" v-model="form.student_id" autocomplete="off" placeholder="2025-0001" />
-                        <InputError class="mt-2" :message="errors.student_id" />
+                        <Label for="student_id">Account ID</Label>
+                        <div class="flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-600">
+                            <span class="font-medium">{{ form.student_id }}</span>
+                        </div>
                     </div>
 
                     <!-- Email -->

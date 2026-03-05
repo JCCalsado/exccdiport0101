@@ -665,8 +665,8 @@ class StudentFeeController extends Controller
 
         DB::beginTransaction();
         try {
-            // Auto-generate ID if empty
-            $studentId = $validated['student_id'] ?: $this->generateUniqueStudentId();
+            // Auto-generate ID if empty (treat empty string as null)
+            $studentId = !empty($validated['student_id']) ? $validated['student_id'] : $this->generateUniqueStudentId();
 
             // Create user record
             $user = User::create([
