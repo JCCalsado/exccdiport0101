@@ -45,6 +45,10 @@ class AccountingDashboardController extends Controller
             'collection_rate' => 0,
             'active_fees' => Fee::where('is_active', true)->count(),
             'total_fee_amount' => Fee::where('is_active', true)->sum('amount'),
+            // PENDING APPROVALS: Count of payment submissions awaiting accounting review
+            'pending_approvals' => \App\Models\WorkflowApproval::where('status', 'pending')
+                ->whereHas('workflowInstance.workflow', fn ($q) => $q->where('type', 'payment_approval'))
+                ->count(),
         ];
         // Calculate collection rate
         $totalCharges = $stats['total_charges'];

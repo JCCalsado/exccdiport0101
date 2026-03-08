@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\Fee;
 use App\Models\User;
 use App\Models\StudentPaymentTerm;
+use App\Models\Workflow;
 use App\Enums\UserRoleEnum;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,6 @@ use Illuminate\Support\Str;
 use App\Services\AccountService;
 use App\Services\WorkflowService;
 use App\Services\StudentPaymentService;
-use App\Models\Workflow;
 use App\Events\PaymentRecorded;
 
 class TransactionController extends Controller
@@ -108,48 +108,30 @@ class TransactionController extends Controller
         ]);
     }
 
-    // ─── receipt (single-transaction PDF) ────────────────────────────────────
+    // ─── receipt ─────────────────────────────────────────────────────────────
 
-    /**
-     * Generate a single-payment receipt PDF for one specific transaction.
-     *
-     * This is what the "📄 Receipt" button on each payment row downloads.
-     * It shows only that one payment — what it was for (term name), amount,
-     * payment method, date, and the student's account balance.
-     *
-     * Security:
-     *   - Students may only download receipts for their OWN transactions.
-     *   - Staff (admin/accounting/super_admin) may download any student's receipt.
-     *   - Only 'payment' kind transactions produce receipts.
-     */
     public function receipt(Request $request, Transaction $transaction)
     {
         $authUser = $request->user();
         $isStaff  = in_array($authUser->role->value, ['super_admin', 'admin', 'accounting']);
 
-        // Guard: students can only download their own receipt
         if (!$isStaff && $transaction->user_id !== $authUser->id) {
             abort(403, 'You do not have permission to view this receipt.');
         }
 
-        // Guard: receipts are only for payment transactions
         if ($transaction->kind !== 'payment') {
             abort(400, 'Receipts are only available for payment transactions.');
         }
 
         $targetUser = $transaction->user->load('account', 'student');
 
-        // Compute balance context for the receipt.
-        // current balance already reflects this payment if status === 'paid'.
         $currentBalance = (float) ($targetUser->account->balance ?? 0);
         $paymentAmount  = (float) $transaction->amount;
 
         if ($transaction->status === 'paid') {
-            // Payment already reduced the balance — reverse it to show "before"
             $balanceBefore    = round($currentBalance + $paymentAmount, 2);
             $remainingBalance = round($currentBalance, 2);
         } else {
-            // Payment not yet applied (awaiting_approval) — balance unchanged
             $balanceBefore    = round($currentBalance, 2);
             $remainingBalance = round($currentBalance - $paymentAmount, 2);
         }
@@ -170,20 +152,8 @@ class TransactionController extends Controller
         return $pdf->download($filename);
     }
 
-    // ─── download (full-term summary PDF) ────────────────────────────────────
+    // ─── download ─────────────────────────────────────────────────────────────
 
-    /**
-     * Generate a full-term transaction summary PDF.
-     *
-     * Used by the term-group header "📄 Receipt" button — shows ALL transactions
-     * for a given academic term (charges + payments) with balance totals.
-     * Useful for end-of-term review or for staff auditing.
-     *
-     * For a single-payment receipt, use receipt() instead.
-     *
-     * Security: Students always get their own data.
-     *           Staff may pass ?user_id=X to view another student's term summary.
-     */
     public function download(Request $request)
     {
         $authUser = $request->user();
@@ -236,81 +206,138 @@ class TransactionController extends Controller
         return $pdf->download($filename);
     }
 
-    // ─── payNow ────────────────────────────────────────────────────────────────
+    // ─── payNow ───────────────────────────────────────────────────────────────
+
     /**
      * Process a payment submission from a student or staff.
-     * Students' payments require approval workflow; staff bypass it.
+     *
+     * Students' payments require accounting approval:
+     *   1. Transaction is created with status = 'awaiting_approval'
+     *   2. A WorkflowInstance + WorkflowApproval record are created
+     *   3. Accounting users see the pending approval in /approvals
+     *
+     * Staff (admin/accounting) bypass approval and are marked 'paid' immediately.
      */
     public function payNow(Request $request)
     {
-        $user = $request->user();
+        $user      = $request->user();
+        $isStudent = $user->role === UserRoleEnum::STUDENT;
 
-        // Determine allowed payment methods based on user role
-        // Students cannot use 'cash' - only admin and accounting can record cash payments
-        $isStudent = $user->role === \App\Enums\UserRoleEnum::STUDENT;
-
-        if ($isStudent) {
-            $allowedMethods = ['gcash', 'bank_transfer', 'credit_card', 'debit_card'];
-        } else {
-            $allowedMethods = ['cash', 'gcash', 'bank_transfer', 'credit_card', 'debit_card'];
-        }
+        $allowedMethods = $isStudent
+            ? ['gcash', 'bank_transfer', 'credit_card', 'debit_card']
+            : ['cash', 'gcash', 'bank_transfer', 'credit_card', 'debit_card'];
 
         $data = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($allowedMethods)],
-            'paid_at' => 'required|date',
-            'description' => 'nullable|string|max:255',
+            'amount'           => 'required|numeric|min:0.01',
+            'payment_method'   => ['required', 'string', Rule::in($allowedMethods)],
+            'paid_at'          => 'required|date',
+            'description'      => 'nullable|string|max:255',
             'selected_term_id' => 'required|exists:student_payment_terms,id',
         ]);
 
         try {
-            $paymentService = new \App\Services\StudentPaymentService();
+            // ─────────────────────────────────────────────────────────────────────────────────
+            // SERVER-SIDE DEDUPLICATION: Prevent duplicate awaiting_approval submissions
+            // for the same term. This complements client-side validation.
+            // ─────────────────────────────────────────────────────────────────────────────────
+            if ($isStudent) {
+                $alreadyPending = Transaction::where('user_id', $user->id)
+                    ->where('status', 'awaiting_approval')
+                    ->where('kind', 'payment')
+                    ->whereJsonContains('meta->selected_term_id', (int) $data['selected_term_id'])
+                    ->exists();
 
-            // Students require approval; staff (admin/accounting) bypass it
+                if ($alreadyPending) {
+                    return back()->withErrors(['payment' => 'A payment for this term is already awaiting approval.']);
+                }
+            }
+
+            $paymentService   = new StudentPaymentService();
             $requiresApproval = $isStudent;
+
+            $term = StudentPaymentTerm::find($data['selected_term_id']);
 
             $result = $paymentService->processPayment($user, (float) $data['amount'], [
                 'payment_method'   => $data['payment_method'],
                 'paid_at'          => $data['paid_at'],
                 'description'      => $data['description'] ?? null,
                 'selected_term_id' => (int) $data['selected_term_id'],
-                'term_name'        => \App\Models\StudentPaymentTerm::find($data['selected_term_id'])?->term_name,
+                'term_name'        => $term?->term_name,
+                'year'             => (string) now()->year,
+                'semester'         => $this->getCurrentSemesterLabel(),
             ], $requiresApproval);
 
-            // Trigger payment recorded event for notifications (for verified payments only)
+            // ── START APPROVAL WORKFLOW FOR STUDENT PAYMENTS ──────────────────
+            // This is the critical step that was missing. Without this, the
+            // WorkflowApproval record is never created and accounting never
+            // receives the submission in their queue.
+            if ($requiresApproval) {
+                $this->startPaymentApprovalWorkflow($result['transaction_id'], $user->id);
+            }
+
+            // ── POST-PROCESSING FOR IMMEDIATELY-APPROVED PAYMENTS ─────────────
             if (!$requiresApproval) {
-                event(new \App\Events\PaymentRecorded(
+                event(new PaymentRecorded(
                     $user,
                     $result['transaction_id'] ?? null,
                     (float) $data['amount'],
                     $result['transaction_reference'] ?? 'N/A'
                 ));
-            }
 
-            // ✅ Only check promotion if user has a student profile and payment is approved
-            if ($isStudent && $user->student && !$requiresApproval) {
-                $this->checkAndPromoteStudent($user->student);
+                if ($user->student) {
+                    $this->checkAndPromoteStudent($user->student);
+                }
             }
 
             $message = $requiresApproval
                 ? 'Payment submitted successfully. Please wait for accounting approval.'
                 : 'Payment recorded successfully!';
 
-            // Return Inertia-compatible redirect with flash data
             return back()->with([
                 'success' => $message,
-                'flash' => [
-                    'transaction_id' => $result['transaction_id'] ?? null,
-                    'requires_approval' => $requiresApproval,
+                'flash'   => [
+                    'transaction_id'     => $result['transaction_id'] ?? null,
+                    'requires_approval'  => $requiresApproval,
                 ],
             ]);
+
         } catch (\Exception $e) {
-            // Return with error message using Inertia session flash
+            \Illuminate\Support\Facades\Log::error('payNow failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
             return back()->withErrors(['payment' => 'Payment processing failed: ' . $e->getMessage()]);
         }
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
+
+    /**
+     * Find the active payment_approval workflow and start a workflow instance
+     * for the given transaction. This creates WorkflowApproval records so
+     * accounting users can see and act on the submission.
+     *
+     * @throws \Exception if no active payment_approval workflow exists
+     */
+    private function startPaymentApprovalWorkflow(int $transactionId, int $userId): void
+    {
+        $workflow = Workflow::active()
+            ->where('type', 'payment_approval')
+            ->first();
+
+        if (!$workflow) {
+            throw new \Exception(
+                'No active payment_approval workflow found. ' .
+                'Please run: php artisan db:seed --class=PaymentApprovalWorkflowSeeder'
+            );
+        }
+
+        $transaction = Transaction::findOrFail($transactionId);
+
+        $this->workflowService->startWorkflow($workflow, $transaction, $userId);
+    }
 
     private function getTransactionGroupKey(Transaction $txn): string
     {

@@ -15,6 +15,12 @@ class StudentPaymentService
     /**
      * Process a payment for a user against a specific payment term.
      *
+     * ⚠️ IMPORTANT: When $requiresApproval=true, the CALLER is responsible for
+     * starting the approval workflow. This service does NOT automatically start
+     * workflows. If a workflow is not created, accounting will never see the
+     * pending payment for approval. See TransactionController::payNow() for an
+     * example of proper workflow initialization.
+     *
      * @param  User   $user             The user making the payment
      * @param  float  $amount           Amount being paid
      * @param  array  $options {
@@ -34,6 +40,7 @@ class StudentPaymentService
      * }
      *
      * @throws \Exception on validation or processing failure
+     * @throws \Exception if $requiresApproval=true but no workflow is started by caller
      */
     public function processPayment(User $user, float $amount, array $options, bool $requiresApproval = true): array
     {

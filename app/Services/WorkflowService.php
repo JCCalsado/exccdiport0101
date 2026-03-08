@@ -24,30 +24,42 @@ class WorkflowService
     {
         $instance = DB::transaction(function () use ($workflow, $entity, $userId) {
             $firstStep = $workflow->steps[0] ?? null;
-            
+
             if (!$firstStep) {
                 throw new \Exception('Workflow has no steps defined');
             }
 
+            // ── Build metadata from the entity for use in Approvals listing ──
+            $metadata = [];
+            if ($entity instanceof Transaction) {
+                $metadata = [
+                    'transaction_id'  => $entity->id,
+                    'amount'          => (float) $entity->amount,
+                    'payment_method'  => $entity->payment_channel,
+                    'term_name'       => $entity->meta['term_name'] ?? $entity->type,
+                    'year'            => $entity->year,
+                    'semester'        => $entity->semester,
+                    'student_user_id' => $entity->user_id,
+                    'submitted_at'    => now()->toIso8601String(),
+                ];
+            }
+
             $instance = WorkflowInstance::create([
-                'workflow_id' => $workflow->id,
-                'workflowable_type' => get_class($entity),
-                'workflowable_id' => $entity->id,
-                'current_step' => $firstStep['name'],
-                'status' => 'in_progress',
-                'step_history' => [],
-                'initiated_by' => $userId,
+                'workflow_id'        => $workflow->id,
+                'workflowable_type'  => get_class($entity),
+                'workflowable_id'    => $entity->id,
+                'current_step'       => $firstStep['name'],
+                'status'             => 'in_progress',
+                'step_history'       => [],
+                'metadata'           => $metadata,   // ← FIX: was always empty
+                'initiated_by'       => $userId,
             ]);
 
             $instance->addStepToHistory($firstStep['name'], [
-                'action' => 'started',
+                'action'  => 'started',
                 'user_id' => $userId,
             ]);
 
-            // If the first step does NOT require approval, auto-advance immediately
-            // so the workflow reaches the first step that does (e.g. Accounting Verification).
-            // Without this, the workflow sits on the introductory step forever and
-            // accounting never receives an approval request.
             if (!($firstStep['requires_approval'] ?? false)) {
                 $this->advanceWorkflow($instance, $userId);
             } else {
@@ -57,17 +69,14 @@ class WorkflowService
             return $instance->fresh();
         });
 
-        // Send notifications AFTER the transaction is committed.
-        // This ensures the approval records are safe in the database even if mail fails.
         $instance->refresh();
         try {
             $this->notifyApproversForStep($instance, $workflow->steps[0]);
         } catch (\Exception $e) {
             Log::warning('Failed to send approval notifications', [
                 'workflow_instance_id' => $instance->id,
-                'error' => $e->getMessage(),
+                'error'                => $e->getMessage(),
             ]);
-            // Don't re-throw; approvals are already in the database
         }
 
         return $instance;
