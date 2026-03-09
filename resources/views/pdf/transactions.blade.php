@@ -193,7 +193,7 @@
     <div class="section-title">Transactions — {{ $termKey }}</div>
 
     @if($transactions->isEmpty())
-        <p style="text-align:center; color:#999; padding: 12px 0;">No transactions found for this term.</p>
+        <p style="text-align:center; color:#999; padding: 12px 0;">No confirmed transactions found for this term.</p>
     @else
     <table class="data">
         <thead>

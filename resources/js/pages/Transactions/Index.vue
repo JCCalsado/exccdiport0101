@@ -131,6 +131,14 @@ const formatDate = (date: string) =>
 // ─── Receipt helpers ──────────────────────────────────────────────────────────
 
 /**
+ * Returns true only if the term has at least one confirmed paid payment.
+ * A term with only awaiting_approval payments cannot produce a valid PDF.
+ */
+const canDownloadTermSummary = (transactions: Transaction[]): boolean => {
+    return transactions.some((t) => t.kind === 'payment' && t.status === 'paid');
+};
+
+/**
  * Download a SINGLE-PAYMENT receipt PDF for one specific transaction.
  *
  * Calls GET /transactions/{id}/receipt — the PDF shows only that payment:
@@ -147,9 +155,10 @@ const downloadReceipt = (transactionId: number) => {
  * Download a FULL-TERM summary PDF for all transactions in a given term.
  *
  * Calls GET /transactions/download?term=2026+1st+Sem — the PDF shows all
- * charges and payments for the term with balance totals.
+ * confirmed charges and paid payments for the term with balance totals.
+ * Terms with only awaiting_approval payments cannot be downloaded.
  *
- * Used by the 📄 Receipt button on the term-group header.
+ * Used by the 📄 Term Summary button on the term-group header.
  */
 const downloadTermSummary = (termKey: string) => {
     const url = route('transactions.download') + '?term=' + encodeURIComponent(termKey);
@@ -258,12 +267,21 @@ const payNow = () => {
 
                         <!--
                             Term-level Receipt button: downloads the FULL TERM SUMMARY PDF.
-                            Shows all charges and payments for this academic term.
+                            Only enabled when the term has at least one confirmed (paid) payment.
+                            Awaiting-verification payments are excluded from the PDF.
                         -->
                         <button
-                            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                            @click.stop="downloadTermSummary(termKey)"
-                            title="Download full term summary"
+                            :disabled="!canDownloadTermSummary(transactions)"
+                            :class="[
+                                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                                canDownloadTermSummary(transactions)
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'cursor-not-allowed bg-gray-300 text-gray-500',
+                            ]"
+                            @click.stop="canDownloadTermSummary(transactions) && downloadTermSummary(termKey)"
+                            :title="canDownloadTermSummary(transactions)
+                                ? 'Download full term summary'
+                                : 'Not available — payments are still awaiting verification'"
                         >
                             📄 Term Summary
                         </button>
@@ -356,16 +374,24 @@ const payNow = () => {
                                             <!--
                                                 Row-level Receipt: downloads a SINGLE-PAYMENT receipt PDF
                                                 for this specific payment transaction only.
-                                                Available for paid and awaiting_approval payments.
+                                                ONLY available for confirmed paid payments.
+                                                Awaiting-verification payments cannot be downloaded.
                                             -->
                                             <button
-                                                v-if="t.kind === 'payment' && (t.status === 'paid' || t.status === 'awaiting_approval')"
+                                                v-if="t.kind === 'payment' && t.status === 'paid'"
                                                 @click="downloadReceipt(t.id)"
                                                 class="rounded-lg bg-green-600 px-3 py-1 text-xs text-white transition-colors hover:bg-green-700"
-                                                :title="t.status === 'paid' ? 'Download payment receipt' : 'Download provisional receipt (awaiting approval)'"
+                                                title="Download payment receipt"
                                             >
                                                 📄 Receipt
                                             </button>
+                                            <span
+                                                v-if="t.kind === 'payment' && t.status === 'awaiting_approval'"
+                                                class="cursor-not-allowed rounded-lg bg-gray-200 px-3 py-1 text-xs text-gray-500"
+                                                title="Receipt not available — payment is awaiting accounting verification"
+                                            >
+                                                ⏳ Pending
+                                            </span>
                                             <button
                                                 v-if="t.status === 'pending' && t.kind === 'charge' && !isStaff"
                                                 @click="payNow"
@@ -508,14 +534,21 @@ const payNow = () => {
                             <Button variant="outline" @click="closeDetailsDialog">Close</Button>
                             <!--
                                 Dialog receipt button: downloads the SINGLE-PAYMENT receipt for this
-                                specific transaction. Only shown for payment transactions.
+                                specific transaction. Only shown for confirmed PAID payment transactions.
+                                Awaiting-verification payments cannot be downloaded.
                             -->
                             <Button
-                                v-if="selectedTransaction.kind === 'payment' && (selectedTransaction.status === 'paid' || selectedTransaction.status === 'awaiting_approval')"
+                                v-if="selectedTransaction.kind === 'payment' && selectedTransaction.status === 'paid'"
                                 @click="downloadReceipt(selectedTransaction.id)"
                             >
                                 📄 Payment Receipt
                             </Button>
+                            <span
+                                v-if="selectedTransaction.kind === 'payment' && selectedTransaction.status === 'awaiting_approval'"
+                                class="flex items-center rounded-lg bg-amber-100 px-4 py-2 text-sm font-medium text-amber-700"
+                            >
+                                ⏳ Awaiting Verification — Receipt Not Yet Available
+                            </span>
                             <Button
                                 v-if="selectedTransaction.status === 'pending' && selectedTransaction.kind === 'charge' && !isStaff"
                                 :disabled="!canMakePayment"

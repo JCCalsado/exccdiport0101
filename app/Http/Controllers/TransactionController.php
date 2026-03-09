@@ -119,6 +119,14 @@ class TransactionController extends Controller
             abort(403, 'You do not have permission to view this receipt.');
         }
 
+        // ── Block receipts for unconfirmed payments ───────────────────────────
+        // Only fully paid transactions may generate a receipt PDF.
+        // Awaiting-approval payments have not yet been verified by accounting,
+        // so issuing a receipt would be premature and potentially misleading.
+        if ($transaction->status === 'awaiting_approval') {
+            abort(403, 'Receipt is not available yet. Your payment is still awaiting accounting verification.');
+        }
+
         if ($transaction->kind !== 'payment') {
             abort(400, 'Receipts are only available for payment transactions.');
         }
@@ -183,6 +191,27 @@ class TransactionController extends Controller
         }
 
         $transactions = $query->get();
+
+        // ── Exclude awaiting_approval from the PDF ────────────────────────────
+        // Only confirmed (paid) payments and charges should appear in the Term
+        // Summary PDF. Unverified payments are excluded from the document and
+        // from the balance calculations to avoid misrepresenting the account.
+        $transactions = $transactions->filter(function ($txn) {
+            // Always include charges (assessment items)
+            if ($txn->kind === 'charge') return true;
+            // For payments, only include those that are confirmed paid
+            return $txn->kind === 'payment' && $txn->status === 'paid';
+        });
+
+        // ── Block download if there are no paid transactions ─────────────────
+        // If every payment in this term is still awaiting approval, the PDF
+        // would show an incomplete or misleading balance. Prevent the download.
+        $paidPaymentsExist = $transactions->where('kind', 'payment')->where('status', 'paid')->isNotEmpty();
+        $chargesExist      = $transactions->where('kind', 'charge')->isNotEmpty();
+
+        if (!$paidPaymentsExist && !$chargesExist) {
+            abort(403, 'No confirmed transactions available for this term. Awaiting-approval payments cannot be downloaded yet.');
+        }
 
         $totalCharges = $transactions->where('kind', 'charge')->sum('amount');
         $totalPaid    = $transactions->where('kind', 'payment')->where('status', 'paid')->sum('amount');

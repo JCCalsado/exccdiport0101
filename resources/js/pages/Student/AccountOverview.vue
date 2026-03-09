@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
@@ -480,6 +482,32 @@ const submitPayment = () => {
         },
     });
 };
+
+// ─── Transaction Detail Dialog ────────────────────────────────────────────────
+
+const selectedTransaction = ref<Transaction | null>(null);
+const showDetailsDialog   = ref(false);
+
+const viewTransaction = (transaction: Transaction) => {
+    selectedTransaction.value = transaction;
+    showDetailsDialog.value   = true;
+};
+
+const closeDetailsDialog = () => {
+    showDetailsDialog.value   = false;
+    selectedTransaction.value = null;
+};
+
+const downloadReceipt = (transactionId: number) => {
+    const url = route('transactions.receipt', { transaction: transactionId });
+    window.open(url, '_blank');
+};
+
+// Overall account balance for the dialog display
+const accountBalance = computed(() => {
+    // Use remaining balance as a positive number (amount owed)
+    return remainingBalance.value;
+});
 </script>
 
 <template>
@@ -698,9 +726,31 @@ const submitPayment = () => {
                                             </td>
                                             <td class="px-4 py-3 text-center">
                                                 <div class="flex justify-center gap-2">
+                                                    <!--
+                                                        View button: finds the most recent payment transaction
+                                                        for this term and opens the Transaction Detail Dialog.
+                                                        If no payment exists for the term yet, shows a tooltip.
+                                                    -->
                                                     <button
-                                                        class="rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 transition-colors hover:bg-gray-300"
-                                                        title="View details"
+                                                        @click="() => {
+                                                            const termTx = transactions
+                                                                .filter(t => t.kind === 'payment' && (
+                                                                    (t.meta && t.meta.selected_term_id === term.id) ||
+                                                                    (t.meta && t.meta.term_name === term.term_name)
+                                                                ))
+                                                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                                                            if (termTx) viewTransaction(termTx);
+                                                        }"
+                                                        :disabled="!transactions.some(t => t.kind === 'payment' && t.meta && (t.meta.selected_term_id === term.id || t.meta.term_name === term.term_name))"
+                                                        :class="[
+                                                            'rounded px-2 py-1 text-xs transition-colors',
+                                                            transactions.some(t => t.kind === 'payment' && t.meta && (t.meta.selected_term_id === term.id || t.meta.term_name === term.term_name))
+                                                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                                                : 'cursor-not-allowed bg-gray-200 text-gray-400',
+                                                        ]"
+                                                        :title="transactions.some(t => t.kind === 'payment' && t.meta && (t.meta.selected_term_id === term.id || t.meta.term_name === term.term_name))
+                                                            ? 'View payment details'
+                                                            : 'No payment recorded for this term yet'"
                                                     >
                                                         View
                                                     </button>
@@ -798,6 +848,12 @@ const submitPayment = () => {
                                     >
                                         {{ getTransactionStatusConfig(payment.status).label }}
                                     </span>
+                                    <button
+                                        @click="viewTransaction(payment)"
+                                        class="mt-1 rounded bg-blue-600 px-2 py-0.5 text-xs text-white transition-colors hover:bg-blue-700"
+                                    >
+                                        View
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -971,5 +1027,122 @@ const submitPayment = () => {
                 </div>
             </div>
         </div>
+
+        <!-- ── Transaction Detail Dialog ── -->
+        <Dialog v-model:open="showDetailsDialog">
+            <DialogContent class="max-h-[80vh] max-w-2xl overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Transaction Details</DialogTitle>
+                    <DialogDescription>Complete information about this transaction</DialogDescription>
+                </DialogHeader>
+
+                <div v-if="selectedTransaction" class="space-y-5">
+                    <!-- Basic Info -->
+                    <div>
+                        <h3 class="mb-3 border-b pb-2 text-base font-semibold">Basic Information</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <p class="text-xs text-gray-500">Reference</p>
+                                <p class="font-mono text-sm font-medium">{{ selectedTransaction.reference }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Date</p>
+                                <p class="text-sm font-medium">{{ formatDate(selectedTransaction.created_at) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Kind</p>
+                                <span
+                                    class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                                    :class="selectedTransaction.kind === 'charge' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'"
+                                >
+                                    {{ selectedTransaction.kind }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Status</p>
+                                <span
+                                    class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                                    :class="[
+                                        getTransactionStatusConfig(selectedTransaction.status).bgClass,
+                                        getTransactionStatusConfig(selectedTransaction.status).textClass,
+                                    ]"
+                                >
+                                    {{ getTransactionStatusConfig(selectedTransaction.status).label }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Category</p>
+                                <p class="text-sm font-medium">
+                                    {{ selectedTransaction.meta?.term_name ?? selectedTransaction.type }}
+                                </p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500">Amount</p>
+                                <p
+                                    class="text-2xl font-bold"
+                                    :class="selectedTransaction.kind === 'charge' ? 'text-red-600' : 'text-green-600'"
+                                >
+                                    {{ selectedTransaction.kind === 'charge' ? '+' : '−' }}{{ formatCurrency(selectedTransaction.amount) }}
+                                </p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500">Overall Remaining Balance</p>
+                                <p class="text-lg font-bold" :class="accountBalance > 0 ? 'text-red-600' : 'text-green-600'">
+                                    {{ formatCurrency(accountBalance) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Info -->
+                    <div v-if="selectedTransaction.kind === 'payment'">
+                        <h3 class="mb-3 border-b pb-2 text-base font-semibold">Payment Information</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <p class="text-xs text-gray-500">Payment Method</p>
+                                <p class="text-sm font-medium capitalize">
+                                    {{ (selectedTransaction as any).payment_channel?.replace(/_/g, ' ') || 'N/A' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Payment Date</p>
+                                <p class="text-sm font-medium">
+                                    {{ (selectedTransaction as any).paid_at ? formatDate((selectedTransaction as any).paid_at) : 'N/A' }}
+                                </p>
+                            </div>
+                            <div v-if="selectedTransaction.meta?.term_name" class="col-span-2">
+                                <p class="text-xs text-gray-500">Payment For</p>
+                                <p class="text-sm font-semibold text-green-700">{{ selectedTransaction.meta.term_name }}</p>
+                            </div>
+                            <div v-if="selectedTransaction.meta?.description" class="col-span-2">
+                                <p class="text-xs text-gray-500">Description</p>
+                                <p class="text-sm font-medium">{{ selectedTransaction.meta.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-3 border-t pt-4">
+                        <Button variant="outline" @click="closeDetailsDialog">Close</Button>
+                        <!--
+                            Receipt download: only available for confirmed paid transactions.
+                            Awaiting-verification payments cannot be downloaded yet.
+                        -->
+                        <Button
+                            v-if="selectedTransaction.kind === 'payment' && selectedTransaction.status === 'paid'"
+                            @click="downloadReceipt(selectedTransaction.id)"
+                        >
+                            📄 Payment Receipt
+                        </Button>
+                        <span
+                            v-if="selectedTransaction.kind === 'payment' && selectedTransaction.status === 'awaiting_approval'"
+                            class="flex items-center rounded-lg bg-amber-100 px-4 py-2 text-sm font-medium text-amber-700"
+                        >
+                            ⏳ Awaiting Verification — Receipt Not Yet Available
+                        </span>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>
