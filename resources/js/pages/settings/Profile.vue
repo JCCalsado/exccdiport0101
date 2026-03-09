@@ -121,9 +121,13 @@ const updateProfilePicturePreview = (event: Event) => {
         forceFormData: true,
         onError: (errors) => {
             profilePictureError.value = (errors as any).profile_picture ?? undefined;
+            // Reset preview on error
+            profilePicturePreview.value = user.profile_picture ? `/storage/${user.profile_picture}` : null;
         },
         onSuccess: () => {
             profilePictureError.value = undefined;
+            // Reload the page to get updated auth user data with new profile picture
+            setTimeout(() => window.location.reload(), 500);
         },
     });
 };
@@ -311,39 +315,21 @@ const yearLevelOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
                         <InputError class="mt-2" :message="errors.faculty" />
                     </div>
 
-                    <!-- Course (Students Only) -->
+                    <!-- Course (Students Only - Read Only) -->
                     <div v-if="isStudent" class="grid gap-2">
-                        <Label for="course">Course <span class="text-red-500">*</span></Label>
-                        <select
-                            id="course"
-                            name="course"
-                            v-model="form.course"
-                            required
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Select Course</option>
-                            <option v-for="course in courseOptions" :key="course" :value="course">
-                                {{ course }}
-                            </option>
-                        </select>
+                        <Label for="course">Course</Label>
+                        <div class="flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-700">
+                            <span class="font-medium">{{ form.course || 'Not assigned' }}</span>
+                        </div>
                         <InputError class="mt-2" :message="errors.course" />
                     </div>
 
-                    <!-- Year Level (Students Only) -->
+                    <!-- Year Level (Students Only - Read Only) -->
                     <div v-if="isStudent" class="grid gap-2">
-                        <Label for="year_level">Year Level <span class="text-red-500">*</span></Label>
-                        <select
-                            id="year_level"
-                            name="year_level"
-                            v-model="form.year_level"
-                            required
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Select Year Level</option>
-                            <option v-for="year in yearLevelOptions" :key="year" :value="year">
-                                {{ year }}
-                            </option>
-                        </select>
+                        <Label for="year_level">Year Level</Label>
+                        <div class="flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-700">
+                            <span class="font-medium">{{ form.year_level || 'Not assigned' }}</span>
+                        </div>
                         <InputError class="mt-2" :message="errors.year_level" />
                     </div>
 

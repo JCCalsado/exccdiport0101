@@ -44,8 +44,12 @@ class ProfileUpdateRequest extends FormRequest
                 'max:50',
                 Rule::unique('users', 'account_id')->ignore($user->id),
             ];
-            $rules['course']     = ['required', 'string', 'max:255'];
-            $rules['year_level'] = ['required', 'string', 'max:50', 'in:1st Year,2nd Year,3rd Year,4th Year'];
+
+            // Course and Year Level are READ-ONLY for students
+            // These fields are managed by administration only, not by the student
+            // If submitted by a student, they are ignored (nullable, not required)
+            $rules['course']     = ['nullable', 'string', 'max:255'];
+            $rules['year_level'] = ['nullable', 'string', 'max:50', 'in:1st Year,2nd Year,3rd Year,4th Year'];
 
             // Only admin can change student status
             if (optional($this->user())->role === 'admin') {
