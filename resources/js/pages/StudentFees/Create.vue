@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, BookOpen, ChevronDown, ChevronRight, Search, Trash2, User } from 'lucide-vue-next';
+import { ArrowLeft, BookOpen, ChevronDown, ChevronRight, PenLine, Search, Trash2, User } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -21,6 +21,12 @@ interface Student {
     is_irregular: boolean;
 }
 
+interface FeeLineItem {
+    category: string;
+    name: string;
+    amount: number;
+}
+
 interface SubjectItem {
     id: number;
     code: string;
@@ -34,11 +40,11 @@ interface SubjectItem {
     semester: string;
 }
 
+// feePresets[course][yearLevel][semester] = FeeLineItem[]
+type FeePresets = Record<string, Record<string, Record<string, FeeLineItem[]>>>;
+
 // subjectMap[course][yearLevel][semester] = SubjectItem[]
 type SubjectMap = Record<string, Record<string, Record<string, SubjectItem[]>>>;
-
-// feePresets[course][yearLevel][semester] = number  (flat total)
-type FeePresets = Record<string, Record<string, Record<string, number>>>;
 
 interface SelectedSubject {
     id: number;
@@ -79,19 +85,72 @@ const currentStep     = ref<1 | 2>(1);
 const selectedStudent = ref<Student | null>(null);
 const studentSearch   = ref('');
 
-// ─── Assessment type — admin can override the student's is_irregular flag ─────
+// ─── Assessment type ──────────────────────────────────────────────────────────
 
 const assessmentType = ref<'regular' | 'irregular'>('regular');
 
 // ─── Term fields ──────────────────────────────────────────────────────────────
 
-const yearLevel  = ref('');
-const semester   = ref('');
-const schoolYear = ref(props.schoolYears[0] || '');
+const yearLevel        = ref('');
+const semester         = ref('');
+const schoolYear       = ref(props.schoolYears[2] || '');   // default = current year (index 2 of 5)
+const customSchoolYear = ref('');
+const useCustomYear    = ref(false);
 
-// ─── REGULAR: single flat Tuition Fee ────────────────────────────────────────
+const effectiveSchoolYear = computed(() =>
+    useCustomYear.value ? customSchoolYear.value.trim() : schoolYear.value,
+);
 
-const tuitionAmount = ref<number | string>('');
+// Custom year format validation: YYYY-YYYY
+const customYearValid = computed(() => {
+    if (!useCustomYear.value) return true;
+    return /^\d{4}-\d{4}$/.test(customSchoolYear.value.trim());
+});
+
+// ─── REGULAR: editable fee breakdown from preset ──────────────────────────────
+
+interface RegularFeeRow {
+    category: string;
+    name: string;
+    amount: number;
+}
+
+const regularFeeRows = ref<RegularFeeRow[]>([]);
+
+// Populate preset rows whenever course/year/semester changes
+const presetLines = computed<FeeLineItem[]>(() => {
+    const course = selectedStudent.value?.course;
+    if (!course || !yearLevel.value || !semester.value) return [];
+    return props.feePresets?.[course]?.[yearLevel.value]?.[semester.value] ?? [];
+});
+
+watch([() => selectedStudent.value?.course, yearLevel, semester, assessmentType], () => {
+    if (assessmentType.value !== 'regular') return;
+    if (presetLines.value.length > 0) {
+        regularFeeRows.value = presetLines.value.map((l) => ({
+            category: l.category,
+            name:     l.name,
+            amount:   l.amount,
+        }));
+    } else {
+        // No preset — give one blank Tuition row
+        regularFeeRows.value = [{ category: 'Tuition', name: 'Tuition Fee', amount: 0 }];
+    }
+});
+
+function addRegularRow() {
+    regularFeeRows.value.push({ category: 'Tuition', name: '', amount: 0 });
+}
+
+function removeRegularRow(index: number) {
+    regularFeeRows.value.splice(index, 1);
+}
+
+const regularTotal = computed(() =>
+    regularFeeRows.value.reduce((sum, r) => sum + (parseFloat(String(r.amount)) || 0), 0),
+);
+
+const FEE_CATEGORIES = ['Tuition', 'Laboratory', 'Miscellaneous', 'Other'];
 
 // ─── IRREGULAR: subject picker ────────────────────────────────────────────────
 
@@ -105,7 +164,33 @@ function toggleGroup(key: string) {
         : expandedGroups.value.add(key);
 }
 
-// All subjects for the current student's course (any year/sem — Irregular picks freely)
+// When student is selected and type is Irregular, pre-load their current year/sem subjects
+function preloadIrregularSubjects() {
+    if (!selectedStudent.value?.course || !yearLevel.value || !semester.value) return;
+    const course = selectedStudent.value.course;
+    const subjectsForCurrentTerm =
+        props.subjectMap?.[course]?.[yearLevel.value]?.[semester.value] ?? [];
+
+    // Auto-expand the current year/sem group
+    const groupKey = `${yearLevel.value}||${semester.value}`;
+    expandedGroups.value.add(groupKey);
+
+    // Pre-select all subjects for the student's current term
+    selectedSubjects.value = subjectsForCurrentTerm.map((s) => ({
+        id:             s.id,
+        code:           s.code,
+        name:           s.name,
+        units:          s.units,
+        price_per_unit: s.price_per_unit,
+        has_lab:        s.has_lab,
+        lab_fee:        s.lab_fee,
+        amount:         s.total_cost,
+        year_level:     s.year_level,
+        semester:       s.semester,
+    }));
+}
+
+// All subjects for the current student's course (any year/sem)
 const allSubjectsForCourse = computed((): SubjectItem[] => {
     const course = selectedStudent.value?.course;
     if (!course || !props.subjectMap[course]) return [];
@@ -118,7 +203,7 @@ const allSubjectsForCourse = computed((): SubjectItem[] => {
     return result;
 });
 
-// Grouped & filtered subjects for the browser panel
+// Grouped & search-filtered subjects for the browser panel
 const groupedSubjects = computed(() => {
     const course = selectedStudent.value?.course;
     if (!course || !props.subjectMap[course]) return {};
@@ -174,26 +259,12 @@ const filteredStudents = computed(() => {
     );
 });
 
-// ─── Preset amount for Regular mode ──────────────────────────────────────────
-
-const presetAmount = computed<number | null>(() => {
-    if (!selectedStudent.value?.course || !yearLevel.value || !semester.value) return null;
-    const val = props.feePresets?.[selectedStudent.value.course]?.[yearLevel.value]?.[semester.value];
-    return val != null ? Number(val) : null;
-});
-
-watch([yearLevel, semester], () => {
-    if (assessmentType.value === 'regular' && presetAmount.value !== null) {
-        tuitionAmount.value = presetAmount.value;
-    }
-});
-
-// ─── Totals ───────────────────────────────────────────────────────────────────
+// ─── Grand total ──────────────────────────────────────────────────────────────
 
 const grandTotal = computed(() =>
     assessmentType.value === 'irregular'
         ? selectedSubjects.value.reduce((sum, s) => sum + s.amount, 0)
-        : parseFloat(String(tuitionAmount.value)) || 0,
+        : regularTotal.value,
 );
 
 // ─── Student selection ────────────────────────────────────────────────────────
@@ -203,7 +274,7 @@ function selectStudent(student: Student) {
     yearLevel.value        = student.year_level || '';
     assessmentType.value   = student.is_irregular ? 'irregular' : 'regular';
     selectedSubjects.value = [];
-    tuitionAmount.value    = '';
+    regularFeeRows.value   = [];
     expandedGroups.value   = new Set();
     subjectSearch.value    = '';
     currentStep.value      = 2;
@@ -213,16 +284,35 @@ function backToStudentSelection() {
     currentStep.value      = 1;
     selectedStudent.value  = null;
     selectedSubjects.value = [];
-    tuitionAmount.value    = '';
+    regularFeeRows.value   = [];
     yearLevel.value        = '';
     semester.value         = '';
     expandedGroups.value   = new Set();
 }
 
+// When type switches to irregular and we have a student + term selected, pre-load subjects
+watch(assessmentType, (newType) => {
+    if (newType === 'irregular') {
+        selectedSubjects.value = [];
+        preloadIrregularSubjects();
+    } else {
+        selectedSubjects.value = [];
+    }
+});
+
+// When year level or semester changes in irregular mode, refresh pre-selection
+watch([yearLevel, semester], () => {
+    if (assessmentType.value === 'irregular') {
+        selectedSubjects.value = [];
+        expandedGroups.value   = new Set();
+        preloadIrregularSubjects();
+    }
+});
+
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
-const form: any      = useForm({});
-const formErrors     = ref<Record<string, string>>({});
+const form: any  = useForm({});
+const formErrors = ref<Record<string, string>>({});
 
 function submit() {
     formErrors.value = {};
@@ -231,10 +321,28 @@ function submit() {
         formErrors.value.term = 'Please select a year level and semester.';
         return;
     }
-    if (assessmentType.value === 'regular' && grandTotal.value <= 0) {
-        formErrors.value.tuition_amount = 'Please enter a tuition amount greater than zero.';
+
+    if (useCustomYear.value && !customYearValid.value) {
+        formErrors.value.school_year = 'School year must be in YYYY-YYYY format (e.g. 2025-2026).';
         return;
     }
+
+    if (assessmentType.value === 'regular') {
+        if (regularFeeRows.value.length === 0) {
+            formErrors.value.regular_fees = 'Please add at least one fee line.';
+            return;
+        }
+        if (regularTotal.value <= 0) {
+            formErrors.value.regular_fees = 'Total assessment must be greater than zero.';
+            return;
+        }
+        const emptyName = regularFeeRows.value.some((r) => !r.name.trim());
+        if (emptyName) {
+            formErrors.value.regular_fees = 'All fee line items must have a name.';
+            return;
+        }
+    }
+
     if (assessmentType.value === 'irregular' && selectedSubjects.value.length === 0) {
         formErrors.value.selected_subjects = 'Please select at least one subject.';
         return;
@@ -244,15 +352,21 @@ function submit() {
         user_id:         selectedStudent.value!.id,
         year_level:      yearLevel.value,
         semester:        semester.value,
-        school_year:     schoolYear.value,
+        school_year:     effectiveSchoolYear.value,
         assessment_type: assessmentType.value,
     };
 
     if (assessmentType.value === 'regular') {
-        payload.tuition_amount = parseFloat(String(tuitionAmount.value));
+        payload.fee_items = regularFeeRows.value.map((r) => ({
+            category: r.category,
+            name:     r.name,
+            amount:   parseFloat(String(r.amount)) || 0,
+        }));
     } else {
         payload.selected_subjects = selectedSubjects.value.map((s) => ({
-            id: s.id, units: s.units, amount: s.amount,
+            id:     s.id,
+            units:  s.units,
+            amount: s.amount,
         }));
     }
 
@@ -274,6 +388,13 @@ function statusColor(status: string) {
           ? 'bg-blue-100 text-blue-800'
           : 'bg-gray-100 text-gray-800';
 }
+
+const categoryColor: Record<string, string> = {
+    Tuition:       'bg-blue-100 text-blue-700',
+    Laboratory:    'bg-purple-100 text-purple-700',
+    Miscellaneous: 'bg-yellow-100 text-yellow-700',
+    Other:         'bg-gray-100 text-gray-700',
+};
 </script>
 
 <template>
@@ -366,9 +487,7 @@ function statusColor(status: string) {
                                     <td class="px-5 py-3 text-xs text-gray-600">{{ st.year_level || '—' }}</td>
                                     <td class="px-5 py-3">
                                         <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold',
-                                                       st.is_irregular
-                                                         ? 'bg-amber-100 text-amber-700'
-                                                         : 'bg-blue-100 text-blue-700']">
+                                                       st.is_irregular ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700']">
                                             {{ st.is_irregular ? 'Irregular' : 'Regular' }}
                                         </span>
                                     </td>
@@ -416,10 +535,11 @@ function statusColor(status: string) {
                     </Button>
                 </div>
 
-                <!-- Term Information -->
+                <!-- ── Term Information ─────────────────────────────── -->
                 <div class="rounded-lg border bg-white p-5 shadow-sm">
                     <h2 class="mb-4 font-semibold text-gray-900">Term Information</h2>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <!-- Year Level -->
                         <div class="space-y-1">
                             <Label>Year Level</Label>
                             <select v-model="yearLevel" required
@@ -428,6 +548,8 @@ function statusColor(status: string) {
                                 <option v-for="y in yearLevels" :key="y" :value="y">{{ y }}</option>
                             </select>
                         </div>
+
+                        <!-- Semester -->
                         <div class="space-y-1">
                             <Label>Semester</Label>
                             <select v-model="semester" required
@@ -436,89 +558,201 @@ function statusColor(status: string) {
                                 <option v-for="s in semesters" :key="s" :value="s">{{ s }}</option>
                             </select>
                         </div>
+
+                        <!-- School Year — select + optional custom override -->
                         <div class="space-y-1">
-                            <Label>School Year</Label>
-                            <select v-model="schoolYear" required
+                            <Label class="flex items-center gap-2">
+                                School Year
+                                <button type="button"
+                                        :class="['rounded px-1.5 py-0.5 text-xs font-medium transition-colors',
+                                                 useCustomYear
+                                                   ? 'bg-blue-100 text-blue-700'
+                                                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"
+                                        :title="useCustomYear ? 'Using custom year — click to use preset' : 'Enter a custom school year'"
+                                        @click="useCustomYear = !useCustomYear; customSchoolYear = ''">
+                                    <PenLine class="inline h-3 w-3 mr-0.5" />
+                                    {{ useCustomYear ? 'Custom ✓' : 'Custom' }}
+                                </button>
+                            </Label>
+
+                            <!-- Preset dropdown -->
+                            <select v-if="!useCustomYear"
+                                    v-model="schoolYear" required
                                     class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                                 <option v-for="sy in schoolYears" :key="sy" :value="sy">{{ sy }}</option>
                             </select>
+
+                            <!-- Custom text input -->
+                            <div v-else>
+                                <input v-model="customSchoolYear"
+                                       type="text"
+                                       placeholder="e.g. 2026-2027"
+                                       :class="['w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2',
+                                                customYearValid
+                                                  ? 'border-blue-400 focus:border-blue-500 focus:ring-blue-200'
+                                                  : 'border-red-400 focus:border-red-500 focus:ring-red-200']" />
+                                <p v-if="!customYearValid && customSchoolYear" class="mt-1 text-xs text-red-500">
+                                    Format: YYYY-YYYY (e.g. 2026-2027)
+                                </p>
+                            </div>
+
+                            <!-- Effective value preview when custom -->
+                            <p v-if="useCustomYear && customYearValid && customSchoolYear"
+                               class="text-xs text-green-600">
+                                ✓ Using: {{ effectiveSchoolYear }}
+                            </p>
+
+                            <p v-if="formErrors.school_year" class="mt-1 text-xs text-red-500">
+                                {{ formErrors.school_year }}
+                            </p>
                         </div>
                     </div>
                     <p v-if="formErrors.term" class="mt-2 text-xs text-red-500">{{ formErrors.term }}</p>
                 </div>
 
-                <!-- Assessment Type Toggle -->
+                <!-- ── Assessment Type Toggle ───────────────────────── -->
                 <div class="rounded-lg border bg-white p-5 shadow-sm">
                     <h2 class="mb-1 font-semibold text-gray-900">Assessment Type</h2>
                     <p class="mb-4 text-xs text-gray-500">
-                        Pre-set from the student's record. You can override it here for this assessment only.
+                        Defaulted from the student's record. You can override it for this assessment.
                     </p>
                     <div class="flex gap-3">
-                        <!-- Regular -->
                         <button type="button"
                                 :class="['flex-1 rounded-lg border-2 px-5 py-4 text-left transition-all',
                                          assessmentType === 'regular'
                                            ? 'border-blue-500 bg-blue-50'
                                            : 'border-gray-200 hover:border-gray-300']"
-                                @click="assessmentType = 'regular'; selectedSubjects = []">
+                                @click="assessmentType = 'regular'">
                             <p :class="['font-bold', assessmentType === 'regular' ? 'text-blue-700' : 'text-gray-700']">
                                 Regular
                             </p>
-                            <p class="mt-0.5 text-xs text-gray-500">Single flat Tuition Fee per semester</p>
+                            <p class="mt-0.5 text-xs text-gray-500">
+                                Fixed fee breakdown auto-loaded from course preset. Each line is editable.
+                            </p>
                         </button>
-                        <!-- Irregular -->
                         <button type="button"
                                 :class="['flex-1 rounded-lg border-2 px-5 py-4 text-left transition-all',
                                          assessmentType === 'irregular'
                                            ? 'border-amber-500 bg-amber-50'
                                            : 'border-gray-200 hover:border-gray-300']"
-                                @click="assessmentType = 'irregular'; tuitionAmount = ''">
+                                @click="assessmentType = 'irregular'">
                             <p :class="['font-bold', assessmentType === 'irregular' ? 'text-amber-700' : 'text-gray-700']">
                                 Irregular
                             </p>
                             <p class="mt-0.5 text-xs text-gray-500">
-                                Pick individual subjects from any year &amp; semester
+                                Current-term subjects pre-loaded. Add or remove subjects from any year &amp; semester.
                             </p>
                         </button>
                     </div>
                 </div>
 
-                <!-- ══════════════════════════════════════
-                     REGULAR PATH
-                     ══════════════════════════════════════ -->
-                <div v-if="assessmentType === 'regular'" class="rounded-lg border bg-white p-5 shadow-sm">
-                    <div class="mb-2 flex items-center gap-2">
-                        <BookOpen class="h-4 w-4 text-blue-500" />
-                        <h2 class="font-semibold text-gray-900">Tuition Fee</h2>
+                <!-- ════════════════════════════════════════
+                     REGULAR PATH — editable fee breakdown
+                     ════════════════════════════════════════ -->
+                <div v-if="assessmentType === 'regular'" class="rounded-lg border bg-white shadow-sm">
+                    <div class="border-b px-5 py-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <BookOpen class="h-4 w-4 text-blue-500" />
+                            <h2 class="font-semibold text-gray-900">Fee Breakdown</h2>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <p v-if="presetLines.length > 0" class="text-xs text-green-600">
+                                ✓ Preset loaded — edit amounts as needed
+                            </p>
+                            <p v-else-if="yearLevel && semester" class="text-xs text-amber-600">
+                                ⚠ No preset for this course/term — enter amounts manually
+                            </p>
+                            <p v-else class="text-xs text-gray-400">
+                                Select year level and semester to load preset
+                            </p>
+                        </div>
                     </div>
 
-                    <p v-if="presetAmount !== null" class="mb-4 text-xs text-green-600">
-                        ✓ Preset loaded for <strong>{{ selectedStudent?.course }}</strong>
-                        — {{ yearLevel }} {{ semester }}: {{ fmt(presetAmount) }}.
-                        You may edit the amount below.
-                    </p>
-                    <p v-else-if="yearLevel && semester" class="mb-4 text-xs text-amber-600">
-                        ⚠ No preset found for this course / term combination. Enter the amount manually.
-                    </p>
-                    <p v-else class="mb-4 text-xs text-gray-400">
-                        Select a year level and semester above to load the preset amount.
-                    </p>
-
-                    <div class="flex items-center gap-2">
-                        <span class="text-xl font-semibold text-gray-400">₱</span>
-                        <input v-model="tuitionAmount"
-                               type="number" min="0" step="0.01" placeholder="0.00"
-                               class="w-56 rounded-lg border border-gray-300 px-4 py-2.5 text-xl font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
+                    <!-- Fee table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100 text-sm">
+                            <thead class="bg-gray-50 text-xs font-medium uppercase text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-2.5 text-left w-36">Category</th>
+                                    <th class="px-4 py-2.5 text-left">Fee Name</th>
+                                    <th class="px-4 py-2.5 text-right w-40">Amount (₱)</th>
+                                    <th class="px-4 py-2.5 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                <tr v-if="regularFeeRows.length === 0">
+                                    <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">
+                                        No fee lines yet. Add rows below or select a year level &amp; semester above.
+                                    </td>
+                                </tr>
+                                <tr v-for="(row, idx) in regularFeeRows" :key="idx"
+                                    class="hover:bg-gray-50">
+                                    <td class="px-4 py-2">
+                                        <select v-model="row.category"
+                                                class="w-full rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200">
+                                            <option v-for="cat in FEE_CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+                                        </select>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <input v-model="row.name"
+                                               type="text"
+                                               placeholder="Fee description"
+                                               class="w-full rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200" />
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <input v-model="row.amount"
+                                               type="number" min="0" step="0.01"
+                                               class="w-full rounded border border-gray-200 px-2 py-1.5 text-right text-sm font-medium outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200" />
+                                    </td>
+                                    <td class="px-4 py-2 text-center">
+                                        <button type="button"
+                                                class="text-gray-300 hover:text-red-500 transition-colors"
+                                                :disabled="regularFeeRows.length === 1"
+                                                @click="removeRegularRow(idx)">
+                                            <Trash2 class="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <p v-if="formErrors.tuition_amount" class="mt-2 text-xs text-red-500">
-                        {{ formErrors.tuition_amount }}
+
+                    <!-- Add row + subtotals -->
+                    <div class="border-t px-5 py-3 flex items-center justify-between">
+                        <button type="button"
+                                class="flex items-center gap-1 rounded-lg border border-dashed border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                                @click="addRegularRow">
+                            + Add Fee Line
+                        </button>
+
+                        <!-- Per-category subtotals -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span v-for="cat in FEE_CATEGORIES"
+                                  :key="cat"
+                                  v-show="regularFeeRows.some(r => r.category === cat)"
+                                  :class="['rounded-full px-2 py-0.5 text-xs font-medium', categoryColor[cat]]">
+                                {{ cat }}: {{ fmt(regularFeeRows.filter(r => r.category === cat).reduce((s, r) => s + (parseFloat(String(r.amount)) || 0), 0)) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <p v-if="formErrors.regular_fees" class="px-5 pb-3 text-xs text-red-500">
+                        {{ formErrors.regular_fees }}
                     </p>
                 </div>
 
-                <!-- ══════════════════════════════════════
-                     IRREGULAR PATH
-                     ══════════════════════════════════════ -->
+                <!-- ════════════════════════════════════════
+                     IRREGULAR PATH — subject picker
+                     ════════════════════════════════════════ -->
                 <div v-if="assessmentType === 'irregular'" class="space-y-4">
+
+                    <!-- Info banner -->
+                    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                        <strong>Irregular Assessment:</strong>
+                        Subjects from the student's current year &amp; semester are pre-selected.
+                        Use the browser below to <strong>add subjects from other years/semesters</strong>
+                        or <strong>remove</strong> subjects the student doesn't need.
+                    </div>
 
                     <!-- Subject browser -->
                     <div class="rounded-lg border bg-white shadow-sm">
@@ -526,11 +760,11 @@ function statusColor(status: string) {
                             <h2 class="font-semibold text-gray-900">Subject Browser</h2>
                             <p class="mt-0.5 text-xs text-gray-500">
                                 All subjects for <strong>{{ selectedStudent?.course || 'this course' }}</strong>.
-                                Irregular students can pick subjects from any year &amp; semester.
+                                Click a subject to add or remove it.
                             </p>
                         </div>
 
-                        <!-- Subject search -->
+                        <!-- Search -->
                         <div class="border-b px-5 py-3">
                             <div class="relative">
                                 <Search class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
@@ -544,7 +778,7 @@ function statusColor(status: string) {
                         <div v-if="allSubjectsForCourse.length === 0"
                              class="px-5 py-10 text-center text-sm text-gray-400">
                             No subjects found for <strong>{{ selectedStudent?.course || 'this course' }}</strong>.
-                            Ask the admin to populate the subjects table for this course.
+                            Ask the admin to populate the subjects table.
                         </div>
 
                         <!-- Grouped accordion -->
@@ -554,11 +788,18 @@ function statusColor(status: string) {
 
                                     <!-- Group header -->
                                     <button type="button"
-                                            class="flex w-full items-center justify-between bg-gray-50 px-5 py-2.5 text-left transition-colors hover:bg-gray-100"
+                                            :class="['flex w-full items-center justify-between px-5 py-2.5 text-left transition-colors hover:bg-gray-100',
+                                                     yl === selectedStudent?.year_level && sem === semester
+                                                       ? 'bg-amber-50'
+                                                       : 'bg-gray-50']"
                                             @click="toggleGroup(`${yl}||${sem}`)">
-                                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                                        <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
                                             {{ yl }} — {{ sem }}
-                                            <span class="ml-2 font-normal text-gray-400">({{ subjects.length }})</span>
+                                            <span v-if="yl === selectedStudent?.year_level && sem === semester"
+                                                  class="rounded-full bg-amber-200 px-1.5 py-0.5 text-amber-700 normal-case font-normal">
+                                                current term
+                                            </span>
+                                            <span class="font-normal text-gray-400">({{ subjects.length }})</span>
                                         </span>
                                         <ChevronDown v-if="expandedGroups.has(`${yl}||${sem}`)"
                                                      class="h-4 w-4 text-gray-400" />
@@ -575,7 +816,6 @@ function statusColor(status: string) {
                                                         : 'hover:bg-gray-50']"
                                              @click="toggleSubject(subject)">
                                             <div class="flex items-start gap-3">
-                                                <!-- Checkbox -->
                                                 <div :class="['mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border text-xs font-bold',
                                                               isSubjectSelected(subject.id)
                                                                 ? 'border-amber-500 bg-amber-500 text-white'
@@ -587,11 +827,8 @@ function statusColor(status: string) {
                                                         {{ subject.code }} — {{ subject.name }}
                                                     </p>
                                                     <p class="text-xs text-gray-400">
-                                                        {{ subject.units }} units
-                                                        × {{ fmt(subject.price_per_unit) }}/unit
-                                                        <span v-if="subject.has_lab">
-                                                            + Lab {{ fmt(subject.lab_fee) }}
-                                                        </span>
+                                                        {{ subject.units }} units × {{ fmt(subject.price_per_unit) }}/unit
+                                                        <span v-if="subject.has_lab">+ Lab {{ fmt(subject.lab_fee) }}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -606,18 +843,20 @@ function statusColor(status: string) {
                         </div>
                     </div>
 
-                    <!-- Selected subjects list -->
+                    <!-- Selected subjects summary -->
                     <div class="rounded-lg border bg-white shadow-sm">
-                        <div class="border-b px-5 py-4">
-                            <h2 class="font-semibold text-gray-900">Selected Subjects</h2>
-                            <p class="mt-0.5 text-xs text-gray-500">
-                                {{ selectedSubjects.length }} subject{{ selectedSubjects.length !== 1 ? 's' : '' }} added
-                            </p>
+                        <div class="border-b px-5 py-4 flex items-center justify-between">
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Selected Subjects</h2>
+                                <p class="mt-0.5 text-xs text-gray-500">
+                                    {{ selectedSubjects.length }} subject{{ selectedSubjects.length !== 1 ? 's' : '' }} · click a subject or use trash icon to remove
+                                </p>
+                            </div>
                         </div>
 
                         <div v-if="selectedSubjects.length === 0"
                              class="px-5 py-8 text-center text-sm text-gray-400">
-                            No subjects selected yet. Use the browser above to add subjects.
+                            No subjects selected. Use the browser above.
                         </div>
 
                         <div v-else class="divide-y divide-gray-100">
@@ -649,7 +888,7 @@ function statusColor(status: string) {
                     </div>
                 </div>
 
-                <!-- Grand Total -->
+                <!-- Grand Total Banner -->
                 <div :class="['rounded-xl px-6 py-5 text-white shadow-lg',
                               assessmentType === 'irregular'
                                 ? 'bg-gradient-to-r from-amber-500 to-amber-600'
@@ -663,15 +902,19 @@ function statusColor(status: string) {
                         </div>
                         <div class="space-y-0.5 text-right text-xs opacity-75">
                             <p>{{ assessmentType === 'irregular' ? 'Irregular' : 'Regular' }} Assessment</p>
+                            <p>School Year: {{ effectiveSchoolYear || '—' }}</p>
                             <p v-if="assessmentType === 'irregular'">
                                 {{ selectedSubjects.length }} subject{{ selectedSubjects.length !== 1 ? 's' : '' }}
+                            </p>
+                            <p v-else>
+                                {{ regularFeeRows.length }} fee line{{ regularFeeRows.length !== 1 ? 's' : '' }}
                             </p>
                             <p>5 payment terms will be generated</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Global form error -->
+                <!-- Global errors -->
                 <p v-if="formErrors.error" class="text-sm font-medium text-red-600">{{ formErrors.error }}</p>
 
                 <!-- Actions -->
@@ -688,8 +931,11 @@ function statusColor(status: string) {
                             :disabled="form.processing
                                 || !yearLevel
                                 || !semester
+                                || !effectiveSchoolYear
+                                || !customYearValid
                                 || grandTotal <= 0
-                                || (assessmentType === 'irregular' && selectedSubjects.length === 0)"
+                                || (assessmentType === 'irregular' && selectedSubjects.length === 0)
+                                || (assessmentType === 'regular' && regularFeeRows.length === 0)"
                             :class="[assessmentType === 'irregular'
                                         ? 'bg-amber-500 hover:bg-amber-600 text-white border-0'
                                         : '',

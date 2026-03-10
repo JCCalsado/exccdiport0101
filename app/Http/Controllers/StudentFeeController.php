@@ -364,9 +364,14 @@ class StudentFeeController extends Controller
             'students'      => $students,
             'yearLevels'    => ['1st Year', '2nd Year', '3rd Year', '4th Year'],
             'semesters'     => ['1st Sem', '2nd Sem', 'Summer'],
+            // 5 school-year options: 2 past + current + 2 future
+            // Admin can also type a custom value in the form
             'schoolYears'   => [
+                ($currentYear - 2) . '-' . ($currentYear - 1),
+                ($currentYear - 1) . '-' . ($currentYear),
                 "{$currentYear}-" . ($currentYear + 1),
-                ($currentYear - 1) . "-{$currentYear}",
+                ($currentYear + 1) . '-' . ($currentYear + 2),
+                ($currentYear + 2) . '-' . ($currentYear + 3),
             ],
             // Regular: one flat Tuition Fee per semester preset
             'feePresets'    => self::COURSE_FEE_PRESETS,
@@ -393,7 +398,7 @@ class StudentFeeController extends Controller
             'user_id'         => 'required|exists:users,id',
             'year_level'      => 'required|string',
             'semester'        => 'required|in:1st Sem,2nd Sem,Summer',
-            'school_year'     => 'required|string|max:20',
+            'school_year'     => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
             'assessment_type' => 'required|in:regular,irregular',
         ]);
 
@@ -408,7 +413,10 @@ class StudentFeeController extends Controller
             ]);
         } else {
             $request->validate([
-                'tuition_amount' => 'required|numeric|min:1',
+                'fee_items'              => 'required|array|min:1',
+                'fee_items.*.category'   => 'required|string|in:Tuition,Laboratory,Miscellaneous,Other',
+                'fee_items.*.name'       => 'required|string|max:100',
+                'fee_items.*.amount'     => 'required|numeric|min:0',
             ]);
         }
 
@@ -441,18 +449,23 @@ class StudentFeeController extends Controller
                 $subjectIds = $subjects->pluck('id')->toArray();
 
             } else {
-                // ── Regular: single flat Tuition Fee ─────────────────────────
-                $grandTotal   = round((float) $request->tuition_amount, 2);
-                $tuitionTotal = $grandTotal;
-                $otherTotal   = 0;
+                // ── Regular: itemised fee breakdown from preset (editable) ──
+                $feeItems     = collect($request->fee_items);
+                $tuitionTotal = round($feeItems->where('category', 'Tuition')->sum('amount'), 2);
+                $otherTotal   = round($feeItems->whereNotIn('category', ['Tuition'])->sum('amount'), 2);
+                $grandTotal   = round($tuitionTotal + $otherTotal, 2);
                 $subjectIds   = [];
 
-                $feeBreakdown = [[
-                    'category'    => 'Tuition',
-                    'name'        => 'Tuition Fee',
-                    'amount'      => $grandTotal,
-                    'description' => "Tuition Fee — {$base['year_level']} {$base['semester']} {$base['school_year']}",
-                ]];
+                if ($grandTotal <= 0) {
+                    throw new \InvalidArgumentException('Total assessment amount must be greater than zero.');
+                }
+
+                $feeBreakdown = $feeItems->map(fn($item) => [
+                    'category'    => $item['category'],
+                    'name'        => $item['name'],
+                    'amount'      => (float) $item['amount'],
+                    'description' => "{$item['name']} — {$base['year_level']} {$base['semester']} {$base['school_year']}",
+                ])->values()->toArray();
             }
 
             $assessment = StudentAssessment::create([

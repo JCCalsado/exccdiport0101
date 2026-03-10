@@ -355,8 +355,37 @@ const firstUnpaidTermId = computed(() => {
     return unpaid?.[0]?.id ?? null;
 });
 
+// All-time payment history — used for the "Total Paid" balance card
+const totalPaidTransactions = computed(() => {
+    return props.transactions.filter((t) => t.kind === 'payment' && t.status === 'paid');
+});
+
+// Current-term payment history — displayed in the Payment History tab
+// Filters to transactions that match the latest assessment's school_year and semester.
+// Falls back to all payment transactions if no assessment exists.
 const paymentHistory = computed(() => {
-    return props.transactions.filter((t) => t.kind === 'payment').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const allPayments = props.transactions
+        .filter((t) => t.kind === 'payment')
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    if (!props.latestAssessment) {
+        // No assessment on record — show everything
+        return allPayments;
+    }
+
+    const { school_year, semester } = props.latestAssessment;
+
+    return allPayments.filter((t) => {
+        // Prefer explicit semester/year columns on the transaction
+        if (t.semester && t.year) {
+            const txYear = String(t.year);
+            const schoolYearStart = school_year ? String(school_year).split('-')[0] : '';
+            return t.semester === semester && txYear === schoolYearStart;
+        }
+        // Fallback: check meta.description or meta.term_name for a semester mention
+        const desc = (t.meta?.description ?? '') + (t.meta?.term_name ?? '');
+        return desc.includes(semester) || desc.includes(school_year ?? '');
+    });
 });
 
 const selectedTermInfo = computed(() => {
@@ -793,7 +822,19 @@ const accountBalance = computed(() => {
 
                     <!-- Payment History Tab -->
                     <div v-if="activeTab === 'history'">
-                        <h2 class="mb-4 text-lg font-semibold">Payment History</h2>
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 class="text-lg font-semibold">Payment History</h2>
+                                <p v-if="latestAssessment" class="mt-0.5 text-xs text-gray-500">
+                                    Showing payments for
+                                    <strong>{{ latestAssessment.semester }} {{ latestAssessment.school_year }}</strong>
+                                    — {{ latestAssessment.assessment_number }}
+                                </p>
+                                <p v-else class="mt-0.5 text-xs text-gray-500">
+                                    Showing all payment history (no active assessment found)
+                                </p>
+                            </div>
+                        </div>
 
                         <!-- Pending Payments Section -->
                         <div v-if="hasPendingPayments" class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4">
@@ -860,8 +901,11 @@ const accountBalance = computed(() => {
 
                         <div v-else-if="!hasPendingPayments" class="py-12 text-center">
                             <XCircle :size="48" class="mx-auto mb-3 text-gray-400" />
-                            <p class="text-gray-500">No payment history yet</p>
-                            <p class="mt-1 text-sm text-gray-400">Your payments will appear here after you make them</p>
+                            <p class="text-gray-500">No payment history for this term yet</p>
+                            <p v-if="latestAssessment" class="mt-1 text-sm text-gray-400">
+                                Payments for {{ latestAssessment.semester }} {{ latestAssessment.school_year }} will appear here
+                            </p>
+                            <p v-else class="mt-1 text-sm text-gray-400">Your payments will appear here after you make them</p>
                         </div>
                     </div>
 
