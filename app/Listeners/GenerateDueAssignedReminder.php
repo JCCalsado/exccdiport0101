@@ -12,8 +12,17 @@ class GenerateDueAssignedReminder
      * Handle the DueAssigned event.
      *
      * Creates or updates a PaymentReminder record for the student's feed.
-     * Uses updateOrCreate keyed on (user_id + term_id + type) to prevent
-     * duplicate reminder entries when the admin updates the same due date twice.
+     *
+     * ── FIX Bug 4 ────────────────────────────────────────────────────────────
+     * The previous updateOrCreate key was (user_id + student_payment_term_id + type).
+     * Because `type` changes depending on urgency at the moment the admin saves
+     * (payment_due → approaching_due → overdue), each urgency level created an
+     * independent row instead of updating the existing one. A student could end up
+     * with three separate reminder cards for the same term.
+     *
+     * Fix: key only on (user_id + student_payment_term_id). Type and message are
+     * now part of the VALUES being updated so they always reflect the latest state.
+     * ─────────────────────────────────────────────────────────────────────────
      */
     public function handle(DueAssigned $event): void
     {
@@ -35,15 +44,17 @@ class GenerateDueAssignedReminder
             $message = "{$term->term_name} payment due on " . $term->due_date->format('M d, Y') . ". Amount: ₱" . number_format($term->balance, 2);
         }
 
-        // updateOrCreate prevents duplicate rows when admin updates the same term's
-        // due date multiple times. The record is refreshed each time.
         PaymentReminder::updateOrCreate(
             [
-                'user_id'                  => $user->id,
-                'student_payment_term_id'  => $term->id,
-                'type'                     => $type,
+                // ── FIXED: key on (user_id + term_id) only ──
+                // `type` is intentionally excluded from the key so that a single
+                // reminder row is refreshed when urgency changes, rather than
+                // creating a new duplicate row per urgency tier.
+                'user_id'                 => $user->id,
+                'student_payment_term_id' => $term->id,
             ],
             [
+                'type'                  => $type,    // ← now a VALUE, not a key
                 'student_assessment_id' => $term->student_assessment_id,
                 'message'               => $message,
                 'outstanding_balance'   => $term->balance,

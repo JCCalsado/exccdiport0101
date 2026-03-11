@@ -2,19 +2,29 @@
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { AlertCircle, Bell, CheckCircle, Clock, CreditCard, FileText, Wallet } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const { formatCurrency, formatDate, getTransactionStatusConfig, formatTransactionType } = useDataFormatting();
 
+// ── FIX Bug 2 & 3 ────────────────────────────────────────────────────────────
+// Added `type`, `dismissed_at`, and `created_at` to the Notification type.
+// Previously `dismissed_at` was absent so the filter could never hide dismissed
+// notifications. `type` was absent so colour-coding was impossible.
+// ─────────────────────────────────────────────────────────────────────────────
 type Notification = {
     id: number;
     title: string;
     message: string;
+    type: string | null;
     start_date: string | null;
     end_date: string | null;
     target_role: string;
+    is_active: boolean;
+    is_complete: boolean;
+    dismissed_at: string | null;
+    created_at: string;
 };
 
 type Account = {
@@ -85,35 +95,21 @@ const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 
 // DATA NORMALIZATION & VALIDATION LAYER
 // ============================================================================
 
-/**
- * Normalize and validate financial stats from props
- * Ensures all values are valid, non-negative numbers
- * Uses payment terms for remaining balance (most accurate)
- */
 const normalizedStats = computed(() => {
     const safeNumber = (value: any): number => {
-        // Handle null, undefined
         if (value === null || value === undefined) return 0;
-
-        // Convert to number
         const num = Number(value);
-
-        // Handle NaN, Infinity
         if (!isFinite(num)) return 0;
-
-        // Prevent negative values in financial context
         return Math.max(0, num);
     };
 
-    // Total fees: use assessment total if available (matches AccountOverview)
-    const totalFees = props.latestAssessment ? safeNumber(props.latestAssessment.total_assessment) : safeNumber(props.stats?.total_fees);
+    const totalFees = props.latestAssessment
+        ? safeNumber(props.latestAssessment.total_assessment)
+        : safeNumber(props.stats?.total_fees);
 
-    // Calculate remaining balance from payment terms if available (most accurate)
-    // This matches the AccountOverview calculation logic
     let remainingBalance = safeNumber(props.stats?.remaining_balance);
 
     if (props.paymentTerms && props.paymentTerms.length > 0) {
-        // Sum all balances from payment terms - they are the source of truth
         remainingBalance = safeNumber(props.paymentTerms.reduce((sum, term) => sum + (term.balance || 0), 0));
     }
 
@@ -125,38 +121,20 @@ const normalizedStats = computed(() => {
     };
 });
 
-/**
- * Calculate payment percentage with safe division
- * Result is capped at 100% and protected from division errors
- */
-/**
- * Validate financial consistency
- * Checks if data makes mathematical sense
- */
 const financialDataIsConsistent = computed(() => {
     const { total_fees, total_paid, remaining_balance } = normalizedStats.value;
 
-    // If we have payment terms, validate against their sum
     if (props.paymentTerms && props.paymentTerms.length > 0) {
         const paymentTermsBalance = props.paymentTerms.reduce((sum, term) => sum + (term.balance || 0), 0);
-        const tolerance = 0.01; // Allow 1 cent difference for rounding
-        return Math.abs(remaining_balance - paymentTermsBalance) < tolerance;
+        return Math.abs(remaining_balance - paymentTermsBalance) < 0.01;
     }
 
-    // Fallback: Check if balance equals fees minus paid
     const expectedRemaining = Math.max(0, total_fees - total_paid);
-    const tolerance = 0.01; // Allow 1 cent difference for rounding
-
-    return Math.abs(remaining_balance - expectedRemaining) < tolerance;
+    return Math.abs(remaining_balance - expectedRemaining) < 0.01;
 });
 
-/**
- * Pending charges context
- * Provides clear, accurate information about pending items
- */
 const pendingChargesInfo = computed(() => {
     const count = normalizedStats.value.pending_charges_count;
-
     return {
         count,
         label: count === 0 ? 'No Pending Charges' : count === 1 ? '1 Pending Charge' : `${count} Pending Charges`,
@@ -165,62 +143,28 @@ const pendingChargesInfo = computed(() => {
     };
 });
 
-/**
- * Check if there are any awaiting_approval transactions
- * When a payment is awaiting approval, students should see a visual indicator
- */
 const hasAwaitingApprovals = computed(() => {
     return props.recentTransactions.some((t) => t.status === 'awaiting_approval');
 });
 
-/**
- * Get unpaid payment terms (terms that still have a balance)
- * Returns terms ordered by term_order for display
- */
 const unpaidTerms = computed(() => {
-    if (!props.paymentTerms || props.paymentTerms.length === 0) {
-        return [];
-    }
-
+    if (!props.paymentTerms || props.paymentTerms.length === 0) return [];
     return props.paymentTerms.filter((term) => term.balance > 0).sort((a, b) => a.term_order - b.term_order);
 });
 
-/**
- * Determine due date color based on proximity to due date
- * Red if: 1 week before due date OR after 1 day past due date
- * Amber if: due date is approaching (2-7 days)
- * Green otherwise (not yet due or recently paid)
- */
 const getDueDateColor = (dueDate: string): 'red' | 'amber' | 'green' => {
     const now = new Date();
     const due = new Date(dueDate);
+    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    // Calculate days difference
-    const diffTime = due.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    // More than 1 day past due = red
     if (diffDays < -1) return 'red';
-
-    // 1 week before due date or after 1 day past due = red
     if (diffDays <= 7 && diffDays >= -1) return 'red';
-
-    // 2 weeks before due date = amber
     if (diffDays <= 14) return 'amber';
-
-    // Otherwise green (not yet due)
     return 'green';
 };
 
-/**
- * Get the first unpaid term (next payment due)
- * This is the term that requires immediate attention
- */
 const nextPaymentDue = computed(() => {
-    if (unpaidTerms.value.length === 0) {
-        return null;
-    }
-
+    if (unpaidTerms.value.length === 0) return null;
     const term = unpaidTerms.value[0];
     const dueColor = getDueDateColor(term.due_date);
     const daysUntilDue = Math.ceil((new Date(term.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -234,37 +178,65 @@ const nextPaymentDue = computed(() => {
     };
 });
 
-/**
- * Get remaining unpaid terms (for pending charges display)
- */
+// ── FIX Bug 2 ────────────────────────────────────────────────────────────────
+// `activeNotifications` now correctly excludes:
+//   • dismissed notifications  (dismissed_at !== null)
+//   • completed notifications  (is_complete === true)
+//   • locally hidden ones      (hiddenNotifications set — optimistic UI)
+// Date-window filtering is done server-side via scopeWithinDateRange; we keep
+// the client-side guard as a safety net for any timezone edge cases.
+// Notifications are sorted: payment_due first, then newest first.
+// ─────────────────────────────────────────────────────────────────────────────
+const hiddenNotifications = ref<Set<number>>(new Set());
+
 const activeNotifications = computed(() => {
     const now = new Date();
-    return props.notifications.filter((n) => {
-        if (!n.start_date) return true;
-        const startDate = new Date(n.start_date);
-        const endDate = n.end_date ? new Date(n.end_date) : null;
-        return startDate <= now && (!endDate || endDate >= now);
-    });
+    return props.notifications
+        .filter((n) => {
+            // Must not be dismissed, complete, or locally hidden
+            if (n.dismissed_at) return false;
+            if (n.is_complete) return false;
+            if (hiddenNotifications.value.has(n.id)) return false;
+
+            // Date window safety net
+            if (n.start_date && new Date(n.start_date) > now) return false;
+            if (n.end_date && new Date(n.end_date) < now) return false;
+
+            return true;
+        })
+        .sort((a, b) => {
+            // Payment due notifications appear at the top
+            if (a.type === 'payment_due' && b.type !== 'payment_due') return -1;
+            if (a.type !== 'payment_due' && b.type === 'payment_due') return 1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
 });
 
-/**
- * Track whether to show all notifications or just the first 3
- */
 const showAllNotifications = ref(false);
 
-/**
- * Show only the first 3 notifications, or all if showAllNotifications is true
- */
 const visibleNotifications = computed(() => {
     return showAllNotifications.value ? activeNotifications.value : activeNotifications.value.slice(0, 3);
 });
 
-/**
- * Check if there are more notifications than the 3 shown by default
- */
 const hasMoreNotifications = computed(() => {
     return activeNotifications.value.length > 3;
 });
+
+// ── FIX Bug 3 ────────────────────────────────────────────────────────────────
+// The Dashboard previously had NO dismiss button and NO dismissNotification()
+// function. Students had no way to close notification banners on this page.
+// We now optimistically hide the notification in the UI (hiddenNotifications set)
+// and fire a POST to the server so dismissed_at is persisted. On the next page
+// load, the server-side `scopeActive()` (whereNull('dismissed_at')) ensures
+// the notification is excluded from the query entirely.
+// ─────────────────────────────────────────────────────────────────────────────
+const dismissNotification = (notificationId: number) => {
+    hiddenNotifications.value.add(notificationId);
+    router.post(route('notifications.dismiss', notificationId), {}, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
 </script>
 
 <template>
@@ -350,13 +322,11 @@ const hasMoreNotifications = computed(() => {
                 <!-- Quick Actions -->
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h2 class="mb-4 text-lg font-semibold">Quick Actions</h2>
-
                     <div class="space-y-3">
                         <Link :href="route('student.account')" class="flex items-center gap-3 rounded-lg bg-blue-50 p-3 hover:bg-blue-100">
                             <Wallet :size="20" class="text-blue-600" />
                             <span class="font-medium">View Account</span>
                         </Link>
-
                         <Link
                             :href="route('student.account', { tab: 'payment' })"
                             class="flex items-center gap-3 rounded-lg bg-green-50 p-3 hover:bg-green-100"
@@ -364,7 +334,6 @@ const hasMoreNotifications = computed(() => {
                             <CreditCard :size="20" class="text-green-600" />
                             <span class="font-medium">Make Payment</span>
                         </Link>
-
                         <Link :href="route('transactions.index')" class="flex items-center gap-3 rounded-lg bg-purple-50 p-3 hover:bg-purple-100">
                             <FileText :size="20" class="text-purple-600" />
                             <span class="font-medium">View History</span>
@@ -446,7 +415,7 @@ const hasMoreNotifications = computed(() => {
                         </div>
                     </div>
 
-                    <!-- ✅ Recent Transactions (RETAINED) -->
+                    <!-- Recent Transactions -->
                     <div class="rounded-lg bg-white p-6 shadow-md">
                         <div class="mb-4 flex items-center justify-between">
                             <h2 class="text-xl font-semibold">Recent Transactions</h2>
@@ -468,16 +437,11 @@ const hasMoreNotifications = computed(() => {
                                         {{ transaction.created_at ? formatDate(transaction.created_at) : '-' }}
                                     </p>
                                 </div>
-
                                 <div class="text-right">
-                                    <p class="font-semibold">
-                                        {{ formatCurrency(transaction.amount) }}
-                                    </p>
+                                    <p class="font-semibold">{{ formatCurrency(transaction.amount) }}</p>
                                     <span
                                         class="rounded px-2 py-1 text-xs font-medium"
-                                        :class="{
-                                            ...getTransactionStatusConfig(transaction.status),
-                                        }"
+                                        :class="{ ...getTransactionStatusConfig(transaction.status) }"
                                     >
                                         {{ getTransactionStatusConfig(transaction.status).label }}
                                     </span>
@@ -487,7 +451,7 @@ const hasMoreNotifications = computed(() => {
                     </div>
                 </div>
 
-                <!-- RIGHT COLUMN - PAYMENT STATUS COMMUNICATION -->
+                <!-- RIGHT COLUMN -->
                 <div class="space-y-6">
                     <!-- Payment Due - Shows Next Payment Term -->
                     <div
@@ -501,7 +465,6 @@ const hasMoreNotifications = computed(() => {
                                   : 'border-green-300 bg-gradient-to-br from-green-50 to-green-100',
                         ]"
                     >
-                        <!-- Header -->
                         <div class="mb-4 flex items-start justify-between">
                             <div>
                                 <h3
@@ -539,29 +502,23 @@ const hasMoreNotifications = computed(() => {
                                           : 'bg-green-200',
                                 ]"
                             >
-                                <AlertCircle
-                                    v-if="nextPaymentDue.dueColor === 'red'"
-                                    :size="20"
-                                    :class="[nextPaymentDue.dueColor === 'red' ? 'text-red-700' : '']"
-                                />
+                                <AlertCircle v-if="nextPaymentDue.dueColor === 'red'" :size="20" class="text-red-700" />
                                 <Clock v-else-if="nextPaymentDue.dueColor === 'amber'" :size="20" class="text-amber-700" />
                                 <CheckCircle v-else :size="20" class="text-green-700" />
                             </div>
                         </div>
 
-                        <!-- Term Details -->
                         <div
                             :class="[
                                 'mb-4 rounded-lg border p-4',
                                 nextPaymentDue.dueColor === 'red'
-                                    ? 'bg-opacity-60 border-red-200 bg-white'
+                                    ? 'border-red-200 bg-white/60'
                                     : nextPaymentDue.dueColor === 'amber'
-                                      ? 'bg-opacity-60 border-amber-200 bg-white'
-                                      : 'bg-opacity-60 border-green-200 bg-white',
+                                      ? 'border-amber-200 bg-white/60'
+                                      : 'border-green-200 bg-white/60',
                             ]"
                         >
                             <div class="space-y-3">
-                                <!-- Amount Due -->
                                 <div>
                                     <p
                                         :class="[
@@ -588,8 +545,6 @@ const hasMoreNotifications = computed(() => {
                                         {{ formatCurrency(nextPaymentDue.balance) }}
                                     </p>
                                 </div>
-
-                                <!-- Due Date with Color Coding -->
                                 <div class="border-t border-gray-300 pt-2">
                                     <p class="mb-1 text-xs text-gray-600">Due Date</p>
                                     <div class="flex items-center justify-between">
@@ -629,7 +584,6 @@ const hasMoreNotifications = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
                         <div class="flex gap-3">
                             <Link
                                 :href="route('student.account')"
@@ -646,12 +600,11 @@ const hasMoreNotifications = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Success State - All Paid -->
+                    <!-- All Paid State -->
                     <div
                         v-if="normalizedStats.remaining_balance === 0"
                         class="rounded-lg border-2 border-green-300 bg-gradient-to-br from-green-50 to-green-100 p-6 shadow-md"
                     >
-                        <!-- Header -->
                         <div class="mb-4 flex items-start justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-green-900">Account in Good Standing</h3>
@@ -661,13 +614,9 @@ const hasMoreNotifications = computed(() => {
                                 <CheckCircle :size="20" class="text-green-700" />
                             </div>
                         </div>
-
-                        <!-- Status Message -->
-                        <div class="bg-opacity-60 mb-4 rounded-lg border border-green-200 bg-white p-4">
+                        <div class="mb-4 rounded-lg border border-green-200 bg-white/60 p-4">
                             <p class="text-sm text-green-800">Your account balance is fully paid. No payment action is required at this time.</p>
                         </div>
-
-                        <!-- Guidance -->
                         <div class="text-xs text-green-700">
                             <p class="mb-2">
                                 <span class="font-semibold">📌 Reminder:</span> Check your dashboard regularly for any new assessment notices or
@@ -680,7 +629,7 @@ const hasMoreNotifications = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Data Integrity Note (development only - can be removed) -->
+                    <!-- Data Integrity Warning (dev aid) -->
                     <div v-if="!financialDataIsConsistent" class="rounded-lg border border-yellow-400 bg-yellow-50 p-4">
                         <p class="text-xs text-yellow-800">
                             <span class="font-semibold">⚠️ Note:</span> There is a discrepancy in your financial data. Please contact support if this
@@ -688,7 +637,12 @@ const hasMoreNotifications = computed(() => {
                         </p>
                     </div>
 
-                    <!-- Important Updates / Notifications -->
+                    <!-- ── FIX Bug 3: Notification banners with working dismiss button ── -->
+                    <!-- Previously this section had no ✕ button and no dismissNotification().   -->
+                    <!-- Now each banner has a dismiss button that:                              -->
+                    <!--   1. Immediately removes the card from the UI (optimistic update)       -->
+                    <!--   2. POSTs to notifications.dismiss so dismissed_at is set on the DB    -->
+                    <!-- On the next page load, scopeActive(whereNull dismissed_at) excludes it. -->
                     <div v-if="activeNotifications.length">
                         <div class="mb-4 flex items-center gap-2">
                             <Bell class="h-6 w-6 text-blue-600" />
@@ -699,16 +653,35 @@ const hasMoreNotifications = computed(() => {
                             <div
                                 v-for="notification in visibleNotifications"
                                 :key="notification.id"
-                                class="rounded-lg border-l-4 border-blue-500 bg-white p-5 shadow-md transition-all hover:bg-blue-50 hover:shadow-lg"
+                                :class="[
+                                    'rounded-lg border-l-4 bg-white p-5 shadow-md transition-all hover:shadow-lg',
+                                    notification.type === 'payment_due'
+                                        ? 'border-amber-500 hover:bg-amber-50'
+                                        : 'border-blue-500 hover:bg-blue-50',
+                                ]"
                             >
                                 <div class="mb-3 flex items-start justify-between">
                                     <h3 class="flex-1 pr-2 text-base font-bold text-gray-900">{{ notification.title }}</h3>
-                                    <div class="flex-shrink-0">
+                                    <div class="flex flex-shrink-0 items-center gap-2">
                                         <div
-                                            class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold whitespace-nowrap text-green-700"
+                                            :class="[
+                                                'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap',
+                                                notification.type === 'payment_due'
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-green-100 text-green-700',
+                                            ]"
                                         >
                                             ✓ Active
                                         </div>
+                                        <!-- Dismiss button — wires to dismissNotification() which persists to DB -->
+                                        <button
+                                            @click="dismissNotification(notification.id)"
+                                            class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                                            title="Dismiss notification"
+                                            aria-label="Dismiss notification"
+                                        >
+                                            ✕
+                                        </button>
                                     </div>
                                 </div>
 
@@ -721,7 +694,6 @@ const hasMoreNotifications = computed(() => {
                             </div>
                         </div>
 
-                        <!-- View More / Show Less Button -->
                         <div v-if="hasMoreNotifications" class="mt-4">
                             <button
                                 @click="showAllNotifications = !showAllNotifications"
