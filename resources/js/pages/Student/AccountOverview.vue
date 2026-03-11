@@ -391,11 +391,6 @@ const paymentHistory = computed(() => {
     });
 });
 
-// All-time payment history — used for the "Total Paid" balance card (legacy, kept for fallback)
-const totalPaidTransactions = computed(() => {
-    return props.transactions.filter((t) => t.kind === 'payment' && t.status === 'paid');
-});
-
 // Total paid for the CURRENT TERM only (matches the latestAssessment)
 // This drives the "Total Paid" card on the dashboard.
 const totalPaid = computed(() => {

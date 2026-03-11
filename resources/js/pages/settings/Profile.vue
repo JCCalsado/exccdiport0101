@@ -163,11 +163,6 @@ const profileInitial = computed(() => {
     return '?';
 });
 
-// Course options
-const courseOptions = ['BS Computer Science', 'BS Information Technology', 'BS Accountancy', 'BS Business Administration'];
-
-// Year level options
-const yearLevelOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 </script>
 
 <template>

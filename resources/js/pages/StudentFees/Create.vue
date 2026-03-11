@@ -180,9 +180,11 @@ const subjectSearch    = ref('');
 const expandedGroups   = ref<Set<string>>(new Set());
 
 function toggleGroup(key: string) {
-    expandedGroups.value.has(key)
-        ? expandedGroups.value.delete(key)
-        : expandedGroups.value.add(key);
+    if (expandedGroups.value.has(key)) {
+        expandedGroups.value.delete(key);
+    } else {
+        expandedGroups.value.add(key);
+    }
 }
 
 // When student is selected and type is Irregular, pre-load their current year/sem subjects
