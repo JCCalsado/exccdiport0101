@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRoleEnum;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -10,7 +11,7 @@ use Inertia\Inertia;
 class NotificationController extends Controller
 {
     /**
-     * Display all notifications (or user-specific based on role).
+     * Display all notifications (admin sees all; others see their own active ones).
      */
     public function index(Request $request)
     {
@@ -169,29 +170,27 @@ class NotificationController extends Controller
     }
 
     /**
-     * Mark a notification as dismissed by the currently authenticated student.
+     * Mark a notification as dismissed by the currently authenticated user.
      *
-     * ── FIX Bug 5 ────────────────────────────────────────────────────────────
-     * The previous implementation called markDismissed() with no authorization
-     * check whatsoever. Any authenticated user who knew a notification's integer
-     * ID could POST to /notifications/{id}/dismiss and wipe it for its owner.
+     * Bug 1 fix — ownership check:
+     *   The previous implementation called markDismissed() with NO authorization.
+     *   Any authenticated user could POST /notifications/{any_id}/dismiss and
+     *   silently wipe another student's banner. We now enforce ownership:
+     *     (a) Notification directly addressed to this user  (user_id match), OR
+     *     (b) Broadcast notification this user's role can receive (user_id = null).
+     *   Admins may dismiss any notification for testing/management purposes.
      *
-     * Fix: enforce that EITHER
-     *   (a) the notification is targeted directly at this user (user_id match), OR
-     *   (b) the notification is a role/all broadcast (user_id = null) and the
-     *       user's role matches target_role (or target_role = 'all').
-     * Admins may dismiss any notification (they manage the system).
-     *
-     * We do this inline rather than through NotificationPolicy to avoid adding a
-     * new `dismiss` gate that callers could inadvertently bypass. The logic is
-     * simple enough to live in the controller action directly.
-     * ─────────────────────────────────────────────────────────────────────────
+     * Bug 2 fix — Enum-safe role comparison:
+     *   $user->role is a UserRoleEnum instance, NOT a plain string.
+     *   The previous code used in_array($target_role, [$user->role, 'all']).
+     *   Since UserRoleEnum::STUDENT !== 'student' (object vs string), the
+     *   comparison always returned false and students could never dismiss
+     *   broadcast notifications.  We now compare against ->value explicitly.
      */
     public function dismiss(Request $request, Notification $notification)
     {
         $user = $request->user();
 
-        // Admins can dismiss anything (they may need to test or clean up)
         if (! $user->isAdmin()) {
             $canDismiss = false;
 
@@ -200,9 +199,14 @@ class NotificationController extends Controller
                 $canDismiss = true;
             }
 
-            // Case B: broadcast notification the user's role can receive
+            // Case B: broadcast notification for this user's role
+            // Bug 2 fix: use ->value to get the plain string from the Enum
             if ($notification->user_id === null) {
-                $canDismiss = in_array($notification->target_role, [$user->role, 'all'], true);
+                $roleString = $user->role instanceof \BackedEnum
+                    ? $user->role->value
+                    : (string) $user->role;
+
+                $canDismiss = in_array($notification->target_role, [$roleString, 'all'], true);
             }
 
             if (! $canDismiss) {

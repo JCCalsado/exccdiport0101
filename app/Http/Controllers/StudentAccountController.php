@@ -14,21 +14,16 @@ class StudentAccountController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
-        // Load account
-        if (!$user->account) {
+
+        if (! $user->account) {
             $user->account()->create(['balance' => 0]);
         }
-        
-        // Load transactions directly through user relationship (NOT account)
-        // This is the key fix - seeders use user_id, not account_id
-        $user->load(['transactions' => function ($query) {
-            $query->orderBy('created_at', 'desc');
-        }]);
 
-        // Get current term
-        $year = now()->year;
+        $user->load(['transactions' => fn ($q) => $q->orderByDesc('created_at')]);
+
+        $year  = now()->year;
         $month = now()->month;
+
         if ($month >= 6 && $month <= 10) {
             $semester = '1st Sem';
         } elseif ($month >= 11 || $month <= 3) {
@@ -37,7 +32,6 @@ class StudentAccountController extends Controller
             $semester = 'Summer';
         }
 
-        // Get fees for current term and student's year level
         $fees = Fee::active()
             ->where('year_level', $user->year_level)
             ->where('semester', $semester)
@@ -45,18 +39,16 @@ class StudentAccountController extends Controller
             ->select('name', 'amount', 'category')
             ->get();
 
-        // If no fees found, use fallback
         if ($fees->isEmpty()) {
             $fees = collect([
-                ['name' => 'Registration Fee', 'amount' => 200.0, 'category' => 'Miscellaneous'],
-                ['name' => 'Tuition Fee', 'amount' => 5000.0, 'category' => 'Tuition'],
-                ['name' => 'Lab Fee', 'amount' => 2000.0, 'category' => 'Laboratory'],
-                ['name' => 'Library Fee', 'amount' => 500.0, 'category' => 'Library'],
-                ['name' => 'Misc. Fee', 'amount' => 1200.0, 'category' => 'Miscellaneous'],
+                ['name' => 'Registration Fee', 'amount' => 200.0,  'category' => 'Miscellaneous'],
+                ['name' => 'Tuition Fee',       'amount' => 5000.0, 'category' => 'Tuition'],
+                ['name' => 'Lab Fee',            'amount' => 2000.0, 'category' => 'Laboratory'],
+                ['name' => 'Library Fee',        'amount' => 500.0,  'category' => 'Library'],
+                ['name' => 'Misc. Fee',          'amount' => 1200.0, 'category' => 'Miscellaneous'],
             ]);
         }
 
-        // Get latest assessment with payment terms
         $latestAssessment = StudentAssessment::where('user_id', $user->id)
             ->with('paymentTerms')
             ->latest('created_at')
@@ -67,54 +59,63 @@ class StudentAccountController extends Controller
             $paymentTerms = $latestAssessment->paymentTerms()
                 ->orderBy('term_order')
                 ->get()
-                ->map(function ($term) {
-                    return [
-                        'id' => $term->id,
-                        'term_name' => $term->term_name,
-                        'term_order' => $term->term_order,
-                        'percentage' => $term->percentage,
-                        'amount' => (float) $term->amount,
-                        'balance' => (float) $term->balance,
-                        'due_date' => $term->due_date,
-                        'status' => $term->status,
-                        'remarks' => $term->remarks,
-                        'paid_date' => $term->paid_date,
-                    ];
-                })
+                ->map(fn ($t) => [
+                    'id'         => $t->id,
+                    'term_name'  => $t->term_name,
+                    'term_order' => $t->term_order,
+                    'percentage' => $t->percentage,
+                    'amount'     => (float) $t->amount,
+                    'balance'    => (float) $t->balance,
+                    'due_date'   => $t->due_date,
+                    'status'     => $t->status,
+                    'remarks'    => $t->remarks,
+                    'paid_date'  => $t->paid_date,
+                ])
                 ->toArray();
         }
 
-        // Get active notifications for this user using model scopes.
-        // scopeForDueDateTrigger handles trigger_days_before_due filtering at the DB level.
         $notifications = Notification::active()
             ->forUser($user->id)
             ->withinDateRange()
             ->forDueDateTrigger($user)
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($n) => [
+                'id'              => $n->id,
+                'title'           => $n->title,
+                'message'         => $n->message,
+                'type'            => $n->type,
+                'start_date'      => $n->start_date,
+                'end_date'        => $n->end_date,
+                'due_date'        => $n->due_date,          // ← the actual payment deadline
+                'payment_term_id' => $n->payment_term_id,  // ← links to the term for Pay Now
+                'target_role'     => $n->target_role,
+                'user_id'         => $n->user_id,
+                'is_active'       => $n->is_active,
+                'is_complete'     => $n->is_complete,
+                'dismissed_at'    => $n->dismissed_at,
+                'created_at'      => $n->created_at,
+            ]);
 
         return Inertia::render('Student/AccountOverview', [
-            'account'                   => $user->account,
-            'transactions'              => $user->transactions ?? [], // Use user->transactions, not account->transactions
-            'fees'                      => $fees->values(),
-            'latestAssessment'          => $latestAssessment,
-            'paymentTerms'              => $paymentTerms,
-            'notifications'             => $notifications,
-            'pendingApprovalPayments'   => $user->transactions
-                ->filter(function ($t) {
-                    return $t->kind === 'payment' && $t->status === 'awaiting_approval';
-                })
-                ->map(function ($t) {
-                    return [
-                        'id'                => $t->id,
-                        'reference'         => $t->reference,
-                        'amount'            => (float) $t->amount,
-                        // Cast to int so JS strict comparisons (===) work correctly
-                        'selected_term_id'  => isset($t->meta['selected_term_id']) ? (int) $t->meta['selected_term_id'] : null,
-                        'term_name'         => $t->meta['term_name'] ?? 'General',
-                        'created_at'        => $t->created_at,
-                    ];
-                })
+            'account'                 => $user->account,
+            'transactions'            => $user->transactions ?? [],
+            'fees'                    => $fees->values(),
+            'latestAssessment'        => $latestAssessment,
+            'paymentTerms'            => $paymentTerms,
+            'notifications'           => $notifications,
+            'pendingApprovalPayments' => $user->transactions
+                ->filter(fn ($t) => $t->kind === 'payment' && $t->status === 'awaiting_approval')
+                ->map(fn ($t) => [
+                    'id'               => $t->id,
+                    'reference'        => $t->reference,
+                    'amount'           => (float) $t->amount,
+                    'selected_term_id' => isset($t->meta['selected_term_id'])
+                        ? (int) $t->meta['selected_term_id']
+                        : null,
+                    'term_name'        => $t->meta['term_name'] ?? 'General',
+                    'created_at'       => $t->created_at,
+                ])
                 ->values(),
         ]);
     }

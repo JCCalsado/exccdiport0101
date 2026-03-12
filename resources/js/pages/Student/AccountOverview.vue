@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { AlertCircle, CheckCircle, Clock, CreditCard, XCircle } from 'lucide-vue-next';
+import { AlertCircle, CalendarClock, CheckCircle, Clock, CreditCard, XCircle } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const { formatCurrency, formatDate, getPaymentTermStatusConfig, getTransactionStatusConfig, getAssessmentStatusConfig } = useDataFormatting();
@@ -84,6 +84,8 @@ type Notification = {
     is_active: boolean;
     start_date?: string;
     end_date?: string;
+    due_date?: string | null;         // actual payment deadline (structured column)
+    payment_term_id?: number | null;  // links to the originating payment term
     dismissed_at?: string | null;
     created_at: string;
 };
@@ -169,17 +171,41 @@ const hasAwaitingApprovals = computed(() => {
 // Filter active, non-dismissed notifications
 const activeNotifications = computed(() => {
     return props.notifications
-        .filter((n) => !n.dismissed_at && !hiddenNotifications.value.has(n.id))
+        .filter((n) => !n.dismissed_at && !n.is_complete && !hiddenNotifications.value.has(n.id))
         .sort((a, b) => {
-            // Sort payment_due to top
+            // payment_due banners first
             if (a.type === 'payment_due' && b.type !== 'payment_due') return -1;
             if (a.type !== 'payment_due' && b.type === 'payment_due') return 1;
+            // within same type: soonest due_date first
+            if (a.due_date && b.due_date) {
+                return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+            }
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 });
 
 // Track notifications that are auto-hidden
 const hiddenNotifications = ref<Set<number>>(new Set());
+
+// ── Notification due-date helpers ─────────────────────────────────────────────
+
+const getDueDateColor = (dueDateStr: string | null | undefined): 'red' | 'amber' | 'green' => {
+    if (!dueDateStr) return 'amber';
+    const diffDays = Math.ceil((new Date(dueDateStr).getTime() - Date.now()) / 86_400_000);
+    if (diffDays <= 7)  return 'red';
+    if (diffDays <= 14) return 'amber';
+    return 'green';
+};
+
+const dueDateLabel = (dueDateStr: string | null | undefined): string => {
+    if (!dueDateStr) return '';
+    const diffDays = Math.ceil((new Date(dueDateStr).getTime() - Date.now()) / 86_400_000);
+    if (diffDays < 0)   return `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
+    if (diffDays === 0) return 'Due today';
+    if (diffDays === 1) return 'Due tomorrow';
+    if (diffDays <= 14) return `Due in ${diffDays} days`;
+    return `Due ${formatDate(dueDateStr)}`;
+};
 
 // Dismiss notification — only triggered by the student clicking ✕
 // Notifications are never auto-dismissed; they persist until the student
@@ -564,8 +590,10 @@ const accountBalance = computed(() => {
             <Breadcrumbs :items="breadcrumbs" />
 
             <!-- Active Notifications -->
-            <!-- These banners are created by PaymentTermsController when an admin sets a due date. -->
-            <!-- They persist until the student dismisses them or pays in full. -->
+            <!-- Banners created by PaymentTermsController when an admin sets a due date.         -->
+            <!-- Each payment_due banner shows a colour-coded due-date chip from the             -->
+            <!-- structured `due_date` DB column — not parsed from message text.                 -->
+            <!-- A Pay Now button scrolls directly to the correct term in the payment tab.       -->
             <div
                 v-for="notification in activeNotifications"
                 :key="notification.id"
@@ -593,6 +621,23 @@ const accountBalance = computed(() => {
                     >
                         {{ notification.title }}
                     </h3>
+
+                    <!-- Due date chip — colour-coded by urgency, uses structured due_date column -->
+                    <div v-if="notification.type === 'payment_due' && notification.due_date" class="mb-2">
+                        <span
+                            :class="['inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                                getDueDateColor(notification.due_date) === 'red'
+                                    ? 'bg-red-100 text-red-700 ring-1 ring-red-200'
+                                    : getDueDateColor(notification.due_date) === 'amber'
+                                      ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200'
+                                      : 'bg-green-100 text-green-700 ring-1 ring-green-200']"
+                        >
+                            <CalendarClock :size="11" />
+                            {{ dueDateLabel(notification.due_date) }}
+                            <span class="font-normal opacity-75">· {{ formatDate(notification.due_date) }}</span>
+                        </span>
+                    </div>
+
                     <p
                         class="text-sm leading-relaxed"
                         :class="notification.type === 'payment_due' ? 'text-amber-800' : 'text-blue-800'"
@@ -606,6 +651,19 @@ const accountBalance = computed(() => {
                     >
                         Visible until: {{ formatDate(notification.end_date) }}
                     </p>
+
+                    <!-- Pay Now shortcut — scrolls to the correct term in the payment tab -->
+                    <div v-if="notification.type === 'payment_due' && notification.payment_term_id" class="mt-2">
+                        <button
+                            @click="() => {
+                                paymentForm.selected_term_id = notification.payment_term_id!;
+                                activeTab = 'payment';
+                            }"
+                            class="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-green-700"
+                        >
+                            Pay Now
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Dismiss button -->

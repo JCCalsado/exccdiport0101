@@ -16,9 +16,6 @@ class Notification extends Model
      * The rename migration (2026_03_11_182805_rename_custom_notifications...)
      * renames `notifications` → `admin_notifications` and creates a fresh
      * `notifications` table for Laravel's internal Notifiable channel.
-     *
-     * IMPORTANT: Run `php artisan migrate` before deploying this model change.
-     * After migration runs, this value must be 'admin_notifications'.
      */
     protected $table = 'admin_notifications';
 
@@ -28,6 +25,8 @@ class Notification extends Model
         'type',
         'start_date',
         'end_date',
+        'due_date',           // ← NEW: actual payment deadline displayed in the UI
+        'payment_term_id',    // ← NEW: links back to the originating payment term
         'target_role',
         'user_id',
         'is_active',
@@ -41,6 +40,7 @@ class Notification extends Model
     protected $casts = [
         'start_date'   => 'date',
         'end_date'     => 'date',
+        'due_date'     => 'date',   // ← NEW
         'is_active'    => 'boolean',
         'is_complete'  => 'boolean',
         'dismissed_at' => 'datetime',
@@ -54,6 +54,12 @@ class Notification extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** The payment term this notification was generated for (nullable). */
+    public function paymentTerm(): BelongsTo
+    {
+        return $this->belongsTo(StudentPaymentTerm::class, 'payment_term_id');
     }
 
     // -------------------------------------------------------------------------
@@ -123,15 +129,9 @@ class Notification extends Model
     /**
      * Scope: apply trigger_days_before_due filter for a specific student.
      *
-     * - Notifications with trigger_days_before_due = NULL always pass through
-     *   (no due-date gate — they show within their date window unconditionally).
+     * - Notifications with trigger_days_before_due = NULL always pass through.
      * - Notifications WITH a trigger value only show when the student has
      *   an unpaid term due within that many days from today.
-     *
-     * Uses $this->getTable() so the raw SQL reference is always correct
-     * regardless of whether the table is 'notifications' or 'admin_notifications'.
-     *
-     * Driver-agnostic: works on MySQL (production) and SQLite (tests).
      */
     public function scopeForDueDateTrigger($query, User $user)
     {

@@ -12,48 +12,47 @@ class SendPaymentDueNotification implements ShouldQueue
     use InteractsWithQueue;
 
     /**
-     * Send a queued email + database notification when a due date is assigned.
+     * Send an email + database notification when an admin assigns a due date.
      *
-     * ── Minor fix: diffInDays() direction ────────────────────────────────────
-     * The previous guard was:
+     * Bug 8 fix — diffInDays() direction:
+     *   The old guard was: $term->due_date->diffInDays(now()) <= 7
      *
-     *   $event->term->due_date->diffInDays(now()) <= 7
+     *   Carbon's diffInDays() with a single argument returns the ABSOLUTE
+     *   difference regardless of direction.  A due date 30 days in the PAST
+     *   has an absolute diff of 30 — it fails the <= 7 check — fine here by
+     *   accident.  But a due date 3 days in the PAST has an absolute diff of
+     *   3 — it PASSES the <= 7 check — and the only thing preventing an email
+     *   going out for a past-due date was the adjacent isFuture() guard.
+     *   Relying on guard ordering is fragile and semantically misleading.
      *
-     * Carbon's diffInDays() always returns an absolute (positive) value when
-     * called with a single argument, regardless of direction. This means a due
-     * date that is already 30 days PAST would still pass the <= 7 check if
-     * the absolute difference happened to be ≤ 7, which is only saved by the
-     * subsequent `isFuture()` guard — but relying on that order is fragile.
+     *   Fix: use now()->diffInDays($dueDate, false) which returns NEGATIVE for
+     *   past dates.  A >= 0 check cleanly means "due date is today or future".
      *
-     * The correct idiom for "due date is within N days from now (in the future)"
-     * is `now()->diffInDays($dueDate, false)` which returns a negative number
-     * for past dates, letting the >= 0 check do the right thing in one step.
-     *
-     * We also send the email for ANY future due date assignment (not just within
-     * 7 days) since the admin has explicitly chosen to notify the student. The
-     * 7-day gate made sense for a scheduled job but is overly restrictive for
-     * an admin-triggered action where the due date may be months away.
-     * ─────────────────────────────────────────────────────────────────────────
+     *   We email for ANY future due date set by an admin action (not just
+     *   within 7 days).  The 7-day window made sense for a scheduled cron job
+     *   that runs daily, but here the admin is explicitly telling the student
+     *   about a deadline — we should always send that notification.
      */
     public function handle(DueAssigned $event): void
     {
         $term = $event->term;
 
-        // Only send if there is a due date and it is still in the future
-        if (! $term->due_date || ! $term->due_date->isFuture()) {
+        if (! $term->due_date) {
             return;
         }
 
-        // `diffInDays(false)` returns negative for past dates; >= 0 means future.
-        // We notify for ALL future due dates set by an admin action.
+        // Bug 8 fix: signed diff — negative means past, positive means future
         $daysUntilDue = now()->diffInDays($term->due_date, false);
 
-        if ($daysUntilDue >= 0) {
-            $event->user->notify(new PaymentDueNotification(
-                $term->term_name,
-                (float) $term->balance,
-                $term->due_date,
-            ));
+        // Only notify when the due date is today or in the future
+        if ($daysUntilDue < 0) {
+            return;
         }
+
+        $event->user->notify(new PaymentDueNotification(
+            $term->term_name,
+            (float) $term->balance,
+            $term->due_date,
+        ));
     }
 }

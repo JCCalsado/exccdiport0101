@@ -59,9 +59,6 @@ class PaymentTermsController extends Controller
 
     /**
      * Update the due date for a single payment term.
-     *
-     * Creates/updates the notification banner AND dispatches DueAssigned event
-     * so the student also receives a PaymentReminder feed entry.
      */
     public function updateDueDate(Request $request, StudentPaymentTerm $paymentTerm)
     {
@@ -115,7 +112,6 @@ class PaymentTermsController extends Controller
                         'term_id' => $term->id,
                         'error'   => $e->getMessage(),
                     ]);
-                    // Non-fatal — continue processing remaining terms
                 }
 
                 $updated++;
@@ -132,17 +128,15 @@ class PaymentTermsController extends Controller
     /**
      * Create or update the persistent notification banner for this payment term.
      *
-     * One record per (user_id + type + title) — updateOrCreate prevents duplicates
-     * when the admin re-sets a due date on the same term.
-     *
-     * Key decisions:
-     *   - trigger_days_before_due = NULL  → notification is visible immediately
-     *     (no "only show 7 days before" gate — the student sees it right away)
-     *   - end_date = due_date + 14 days   → gives a 2-week grace window after the
-     *     deadline before the banner disappears (MarkNotificationCompleteOnPayment
-     *     closes it early if the student pays)
-     *   - dismissed_at is reset to NULL   → re-opens the banner if admin updates
-     *     the due date after a student already dismissed it
+     * Key design decisions:
+     *   - due_date stored as a proper DATE column (NEW) so Vue components can
+     *     display and colour-code it as a structured value instead of parsing prose.
+     *   - payment_term_id (NEW) links back to the term so the UI can deep-link
+     *     to the correct pay-now flow and MarkNotificationCompleteOnPayment can
+     *     close this exact banner when the term is paid.
+     *   - trigger_days_before_due = NULL → visible immediately, no day-gate.
+     *   - end_date = due_date + 14 days  → grace window after deadline.
+     *   - dismissed_at reset to NULL     → re-opens if admin updates due date.
      */
     private function upsertDueDateNotification(StudentPaymentTerm $paymentTerm): void
     {
@@ -163,36 +157,32 @@ class PaymentTermsController extends Controller
         $dueDate          = $paymentTerm->due_date;
         $dueDateFormatted = $dueDate->format('F j, Y');
         $amount           = number_format((float) $paymentTerm->amount, 2);
-
-        // Grace window: banner stays visible for 14 days past the due date
-        // so overdue students still see the reminder.
-        $endDate = $dueDate->copy()->addDays(14)->toDateString();
+        $endDate          = $dueDate->copy()->addDays(14)->toDateString();
 
         Notification::updateOrCreate(
             [
-                // Match key: one banner per student per term name
+                // One banner per (student, term name) — updating due date refreshes existing banner
                 'user_id' => $user->id,
                 'type'    => 'payment_due',
                 'title'   => "Payment Due: {$paymentTerm->term_name}",
             ],
             [
                 'message'                 => "Your {$paymentTerm->term_name} payment of ₱{$amount} is due on {$dueDateFormatted}. Please settle your balance on or before the deadline.",
+                'due_date'                => $dueDate->toDateString(),   // ← NEW: structured date column
+                'payment_term_id'         => $paymentTerm->id,           // ← NEW: term reference
                 'target_role'             => 'student',
                 'start_date'              => now()->toDateString(),
                 'end_date'                => $endDate,
                 'is_active'               => true,
                 'is_complete'             => false,
-                'dismissed_at'            => null,   // Re-open if admin updates due date
-                'trigger_days_before_due' => null,   // Show immediately, no day-gate
+                'dismissed_at'            => null,
+                'trigger_days_before_due' => null,
             ]
         );
     }
 
     /**
      * Fire DueAssigned event if the payment term is linked to a real student user.
-     * This triggers:
-     *   1. GenerateDueAssignedReminder  → creates a PaymentReminder feed entry
-     *   2. SendPaymentDueNotification   → sends a queued mail notification
      */
     private function dispatchDueAssignedIfStudentExists(StudentPaymentTerm $paymentTerm): void
     {
