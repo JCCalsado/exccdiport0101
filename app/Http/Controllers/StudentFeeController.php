@@ -1101,6 +1101,9 @@ class StudentFeeController extends Controller
                 $studentId = "{$currentYear}-{$randomNum}";
             }
 
+            // Generate unique account_id
+            $accountId = $this->generateUniqueAccountId();
+
             $user = User::create([
                 'last_name'      => $validated['last_name'],
                 'first_name'     => $validated['first_name'],
@@ -1111,8 +1114,11 @@ class StudentFeeController extends Controller
                 'address'        => $validated['address'],
                 'year_level'     => $validated['year_level'],
                 'course'         => $validated['course'],
+                'account_id'     => $accountId,
                 'role'           => 'student',
+                'is_active'      => true,
                 'status'         => User::STATUS_ACTIVE,
+                'email_verified_at' => now(),
                 'password'       => Hash::make('password'),
             ]);
 
@@ -1133,9 +1139,13 @@ class StudentFeeController extends Controller
 
             DB::commit();
 
+            // Refresh the user from DB to ensure account_id is loaded
+            $user->refresh();
+
             return redirect()
                 ->route('student-fees.show', $user->id)
-                ->with('success', 'Student created successfully!');
+                ->with('success', "Student {$user->first_name} {$user->last_name} (Account ID: {$user->account_id}) created successfully!");
+
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1193,5 +1203,17 @@ class StudentFeeController extends Controller
                 'carryover_amount'       => 0.00,
             ]);
         }
+    }
+
+    /**
+     * Generate a unique account ID in format: STU-NNNNN
+     */
+    private function generateUniqueAccountId(): string
+    {
+        do {
+            $accountId = 'STU-' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
+        } while (User::where('account_id', $accountId)->exists());
+
+        return $accountId;
     }
 }
