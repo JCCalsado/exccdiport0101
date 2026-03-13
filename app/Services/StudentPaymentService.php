@@ -288,13 +288,16 @@ class StudentPaymentService
 
     /**
      * Get the total outstanding balance for a user, derived from their payment terms.
+     * Queries through StudentAssessment to ensure consistent access pattern.
      *
      * @param  User $user
      * @return float
      */
     public function getTotalOutstandingBalance(User $user): float
     {
-        return (float) StudentPaymentTerm::where('user_id', $user->id)
+        return (float) StudentPaymentTerm::whereHas('assessment', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })
             ->whereIn('status', ['pending', 'partial'])
             ->sum('balance');
     }

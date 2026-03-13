@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Fee;
 use App\Models\StudentAssessment;
 use App\Models\Notification;
 
@@ -32,22 +30,15 @@ class StudentAccountController extends Controller
             $semester = 'Summer';
         }
 
-        $fees = Fee::active()
-            ->where('year_level', $user->year_level)
-            ->where('semester', $semester)
-            ->where('school_year', $year . '-' . ($year + 1))
-            ->select('name', 'amount', 'category')
-            ->get();
-
-        if ($fees->isEmpty()) {
-            $fees = collect([
-                ['name' => 'Registration Fee', 'amount' => 200.0,  'category' => 'Miscellaneous'],
-                ['name' => 'Tuition Fee',       'amount' => 5000.0, 'category' => 'Tuition'],
-                ['name' => 'Lab Fee',            'amount' => 2000.0, 'category' => 'Laboratory'],
-                ['name' => 'Library Fee',        'amount' => 500.0,  'category' => 'Library'],
-                ['name' => 'Misc. Fee',          'amount' => 1200.0, 'category' => 'Miscellaneous'],
-            ]);
-        }
+        // Fees are managed through StudentAssessment fee_breakdown JSON
+        // If no assessment exists yet, use hardcoded fee structure as fallback
+        $fees = collect([
+            ['name' => 'Registration Fee', 'amount' => 200.0,  'category' => 'Miscellaneous'],
+            ['name' => 'Tuition Fee',       'amount' => 5000.0, 'category' => 'Tuition'],
+            ['name' => 'Lab Fee',            'amount' => 2000.0, 'category' => 'Laboratory'],
+            ['name' => 'Library Fee',        'amount' => 500.0,  'category' => 'Library'],
+            ['name' => 'Misc. Fee',          'amount' => 1200.0, 'category' => 'Miscellaneous'],
+        ]);
 
         $latestAssessment = StudentAssessment::where('user_id', $user->id)
             ->with('paymentTerms')

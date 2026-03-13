@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Models\Payment;
-use App\Models\Fee;
 use App\Models\Workflow;
 use App\Services\WorkflowService;
 use Illuminate\Http\Request;
@@ -50,17 +49,14 @@ class StudentController extends Controller
 
         $students = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        // Try to load fees from DB, otherwise fallback defaults
-        if (class_exists(Fee::class) && Fee::count() > 0) {
-            $fees = Fee::select('name', 'amount')->get();
-        } else {
-            $fees = collect([
-                ['name' => 'Registration Fee', 'amount' => 0.0],
-                ['name' => 'Tuition Fee', 'amount' => 1092.0],
-                ['name' => 'Lab Fee', 'amount' => 2256.0],
-                ['name' => 'Misc. Fee', 'amount' => 4700.0],
-            ]);
-        }
+        // Fees are now managed through StudentAssessment fee_breakdown JSON
+        // Default fee structure for display purposes only
+        $fees = collect([
+            ['name' => 'Registration Fee', 'amount' => 0.0],
+            ['name' => 'Tuition Fee', 'amount' => 1092.0],
+            ['name' => 'Lab Fee', 'amount' => 2256.0],
+            ['name' => 'Misc. Fee', 'amount' => 4700.0],
+        ]);
 
         return Inertia::render('Students/Index', [
             'students' => $students,
@@ -109,9 +105,9 @@ class StudentController extends Controller
         }
 
         // Set default total_balance if not provided
+        // Balance will be recalculated from StudentAssessment after creation
         if (!isset($validated['total_balance'])) {
-            // Calculate from fees or set default
-            $validated['total_balance'] = Fee::active()->sum('amount') ?: 8048.0;
+            $validated['total_balance'] = 0;
         }
 
         // Create student

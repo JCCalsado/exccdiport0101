@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Transaction;
-use App\Models\Fee;
 use App\Models\User;
 use App\Models\StudentPaymentTerm;
 use App\Models\Workflow;
@@ -483,21 +482,8 @@ class TransactionController extends Controller
 
     protected function assignNextPayables($student): void
     {
-        $fees = Fee::where('year_level', $student->year_level)
-            ->where('semester', '1st Sem')
-            ->get();
-
-        foreach ($fees as $fee) {
-            $student->user->transactions()->create([
-                'reference' => 'FEE-' . strtoupper($fee->name) . '-' . $student->id,
-                'kind'      => 'charge',
-                'type'      => $fee->name,
-                'amount'    => $fee->amount,
-                'status'    => 'pending',
-                'year'      => (string) now()->year,
-                'semester'  => $this->getCurrentSemesterLabel(),
-                'meta'      => ['description' => $fee->name],
-            ]);
-        }
+        // Fee management has been disabled.
+        // Payables are now created through StudentAssessment and StudentPaymentTerms.
+        // This method is retained for backward compatibility but does nothing.
     }
 }

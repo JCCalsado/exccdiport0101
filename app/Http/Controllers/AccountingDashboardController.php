@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Payment;
 use App\Models\StudentAssessment;
-use App\Models\Fee;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -43,8 +42,9 @@ class AccountingDashboardController extends Controller
                 ->get()
                 ->sum('account.balance')),
             'collection_rate' => 0,
-            'active_fees' => Fee::where('is_active', true)->count(),
-            'total_fee_amount' => Fee::where('is_active', true)->sum('amount'),
+            // Fee management feature is disabled; fees are now part of student assessment
+            'active_fees' => 0,
+            'total_fee_amount' => 0,
             // PENDING APPROVALS: Count of payment submissions awaiting accounting review
             'pending_approvals' => \App\Models\WorkflowApproval::where('status', 'pending')
                 ->whereHas('workflowInstance.workflow', fn ($q) => $q->where('type', 'payment_approval'))

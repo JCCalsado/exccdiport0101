@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Fee;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentAssessment;
@@ -368,40 +367,15 @@ class StudentFeeController extends Controller
             });
 
         // All subjects grouped by course → year_level → semester for Irregular picker
+        // Subject management has been disabled; return empty structure
         // Shape: subjects[course][yearLevel][semester][]
-        $subjectMap = \App\Models\Subject::active()
-            ->orderBy('course')
-            ->orderBy('year_level')
-            ->orderBy('semester')
-            ->orderBy('name')
-            ->get()
-            ->groupBy('course')
-            ->map(fn($byCourse) =>
-                $byCourse->groupBy('year_level')
-                    ->map(fn($byYear) =>
-                        $byYear->groupBy('semester')
-                            ->map(fn($bySem) =>
-                                $bySem->map(fn($s) => [
-                                    'id'             => $s->id,
-                                    'code'           => $s->code,
-                                    'name'           => $s->name,
-                                    'units'          => $s->units,
-                                    'price_per_unit' => (float) $s->price_per_unit,
-                                    'has_lab'        => (bool) $s->has_lab,
-                                    'lab_fee'        => (float) $s->lab_fee,
-                                    'total_cost'     => (float) $s->total_cost,
-                                    'year_level'     => $s->year_level,
-                                    'semester'       => $s->semester,
-                                ])->values()
-                            )
-                    )
-            );
+        $subjectMap = [];
 
-        // Course list: presets + existing student courses + subject courses
+        // Course list: presets + existing student courses
+        // (Subject courses previously used for this list)
         $allCourses = collect(array_unique(array_merge(
             array_keys(self::COURSE_FEE_PRESETS),
             User::where('role', 'student')->whereNotNull('course')->distinct()->pluck('course')->toArray(),
-            \App\Models\Subject::distinct()->pluck('course')->toArray(),
         )))->sort()->values();
 
         return Inertia::render('StudentFees/Create', [
@@ -476,7 +450,8 @@ class StudentFeeController extends Controller
                 $otherTotal   = 0;
 
                 $feeBreakdown = $subjects->map(function ($s) {
-                    $subject = \App\Models\Subject::find($s['id']);
+                    // Subject management is disabled; subjects array is now derived from assessments
+                    $subject = null;
                     return [
                         'category'       => 'Tuition',
                         'name'           => "{$subject->code} — {$subject->name}",
@@ -805,10 +780,10 @@ class StudentFeeController extends Controller
         }
 
         // Build the same course list used in create()
+        // Subject management is disabled; courses now come from presets and existing students only
         $courses = collect(array_unique(array_merge(
             array_keys(self::COURSE_FEE_PRESETS),
             User::where('role', 'student')->whereNotNull('course')->distinct()->pluck('course')->toArray(),
-            \App\Models\Subject::distinct()->pluck('course')->toArray(),
         )))->sort()->values();
 
         return Inertia::render('StudentFees/Edit', [
@@ -1189,7 +1164,6 @@ class StudentFeeController extends Controller
 
             StudentPaymentTerm::create([
                 'student_assessment_id'  => $assessment->id,
-                'user_id'                => $userId,
                 'term_name'              => $def['name'],
                 'term_order'             => $order,
                 'percentage'             => $def['percentage'],
