@@ -89,13 +89,23 @@ class AdminService
 
     /**
      * Deactivate an admin user
+     *
+     * Prevents:
+     * - Self-deactivation (must have another admin perform the action)
+     * - Deactivating the last active super admin
      */
-    public function deactivateAdmin(User $admin): bool
+    public function deactivateAdmin(User $admin, ?User $performedBy = null): bool
     {
         if (!$admin->isAdmin()) {
             throw new \InvalidArgumentException('User is not an admin');
         }
 
+        // Prevent self-deactivation: admin cannot deactivate their own account
+        if ($performedBy && $performedBy->id === $admin->id) {
+            throw new \InvalidArgumentException('You cannot deactivate your own account. Ask another admin to deactivate you.');
+        }
+
+        // Prevent deactivating the last active super admin
         if ($admin->admin_type === User::ADMIN_TYPE_SUPER && $admin->is_active) {
             $activeSuperAdmins = User::admins()
                 ->where('admin_type', User::ADMIN_TYPE_SUPER)

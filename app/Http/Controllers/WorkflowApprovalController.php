@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WorkflowApproval;
 use App\Models\WorkflowInstance;
+use App\Models\StudentPaymentTerm;
 use App\Services\WorkflowService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -64,7 +65,10 @@ class WorkflowApprovalController extends Controller
 
         if ($transaction instanceof \App\Models\Transaction && $transaction->user && $transaction->user->student) {
             $student     = $transaction->user->student;
-            $unpaidTerms = \App\Models\StudentPaymentTerm::where('user_id', $transaction->user_id)
+            // Query through StudentAssessment for consistent access patterns
+            $unpaidTerms = StudentPaymentTerm::whereHas('assessment', function ($q) use ($transaction) {
+                $q->where('user_id', $transaction->user_id);
+            })
                 ->whereIn('status', ['pending', 'partial'])
                 ->orderBy('due_date', 'asc')
                 ->get();

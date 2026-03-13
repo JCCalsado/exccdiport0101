@@ -6,25 +6,30 @@ use App\Models\StudentPaymentTerm;
 use App\Models\StudentAssessment;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class PaymentCarryoverService
 {
     /**
      * Apply carryover logic to all payment terms for an assessment
+     *
+     * Wrapped in a database transaction to ensure all terms are updated atomically.
+     * If any term update fails, the entire carryover is rolled back.
      */
     public function applyCarryoverToAssessment(StudentAssessment $assessment): void
     {
-        $terms = $assessment->paymentTerms()
-            ->orderBy('term_order')
-            ->get();
+        DB::transaction(function () use ($assessment) {
+            $terms = $assessment->paymentTerms()
+                ->orderBy('term_order')
+                ->get();
 
-        if ($terms->count() === 0) {
-            return;
-        }
+            if ($terms->count() === 0) {
+                return;
+            }
 
-        $carryoverBalance = 0;
+            $carryoverBalance = 0;
 
-        foreach ($terms as $index => $term) {
+            foreach ($terms as $index => $term) {
             $previousTermUnpaid = $carryoverBalance;
             $currentTermAmount = (float) $term->amount;
             
@@ -48,35 +53,40 @@ class PaymentCarryoverService
             // ✅ Only carry over what remains UNPAID after any payments made to this term
             // On fresh assessments with no payments yet, balance = amount, so carryover = amount for next term
             // After a payment is processed, balance is reduced from amount, so carryover = remaining balance
-            $carryoverBalance = round((float) $term->balance, 2);
-        }
-
-        // Mark the last term for carryover information
-        if ($terms->count() > 0) {
-            $lastTerm = $terms->last();
-            if ($lastTerm->balance > 0) {
-                $lastTerm->update([
-                    'remarks' => ($lastTerm->remarks ? $lastTerm->remarks . '. ' : '') . 'Final term - no carryover beyond this',
-                ]);
+                $carryoverBalance = round((float) $term->balance, 2);
             }
-        }
+
+            // Mark the last term for carryover information
+            if ($terms->count() > 0) {
+                $lastTerm = $terms->last();
+                if ($lastTerm->balance > 0) {
+                    $lastTerm->update([
+                        'remarks' => ($lastTerm->remarks ? $lastTerm->remarks . '. ' : '') . 'Final term - no carryover beyond this',
+                    ]);
+                }
+            }
+        });
     }
 
     /**
      * Apply payment across terms using carryover priority
      * Priority: Earlier unpaid terms first, then current term
+     *
+     * Wrapped in a database transaction to ensure all term updates are atomic.
+     * If any term update fails, the entire payment is rolled back.
      */
     public function applyPayment(StudentAssessment $assessment, float $paymentAmount): array
     {
-        $appliedPayments = [];
-        $remainingAmount = $paymentAmount;
+        return DB::transaction(function () use ($assessment, $paymentAmount) {
+            $appliedPayments = [];
+            $remainingAmount = $paymentAmount;
 
-        $terms = $assessment->paymentTerms()
-            ->where('balance', '>', 0)
-            ->orderBy('term_order')
-            ->get();
+            $terms = $assessment->paymentTerms()
+                ->where('balance', '>', 0)
+                ->orderBy('term_order')
+                ->get();
 
-        foreach ($terms as $term) {
+            foreach ($terms as $term) {
             if ($remainingAmount <= 0) {
                 break;
             }
@@ -99,14 +109,15 @@ class PaymentCarryoverService
                 'remaining_balance' => max(0, $newBalance),
             ];
 
-            $remainingAmount -= $amountToApply;
-        }
+                $remainingAmount -= $amountToApply;
+            }
 
-        return [
-            'applied_payments' => $appliedPayments,
-            'remaining_amount' => $remainingAmount,
-            'total_applied' => $paymentAmount - $remainingAmount,
-        ];
+            return [
+                'applied_payments' => $appliedPayments,
+                'remaining_amount' => $remainingAmount,
+                'total_applied' => $paymentAmount - $remainingAmount,
+            ];
+        });
     }
 
     /**

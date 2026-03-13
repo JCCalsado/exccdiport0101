@@ -160,7 +160,7 @@ class AdminController extends Controller
         $this->authorize('manageAdmins', $user);
 
         try {
-            $this->adminService->deactivateAdmin($user);
+            $this->adminService->deactivateAdmin($user, $request->user());
 
             return back()->with('success', 'Admin deactivated successfully!');
         } catch (\InvalidArgumentException $e) {

@@ -191,7 +191,10 @@ class StudentPaymentService
                     'user_id'        => $user->id,
                 ]);
 
-                $term = StudentPaymentTerm::where('user_id', $user->id)
+                // Query through StudentAssessment instead of direct user_id lookup
+                $term = $user->assessments()
+                    ->first()
+                    ?->paymentTerms()
                     ->where('term_name', $termName)
                     ->whereIn('status', ['pending', 'partial'])
                     ->orderBy('due_date', 'desc')

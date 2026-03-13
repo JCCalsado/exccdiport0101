@@ -9,7 +9,6 @@ class StudentPaymentTerm extends Model
 {
     protected $fillable = [
         'student_assessment_id',
-        'user_id',
         'term_name',
         'term_order',
         'percentage',
@@ -49,11 +48,6 @@ class StudentPaymentTerm extends Model
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(StudentAssessment::class, 'student_assessment_id');
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     /**

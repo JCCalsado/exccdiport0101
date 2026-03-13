@@ -45,10 +45,13 @@ class PaymentTermService
 
     /**
      * Get total outstanding balance for a student
+     * Query through StudentAssessment for consistent access patterns
      */
     public static function getTotalOutstandingBalance(int $userId): float
     {
-        return StudentPaymentTerm::where('user_id', $userId)
+        return StudentPaymentTerm::whereHas('assessment', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })
             ->where('status', '!=', StudentPaymentTerm::STATUS_PAID)
             ->sum('balance');
     }
@@ -66,10 +69,13 @@ class PaymentTermService
 
     /**
      * Get payment term status summary for a student
+     * Query through StudentAssessment for consistent access patterns
      */
     public static function getPaymentTermsSummary(int $userId): array
     {
-        $terms = StudentPaymentTerm::where('user_id', $userId)->get();
+        $terms = StudentPaymentTerm::whereHas('assessment', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })->get();
 
         return [
             'total_terms' => $terms->count(),
