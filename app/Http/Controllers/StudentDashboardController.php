@@ -2,41 +2,50 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
+use App\Models\PaymentReminder;
+use App\Models\StudentAssessment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Notification;
-use App\Models\StudentAssessment;
-use App\Models\PaymentReminder;
+use Inertia\Response;
 
 class StudentDashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $user = $request->user();
 
-        // Ensure account exists
-        $account = $user->account()->with('transactions')->first();
-        if (! $account) {
-            $account = $user->account()->create(['balance' => 0]);
-        }
+        // ── Account ───────────────────────────────────────────────────────────
+        // Registration creates the Account row. This guard exists only for
+        // accounts created by admin outside of the registration flow.
+        // We intentionally do NOT load the transactions relation here —
+        // Vue only needs the balance scalar.
+        $account = $user->account()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
 
-        // Latest assessment + payment terms (source of truth for balances)
+        // ── Latest assessment + payment terms ─────────────────────────────────
+        // Source of truth for balances. Eager-load paymentTerms in ONE query,
+        // then sort the already-loaded collection in PHP — no second DB call.
         $latestAssessment = StudentAssessment::where('user_id', $user->id)
-            ->with('paymentTerms')
+            ->with(['paymentTerms' => fn ($q) => $q->orderBy('term_order')])
             ->latest('created_at')
             ->first();
 
-        $paymentTerms     = collect([]);
+        $paymentTerms = collect();
         $remainingBalance = 0;
 
         if ($latestAssessment) {
-            $paymentTerms     = $latestAssessment->paymentTerms()->orderBy('term_order')->get();
+            $paymentTerms     = $latestAssessment->paymentTerms;   // already loaded — no extra query
             $remainingBalance = $paymentTerms->sum('balance');
         }
 
+        // ── Transaction aggregates ────────────────────────────────────────────
         $totalCharges  = $user->transactions()->where('kind', 'charge')->sum('amount');
         $totalPayments = $user->transactions()->where('kind', 'payment')->where('status', 'paid')->sum('amount');
 
+        // Fall back to ledger diff when no payment terms exist yet
         if ($paymentTerms->isEmpty()) {
             $remainingBalance = max(0, $totalCharges - $totalPayments);
         }
@@ -47,9 +56,9 @@ class StudentDashboardController extends Controller
             ->count();
 
         // ── Notifications ─────────────────────────────────────────────────────
-        // Raised from take(5) to take(10) so general announcements aren't
-        // crowded out by payment_due banners. Vue's visibleNotifications
-        // already handles slice(0,3) + "View More" on the frontend.
+        // Fetches 10 so general announcements aren't crowded out by
+        // payment_due banners. Vue's visibleNotifications slice(0,3) + "View More"
+        // already handles the display limit on the front end.
         $notifications = Notification::active()
             ->forUser($user->id)
             ->withinDateRange()
@@ -73,6 +82,7 @@ class StudentDashboardController extends Controller
                 'created_at'      => $n->created_at,
             ]);
 
+        // ── Recent transactions ───────────────────────────────────────────────
         $recentTransactions = $user->transactions()
             ->orderByDesc('created_at')
             ->take(5)
@@ -86,12 +96,7 @@ class StudentDashboardController extends Controller
                 'created_at' => $txn->created_at,
             ]);
 
-        $totalFees = $latestAssessment
-            ? (float) $latestAssessment->total_assessment
-            : (float) $totalCharges;
-
-        // ── Payment Reminders ─────────────────────────────────────────────────
-        // Excludes dismissed reminders. Ordered by most recent first.
+        // ── Payment reminders ─────────────────────────────────────────────────
         $paymentReminders = PaymentReminder::where('user_id', $user->id)
             ->where('status', '!=', PaymentReminder::STATUS_DISMISSED)
             ->orderByDesc('created_at')
@@ -112,18 +117,28 @@ class StudentDashboardController extends Controller
             ->where('status', PaymentReminder::STATUS_SENT)
             ->count();
 
+        $totalFees = $latestAssessment
+            ? (float) $latestAssessment->total_assessment
+            : (float) $totalCharges;
+
         return Inertia::render('Student/Dashboard', [
-            'account'             => $account,
-            'notifications'       => $notifications,
-            'recentTransactions'  => $recentTransactions,
-            'latestAssessment'    => $latestAssessment ? [
+            // Only scalar — no transaction relation serialised over the wire
+            'account' => [
+                'balance' => (float) $account->balance,
+            ],
+
+            'notifications'      => $notifications,
+            'recentTransactions' => $recentTransactions,
+
+            'latestAssessment' => $latestAssessment ? [
                 'id'                => $latestAssessment->id,
                 'assessment_number' => $latestAssessment->assessment_number,
                 'total_assessment'  => (float) $latestAssessment->total_assessment,
                 'status'            => $latestAssessment->status,
                 'created_at'        => $latestAssessment->created_at,
             ] : null,
-            'paymentTerms'        => $paymentTerms->map(fn ($t) => [
+
+            'paymentTerms' => $paymentTerms->map(fn ($t) => [
                 'id'         => $t->id,
                 'term_name'  => $t->term_name,
                 'term_order' => $t->term_order,
@@ -134,13 +149,15 @@ class StudentDashboardController extends Controller
                 'status'     => $t->status,
                 'remarks'    => $t->remarks,
                 'paid_date'  => $t->paid_date,
-            ])->toArray(),
-            'stats'               => [
+            ])->values()->toArray(),
+
+            'stats' => [
                 'total_fees'            => $totalFees,
                 'total_paid'            => (float) $totalPayments,
                 'remaining_balance'     => (float) $remainingBalance,
                 'pending_charges_count' => $pendingChargesCount,
             ],
+
             'paymentReminders'    => $paymentReminders,
             'unreadReminderCount' => $unreadReminderCount,
         ]);

@@ -9,21 +9,21 @@ import { computed } from 'vue';
 
 interface Props {
     stats?: {
-        totalAdmins: number;
-        activeAdmins: number;
-        inactiveAdmins: number;
-        pendingApprovals: number;
-        totalUsers: number;
-        totalStudents: number;
-        recentNotifications: Array<{
+        total_admins: number;
+        active_admins: number;
+        inactive_admins: number;
+        pending_approvals: number;
+        total_users: number;
+        total_students: number;
+        recent_notifications: Array<{
             id: number;
             title: string;
-            targetRole: string;
-            startDate: string;
-            endDate: string;
-            createdAt: string;
+            target_role: string;
+            start_date: string;
+            end_date: string;
+            created_at: string;
         }>;
-        systemHealth: {
+        system_health: {
             status: string;
         };
     };
@@ -31,14 +31,14 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     stats: () => ({
-        totalAdmins: 0,
-        activeAdmins: 0,
-        inactiveAdmins: 0,
-        pendingApprovals: 0,
-        totalUsers: 0,
-        totalStudents: 0,
-        recentNotifications: [],
-        systemHealth: {
+        total_admins: 0,
+        active_admins: 0,
+        inactive_admins: 0,
+        pending_approvals: 0,
+        total_users: 0,
+        total_students: 0,
+        recent_notifications: [],
+        system_health: {
             status: 'operational',
         },
     }),
@@ -52,21 +52,21 @@ const breadcrumbs = [
 const adminStats = computed(() => [
     {
         title: 'Total Admins',
-        value: props.stats?.totalAdmins || 0,
-        description: `${props.stats?.activeAdmins || 0} active`,
+        value: props.stats?.total_admins || 0,
+        description: `${props.stats?.active_admins || 0} active`,
         icon: Users,
         color: 'blue',
     },
     {
         title: 'Total Users',
-        value: props.stats?.totalUsers || 0,
-        description: `${props.stats?.totalStudents || 0} students`,
+        value: props.stats?.total_users || 0,
+        description: `${props.stats?.total_students || 0} students`,
         icon: Users,
         color: 'purple',
     },
     {
         title: 'Pending Approvals',
-        value: props.stats?.pendingApprovals || 0,
+        value: props.stats?.pending_approvals || 0,
         description: 'Awaiting action',
         icon: AlertCircle,
         color: 'orange',
@@ -208,14 +208,14 @@ const getColorClass = (color: string) => {
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-700">Active Admins</span>
-                                    <span class="font-semibold text-gray-900">{{ props.stats?.activeAdmins || 0 }}</span>
+                                    <span class="font-semibold text-gray-900">{{ props.stats?.active_admins || 0 }}</span>
                                 </div>
                                 <div class="h-2 w-full rounded-full bg-gray-200">
                                     <div
                                         class="h-2 rounded-full bg-green-500"
                                         :style="{
-                                            width: props.stats?.activeAdmins
-                                                ? (props.stats.activeAdmins / Math.max(props.stats.totalAdmins, 1)) * 100 + '%'
+                                            width: props.stats?.active_admins
+                                                ? (props.stats.active_admins / Math.max(props.stats.total_admins, 1)) * 100 + '%'
                                                 : '0%',
                                         }"
                                     ></div>
@@ -225,14 +225,14 @@ const getColorClass = (color: string) => {
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-700">Inactive Admins</span>
-                                    <span class="font-semibold text-gray-900">{{ props.stats?.inactiveAdmins || 0 }}</span>
+                                    <span class="font-semibold text-gray-900">{{ props.stats?.inactive_admins || 0 }}</span>
                                 </div>
                                 <div class="h-2 w-full rounded-full bg-gray-200">
                                     <div
                                         class="h-2 rounded-full bg-red-500"
                                         :style="{
-                                            width: props.stats?.inactiveAdmins
-                                                ? (props.stats.inactiveAdmins / Math.max(props.stats.totalAdmins, 1)) * 100 + '%'
+                                            width: props.stats?.inactive_admins
+                                                ? (props.stats.inactive_admins / Math.max(props.stats.total_admins, 1)) * 100 + '%'
                                                 : '0%',
                                         }"
                                     ></div>
@@ -255,14 +255,14 @@ const getColorClass = (color: string) => {
                     </Link>
                 </CardHeader>
                 <CardContent>
-                    <div v-if="!props.stats?.recentNotifications?.length" class="py-8 text-center">
+                    <div v-if="!props.stats?.recent_notifications?.length" class="py-8 text-center">
                         <FileText class="mx-auto mb-4 h-12 w-12 text-gray-300" />
                         <p class="text-gray-500">No notifications yet</p>
                         <p class="mt-1 text-sm text-gray-400">Create one to get started</p>
                     </div>
                     <div v-else class="space-y-3">
                         <div
-                            v-for="notification in props.stats?.recentNotifications?.slice(0, 5)"
+                            v-for="notification in props.stats?.recent_notifications?.slice(0, 5)"
                             :key="notification.id"
                             class="rounded-lg border p-4 transition hover:bg-gray-50"
                         >
@@ -270,11 +270,11 @@ const getColorClass = (color: string) => {
                                 <div class="flex-1">
                                     <h4 class="font-semibold text-gray-900">{{ notification.title }}</h4>
                                     <p class="mt-1 text-sm text-gray-600">
-                                        To: <span class="font-medium capitalize">{{ notification.targetRole }}</span>
+                                        To: <span class="font-medium capitalize">{{ notification.target_role }}</span>
                                     </p>
                                 </div>
                                 <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">{{
-                                    new Date(notification.createdAt).toLocaleDateString()
+                                    new Date(notification.created_at).toLocaleDateString()
                                 }}</span>
                             </div>
                         </div>

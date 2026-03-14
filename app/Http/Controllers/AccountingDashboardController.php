@@ -2,113 +2,115 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Transaction;
-use App\Models\Payment;
 use App\Models\StudentAssessment;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Models\WorkflowApproval;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AccountingDashboardController extends Controller
 {
-    public function index()
+    public function index(): Response
     {
         $currentYear = now()->year;
         $month       = now()->month;
 
-        if ($month >= 6 && $month <= 10) {
-            $currentSemester = '1st Sem';
-        } elseif ($month >= 11 || $month <= 3) {
-            $currentSemester = '2nd Sem';
-        } else {
-            $currentSemester = 'Summer';
-        }
+        $currentSemester = match (true) {
+            $month >= 6 && $month <= 10 => '1st Sem',
+            $month >= 11 || $month <= 3 => '2nd Sem',
+            default                     => 'Summer',
+        };
 
-        $stats = [
-            'total_students'  => User::where('role', 'student')->count(),
-            'active_students' => User::where('role', 'student')
-                ->where('status', User::STATUS_ACTIVE)
-                ->count(),
-            'total_charges'   => Transaction::where('kind', 'charge')->sum('amount'),
-            'total_payments'  => Transaction::where('kind', 'payment')
-                ->where('status', 'paid')
-                ->sum('amount'),
-            'total_pending'   => abs(
-                User::where('role', 'student')
-                    ->whereHas('account', fn ($q) => $q->where('balance', '>', 0))
-                    ->with('account')
-                    ->get()
-                    ->sum('account.balance')
-            ),
-            'collection_rate' => 0,
-
-            // Fee management feature is disabled.
-            // Fees are now part of StudentAssessment; active assessment counts replace fee counts.
-            'active_fees'      => StudentAssessment::where('status', 'active')->count(),
-            'total_fee_amount' => StudentAssessment::where('status', 'active')->sum('total_assessment'),
-
-            // Pending approvals: payment submissions awaiting accounting review
-            'pending_approvals' => \App\Models\WorkflowApproval::where('status', 'pending')
-                ->whereHas('workflowInstance.workflow', fn ($q) => $q->where('type', 'payment_approval'))
-                ->count(),
-        ];
-
-        // Calculate collection rate
-        $totalCharges     = $stats['total_charges'];
-        $totalPayments    = $stats['total_payments'];
-        $stats['collection_rate'] = $totalCharges > 0
+        // ── Transaction aggregates ─────────────────────────────────────────────
+        $totalCharges  = (float) Transaction::where('kind', 'charge')->sum('amount');
+        $totalPayments = (float) Transaction::where('kind', 'payment')->where('status', 'paid')->sum('amount');
+        $collectionRate = $totalCharges > 0
             ? round(($totalPayments / $totalCharges) * 100, 2)
             : 0;
 
-        // Students with outstanding balance
-        $studentsWithBalance = User::where('role', 'student')
-            ->whereHas('account', fn ($q) => $q->where('balance', '>', 0))
-            ->with('account')
-            ->orderBy('created_at', 'desc')
+        // ── Students with outstanding balance ──────────────────────────────────
+        // Single query with a DB join aggregate — replaces two separate
+        // collection-in-PHP queries (old Q5 and Q8 both ran the same filter).
+        $studentsWithBalance = User::students()
+            ->join('accounts', 'accounts.user_id', '=', 'users.id')
+            ->where('accounts.balance', '>', 0)
+            ->orderByDesc('accounts.balance')
             ->limit(10)
-            ->get()
-            ->map(fn ($user) => [
-                'id'         => $user->id,
-                'name'       => $user->name,
-                'email'      => $user->email,
-                'account_id' => $user->account_id,
-                'course'     => $user->course,
-                'year_level' => $user->year_level,
-                'balance'    => abs($user->account->balance ?? 0),
+            ->get(['users.id', 'users.last_name', 'users.first_name', 'users.middle_initial',
+                   'users.email', 'users.account_id', 'users.course', 'users.year_level',
+                   'accounts.balance'])
+            ->map(fn ($u) => [
+                'id'         => $u->id,
+                'name'       => $u->name,
+                'email'      => $u->email,
+                'account_id' => $u->account_id,
+                'course'     => $u->course,
+                'year_level' => $u->year_level,
+                'balance'    => abs((float) $u->balance),
             ]);
 
-        // Recent approved payments
+        // Total outstanding: DB-level sum — no PHP collection needed.
+        $totalPending = (float) DB::table('accounts')
+            ->join('users', 'users.id', '=', 'accounts.user_id')
+            ->where('users.role', 'student')
+            ->where('accounts.balance', '>', 0)
+            ->sum('accounts.balance');
+
+        // ── Assessment stats ───────────────────────────────────────────────────
+        $assessmentStats = StudentAssessment::select(
+                'status',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(total_assessment) as total_amount')
+            )
+            ->whereIn('status', ['active', 'pending'])
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $activeAssessmentCount  = (int) ($assessmentStats['active']?->count  ?? 0);
+        $activeAssessmentAmount = (float) ($assessmentStats['active']?->total_amount ?? 0);
+        $pendingAssessmentCount = (int) ($assessmentStats['pending']?->count ?? 0);
+
+        $recentAssessmentsCount = StudentAssessment::where('created_at', '>=', now()->subDays(30))->count();
+
+        // ── Pending approvals ──────────────────────────────────────────────────
+        $pendingApprovals = WorkflowApproval::where('status', 'pending')
+            ->whereHas('workflowInstance.workflow', fn ($q) => $q->where('type', 'payment_approval'))
+            ->count();
+
+        // ── Recent payments ────────────────────────────────────────────────────
         $recentPayments = Transaction::where('kind', 'payment')
             ->where('status', 'paid')
-            ->with('user')
-            ->orderBy('paid_at', 'desc')
+            ->with('user:id,last_name,first_name,middle_initial')
+            ->orderByDesc('paid_at')
             ->limit(10)
             ->get()
-            ->map(fn ($transaction) => [
-                'id'           => $transaction->id,
-                'reference'    => $transaction->reference,
-                'student_name' => $transaction->user->name ?? 'N/A',
-                'amount'       => $transaction->amount,
-                'status'       => $transaction->status,
-                'paid_at'      => $transaction->paid_at,
-                'created_at'   => $transaction->created_at,
+            ->map(fn ($t) => [
+                'id'           => $t->id,
+                'reference'    => $t->reference,
+                'student_name' => $t->user?->name ?? 'N/A',
+                'amount'       => (float) $t->amount,
+                'status'       => $t->status,
+                'paid_at'      => $t->paid_at,
+                'created_at'   => $t->created_at,
             ]);
 
-        // Payment trends — last 6 months
+        // ── Payment trends — last 6 months ────────────────────────────────────
         $paymentTrends = Transaction::where('kind', 'payment')
             ->where('status', 'paid')
             ->where('paid_at', '>=', now()->subMonths(6))
             ->select(
-                DB::raw('DATE_FORMAT(paid_at, "%Y-%m") as month'),
+                DB::raw("DATE_FORMAT(paid_at, '%Y-%m') as month"),
                 DB::raw('SUM(amount) as total'),
                 DB::raw('COUNT(*) as count')
             )
             ->groupBy('month')
-            ->orderBy('month', 'asc')
+            ->orderBy('month')
             ->get();
 
-        // Payment by method
+        // ── Payment by channel ────────────────────────────────────────────────
         $paymentByMethod = Transaction::where('kind', 'payment')
             ->where('status', 'paid')
             ->whereNotNull('payment_channel')
@@ -118,41 +120,56 @@ class AccountingDashboardController extends Controller
                 DB::raw('SUM(amount) as total')
             )
             ->groupBy('payment_channel')
-            ->orderBy('total', 'desc')
+            ->orderByDesc('total')
             ->get();
 
-        // Students by year level
-        $studentsByYearLevel = User::where('role', 'student')
+        // ── Students by year level ─────────────────────────────────────────────
+        $studentsByYearLevel = User::students()
             ->where('status', User::STATUS_ACTIVE)
             ->select('year_level', DB::raw('COUNT(*) as count'))
             ->groupBy('year_level')
             ->orderBy('year_level')
             ->get();
 
-        // Student fee stats derived entirely from StudentAssessment
-        $studentFeeStats = [
-            'total_assessments'       => StudentAssessment::where('status', 'active')->count(),
-            'total_assessment_amount' => StudentAssessment::where('status', 'active')->sum('total_assessment'),
-            'pending_assessments'     => StudentAssessment::where('status', 'pending')->count(),
-            'recent_assessments'      => StudentAssessment::where('created_at', '>=', now()->subDays(30))->count(),
-            'recent_payments_amount'  => Transaction::where('kind', 'payment')
-                ->where('status', 'paid')
-                ->where('paid_at', '>=', now()->subDays(30))
-                ->sum('amount'),
-        ];
+        // ── Recent payment amount (last 30 days) ──────────────────────────────
+        $recentPaymentsAmount = (float) Transaction::where('kind', 'payment')
+            ->where('status', 'paid')
+            ->where('paid_at', '>=', now()->subDays(30))
+            ->sum('amount');
 
         return Inertia::render('Accounting/Dashboard', [
-            'stats'               => $stats,
+            'stats' => [
+                'total_students'    => User::students()->count(),
+                'active_students'   => User::students()->where('status', User::STATUS_ACTIVE)->count(),
+                'total_charges'     => $totalCharges,
+                'total_payments'    => $totalPayments,
+                'total_pending'     => $totalPending,
+                'collection_rate'   => $collectionRate,
+                'active_fees'       => $activeAssessmentCount,
+                'total_fee_amount'  => $activeAssessmentAmount,
+                'pending_approvals' => $pendingApprovals,
+            ],
+
             'studentsWithBalance' => $studentsWithBalance,
             'recentPayments'      => $recentPayments,
             'paymentTrends'       => $paymentTrends,
             'paymentByMethod'     => $paymentByMethod,
             'studentsByYearLevel' => $studentsByYearLevel,
-            'currentTerm'         => [
+
+            'currentTerm' => [
                 'year'     => $currentYear,
                 'semester' => $currentSemester,
             ],
-            'studentFeeStats'     => $studentFeeStats,
+
+            // pending_assessments_count is an INTEGER COUNT — not a currency amount.
+            // The Vue template previously passed this through formatCurrency() by mistake.
+            'studentFeeStats' => [
+                'total_assessments'        => $activeAssessmentCount,
+                'total_assessment_amount'  => $activeAssessmentAmount,
+                'pending_assessments_count' => $pendingAssessmentCount,   // renamed key — was pending_assessments
+                'recent_assessments'       => $recentAssessmentsCount,
+                'recent_payments_amount'   => $recentPaymentsAmount,
+            ],
         ]);
     }
 }

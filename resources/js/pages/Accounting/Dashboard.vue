@@ -69,7 +69,7 @@ type YearLevel = {
 type StudentFeeStats = {
     total_assessments: number;
     total_assessment_amount: number;
-    pending_assessments: number;
+    pending_assessments_count: number; // integer count — NOT a currency amount
     recent_assessments: number;
     recent_payments_amount: number;
 };
@@ -279,9 +279,9 @@ const viewStudent = (studentId: number) => {
                     <div class="rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md">
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
-                                <p class="mb-1 text-sm text-gray-600">Pending Balance</p>
+                                <p class="mb-1 text-sm text-gray-600">Pending Assessments</p>
                                 <p class="text-xl font-bold text-red-600">
-                                    {{ formatCurrency(studentFeeStats.pending_assessments) }}
+                                    {{ studentFeeStats.pending_assessments_count }}
                                 </p>
                                 <p class="mt-1 text-xs text-gray-500">Outstanding</p>
                             </div>
@@ -345,7 +345,7 @@ const viewStudent = (studentId: number) => {
                             </div>
                             <div class="flex-1">
                                 <p class="text-sm font-medium text-gray-900">Outstanding Balance</p>
-                                <p class="text-xs text-gray-600">{{ studentFeeStats.pending_assessments > 0 ? 'Needs attention' : 'All clear' }}</p>
+                                <p class="text-xs text-gray-600">{{ studentFeeStats.pending_assessments_count > 0 ? 'Needs attention' : 'All clear' }}</p>
                             </div>
                         </Link>
                     </div>
