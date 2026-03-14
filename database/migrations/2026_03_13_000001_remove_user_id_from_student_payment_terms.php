@@ -16,7 +16,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('student_payment_terms', function (Blueprint $table) {
-            // Drop the foreign key constraint first
+            // Drop the composite index first
+            $table->dropIndex(['user_id', 'student_assessment_id']);
+            // Drop the foreign key constraint
             $table->dropForeign(['user_id']);
             // Drop the redundant column
             $table->dropColumn('user_id');
