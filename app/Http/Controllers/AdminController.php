@@ -4,26 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AdminService;
-use App\Enums\UserRoleEnum;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class AdminController extends Controller
 {
-    protected $adminService;
-
-    public function __construct(AdminService $adminService)
+    public function __construct(protected AdminService $adminService)
     {
-        $this->adminService = $adminService;
         $this->middleware('auth:web');
         $this->middleware('role:admin');
     }
 
-    /**
-     * Display a listing of admin users.
-     */
-    public function index()
+    public function index(): Response
     {
         $this->authorize('viewAny', User::class);
 
@@ -33,45 +26,33 @@ class AdminController extends Controller
             ->paginate(15);
 
         return Inertia::render('Admin/Users/Index', [
-            'admins' => $admins,
-            'stats' => $this->adminService->getAdminStats(),
+            'admins'    => $admins,
+            'stats'     => $this->adminService->getAdminStats(),
+            'canManage' => auth()->user()->isSuperAdmin(),
         ]);
     }
 
-    /**
-     * Show the form for creating a new admin.
-     */
-    public function create()
+    public function create(): Response
     {
         $this->authorize('create', User::class);
 
         return Inertia::render('Admin/Users/Create', [
             'adminTypes' => [
-                ['value' => 'super', 'label' => 'Super Admin'],
-                ['value' => 'manager', 'label' => 'Manager'],
+                ['value' => 'super',    'label' => 'Super Admin'],
+                ['value' => 'manager',  'label' => 'Manager'],
                 ['value' => 'operator', 'label' => 'Operator'],
             ],
         ]);
     }
 
-    /**
-     * Store a newly created admin in storage.
-     */
     public function store(Request $request)
     {
         $this->authorize('create', User::class);
 
-        // Validate terms acceptance at the HTTP layer (only when provided)
-        $request->validate([
-            'accept_terms' => 'sometimes|accepted',
-        ]);
+        $request->validate(['accept_terms' => 'sometimes|accepted']);
 
         try {
-            $admin = $this->adminService->createAdmin(
-                $request->all(),
-                $request->user()
-            );
-
+            $admin = $this->adminService->createAdmin($request->all(), $request->user());
             return redirect("/admin/users/{$admin->id}")
                 ->with('success', 'Admin user created successfully!');
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -79,61 +60,48 @@ class AdminController extends Controller
         }
     }
 
-    /**
-     * Display the specified admin user.
-     */
-    public function show(User $user)
+    public function show(User $user): Response
     {
         $this->authorize('view', $user);
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(404);
         }
 
         return Inertia::render('Admin/Users/Show', [
-            'admin' => $user->load(['createdByUser', 'updatedByUser']),
+            'admin'     => $user->load(['createdByUser', 'updatedByUser']),
+            'canManage' => auth()->user()->isSuperAdmin(),
         ]);
     }
 
-    /**
-     * Show the form for editing the specified admin.
-     */
-    public function edit(User $user)
+    public function edit(User $user): Response
     {
         $this->authorize('update', $user);
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(404);
         }
 
         return Inertia::render('Admin/Users/Edit', [
-            'admin' => $user,
+            'admin'      => $user,
             'adminTypes' => [
-                ['value' => 'super', 'label' => 'Super Admin'],
-                ['value' => 'manager', 'label' => 'Manager'],
+                ['value' => 'super',    'label' => 'Super Admin'],
+                ['value' => 'manager',  'label' => 'Manager'],
                 ['value' => 'operator', 'label' => 'Operator'],
             ],
         ]);
     }
 
-    /**
-     * Update the specified admin in storage.
-     */
     public function update(Request $request, User $user)
     {
         $this->authorize('update', $user);
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(404);
         }
 
         try {
-            $this->adminService->updateAdmin(
-                $user,
-                $request->all(),
-                $request->user()
-            );
-
+            $this->adminService->updateAdmin($user, $request->all(), $request->user());
             return redirect("/admin/users/{$user->id}")
                 ->with('success', 'Admin updated successfully!');
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -141,41 +109,29 @@ class AdminController extends Controller
         }
     }
 
-    /**
-     * Hard delete is not permitted — use deactivate instead.
-     */
     public function destroy(User $user)
     {
         $this->authorize('delete', $user);
-
-        // Policy always returns false for delete; this line is never reached
         abort(403, 'Hard deletion of admin accounts is not permitted.');
     }
 
-    /**
-     * Deactivate the specified admin.
-     */
     public function deactivate(Request $request, User $user)
     {
         $this->authorize('manageAdmins', $user);
 
         try {
             $this->adminService->deactivateAdmin($user, $request->user());
-
             return back()->with('success', 'Admin deactivated successfully!');
         } catch (\InvalidArgumentException $e) {
             abort(403, $e->getMessage());
         }
     }
 
-    /**
-     * Reactivate the specified admin.
-     */
     public function reactivate(Request $request, User $user)
     {
         $this->authorize('manageAdmins', $user);
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(404);
         }
 

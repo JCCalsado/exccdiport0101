@@ -66,7 +66,7 @@ const allNavItems: NavItem[] = [
     },
     {
         title: 'Archives',
-        href: route('students.index'),
+        href: route('students.archive'),
         icon: GraduationCap,
         roles: ['admin'],
     },

@@ -63,6 +63,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         ->name('students.advance-workflow');
     Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])
         ->name('students.workflow-history');
+    // Student Archives — graduated, dropped, and inactive students
+    Route::get('students-archive', [StudentController::class, 'archive'])->name('students.archive');
 });
 
 // ============================================
