@@ -31,7 +31,8 @@ const typeBadge = (type: string) => {
     return map[type] ?? 'bg-gray-100 text-gray-700';
 };
 
-const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+const formatDate = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
 const deactivate = () => {
     if (confirm('Deactivate this admin account?')) {
@@ -55,7 +56,9 @@ const reactivate = () => {
                 <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-100">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-900">{{ admin.last_name }}, {{ admin.first_name }}{{ admin.middle_initial ? ' ' + admin.middle_initial + '.' : '' }}</h1>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                {{ admin.last_name }}, {{ admin.first_name }}{{ admin.middle_initial ? ' ' + admin.middle_initial + '.' : '' }}
+                            </h1>
                             <p class="mt-1 text-gray-500">{{ admin.email }}</p>
                             <div class="mt-3 flex items-center gap-2">
                                 <span :class="['rounded-full px-2.5 py-1 text-xs font-medium', typeBadge(admin.admin_type)]">
@@ -67,7 +70,6 @@ const reactivate = () => {
                             </div>
                         </div>
 
-                        <!-- Action buttons — only shown to super admins -->
                         <div v-if="canManage" class="flex shrink-0 gap-2">
                             <Link :href="route('users.edit', admin.id)">
                                 <Button>Edit</Button>

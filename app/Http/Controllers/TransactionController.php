@@ -10,6 +10,7 @@ use App\Models\Workflow;
 use App\Enums\UserRoleEnum;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use App\Services\AccountService;
@@ -274,19 +275,21 @@ class TransactionController extends Controller
             $term = StudentPaymentTerm::findOrFail((int) $data['selected_term_id']);
 
             // Security: prevent cross-user payment — term must belong to this user
-            if ((int) $term->user_id !== (int) $user->id) {
-                return back()->withErrors(['payment' => 'Invalid payment term selected.']);
+            // Access user_id through assessment relationship
+            $termUserId = $term->assessment?->user_id;
+            if (!$termUserId || (int) $termUserId !== (int) $user->id) {
+                throw ValidationException::withMessages(['payment' => 'Invalid payment term selected.']);
             }
 
             $termBalance = round((float) $term->balance, 2);
             $paidAmount  = round((float) $data['amount'], 2);
 
             if ($termBalance <= 0) {
-                return back()->withErrors(['payment' => 'This payment term has already been fully paid.']);
+                throw ValidationException::withMessages(['payment' => 'This payment term has already been fully paid.']);
             }
 
             if ($paidAmount > $termBalance) {
-                return back()->withErrors([
+                throw ValidationException::withMessages([
                     'amount' => sprintf(
                         'Payment amount (₱%s) exceeds the outstanding balance for this term (₱%s).',
                         number_format($paidAmount, 2),
@@ -304,7 +307,7 @@ class TransactionController extends Controller
                     ->exists();
 
                 if ($alreadyPending) {
-                    return back()->withErrors(['payment' => 'A payment for this term is already awaiting approval.']);
+                    throw ValidationException::withMessages(['payment' => 'A payment for this term is already awaiting approval.']);
                 }
             }
 

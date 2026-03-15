@@ -12,8 +12,8 @@ defineProps<Props>();
 
 const breadcrumbs = [
     { title: 'Admin', href: route('admin.dashboard') },
-    { title: 'Users', href: route('users.index') },
-    { title: 'Create New User', href: route('users.create') },
+    { title: 'Admin Users', href: route('users.index') },
+    { title: 'Create New Admin', href: route('users.create') },
 ];
 </script>
 

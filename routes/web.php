@@ -45,7 +45,6 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->grou
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('student.dashboard');
     Route::get('/account', [StudentAccountController::class, 'index'])->name('student.account');
     Route::get('/payment', [PaymentController::class, 'create'])->name('payment.create');
-    Route::get('/my-profile', [StudentController::class, 'studentProfile'])->name('my-profile');
     Route::post('reminders/{reminder}/read', [PaymentReminderController::class, 'markRead'])
         ->name('reminders.read');
     Route::post('reminders/{reminder}/dismiss', [PaymentReminderController::class, 'dismiss'])

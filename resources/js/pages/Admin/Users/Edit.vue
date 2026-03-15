@@ -13,7 +13,7 @@ const props = defineProps<Props>();
 
 const breadcrumbs = [
     { title: 'Admin', href: route('admin.dashboard') },
-    { title: 'Users', href: route('users.index') },
+    { title: 'Admin Users', href: route('users.index') },
     {
         title: `Edit: ${props.admin.last_name}, ${props.admin.first_name}`,
         href: route('users.edit', props.admin.id),

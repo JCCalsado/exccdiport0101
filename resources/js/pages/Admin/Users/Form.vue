@@ -30,11 +30,9 @@ const form = useForm({
 
 const submit = () => {
     if (props.isEditing) {
-        form.post(`/admin/users/${props.admin.id}`, {
-            method: 'put',
-        });
+        form.put(route('users.update', props.admin.id));
     } else {
-        form.post('/admin/users');
+        form.post(route('users.store'));
     }
 };
 
@@ -73,13 +71,13 @@ const goBack = () => {
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-                <Label for="password">{{ isEditing ? 'Password (leave blank to keep current)' : 'Password' }} *</Label>
+                <Label for="password">{{ isEditing ? 'Password (leave blank to keep current)' : 'Password *' }}</Label>
                 <Input id="password" v-model="form.password" type="password" :required="!isEditing" />
                 <InputError :message="form.errors.password" />
             </div>
 
             <div>
-                <Label for="password_confirmation">Confirm Password *</Label>
+                <Label for="password_confirmation">Confirm Password{{ isEditing ? '' : ' *' }}</Label>
                 <Input id="password_confirmation" v-model="form.password_confirmation" type="password" :required="!isEditing" />
                 <InputError :message="form.errors.password_confirmation" />
             </div>
@@ -111,7 +109,7 @@ const goBack = () => {
             <Button type="submit" :disabled="form.processing">
                 {{ form.processing ? 'Saving...' : isEditing ? 'Update Admin' : 'Create Admin' }}
             </Button>
-            <Button type="button" variant="outline" @click="goBack"> Cancel </Button>
+            <Button type="button" variant="outline" @click="goBack">Cancel</Button>
         </div>
     </form>
 </template>

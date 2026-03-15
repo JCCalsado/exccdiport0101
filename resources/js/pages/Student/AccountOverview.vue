@@ -534,6 +534,14 @@ const submitPayment = () => {
         return;
     }
 
+    // Debug: log the form data being submitted
+    console.debug('Submitting payment form:', {
+        amount: paymentForm.amount,
+        payment_method: paymentForm.payment_method,
+        paid_at: paymentForm.paid_at,
+        selected_term_id: paymentForm.selected_term_id,
+    });
+
     paymentForm.post(route('account.pay-now'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -548,9 +556,16 @@ const submitPayment = () => {
             activeTab.value = 'history';
         },
         onError: (errors) => {
+            // Log the raw error object for debugging
+            console.error('Payment submission failed. Errors:', errors);
+            if (errors && typeof errors === 'object') {
+                console.error('Error keys:', Object.keys(errors));
+                Object.entries(errors).forEach(([key, value]) => {
+                    console.error(`  ${key}:`, value);
+                });
+            }
             // Form validation errors are automatically set on paymentForm
             // and displayed via paymentForm.errors properties
-            console.error('Payment submission failed:', errors);
         },
     });
 };
