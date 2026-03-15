@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Enums\UserRoleEnum;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,19 +11,23 @@ class ProfileUpdateRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         $user = $this->user();
 
+        // Safely resolve the role as a string regardless of Enum cast
+        $role = $user->role instanceof UserRoleEnum
+            ? $user->role->value
+            : (string) $user->role;
+
         // Base rules for all users
         $rules = [
+            // Accept legacy 'name' field but it is not saved directly
             'name'           => ['nullable', 'string', 'max:255'],
-            'last_name'      => ['nullable', 'string', 'max:255'],
-            'first_name'     => ['nullable', 'string', 'max:255'],
-            'middle_initial' => ['nullable', 'string', 'max:10'],
+            'last_name'      => ['required', 'string', 'max:100'],
+            'first_name'     => ['required', 'string', 'max:100'],
+            'middle_initial' => ['nullable', 'string', 'max:1'],
             'email'          => [
                 'required',
                 'string',
@@ -36,8 +41,8 @@ class ProfileUpdateRequest extends FormRequest
             'address'  => ['nullable', 'string', 'max:500'],
         ];
 
-        // Add student-specific fields
-        if ($user->role === 'student' || $this->input('role') === 'student') {
+        // Student-specific rules — now correctly comparing against the Enum value
+        if ($role === 'student') {
             $rules['account_id'] = [
                 'nullable',
                 'string',
@@ -45,20 +50,23 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique('users', 'account_id')->ignore($user->id),
             ];
 
-            // Course and Year Level are READ-ONLY for students
-            // These fields are managed by administration only, not by the student
-            // If submitted by a student, they are ignored (nullable, not required)
+            // Course and Year Level are READ-ONLY for students.
+            // They are accepted but stripped in the controller.
             $rules['course']     = ['nullable', 'string', 'max:255'];
             $rules['year_level'] = ['nullable', 'string', 'max:50', 'in:1st Year,2nd Year,3rd Year,4th Year'];
 
-            // Only admin can change student status
-            if (optional($this->user())->role === 'admin') {
+            // Only admins can submit a status change for a student
+            $adminRole = $this->user()->role instanceof UserRoleEnum
+                ? $this->user()->role->value
+                : (string) $this->user()->role;
+
+            if ($adminRole === 'admin') {
                 $rules['status'] = ['nullable', Rule::in(['active', 'graduated', 'dropped'])];
             }
         }
 
-        // Add faculty field for accounting/admin users
-        if (in_array($user->role, ['accounting', 'admin'])) {
+        // Faculty field for accounting and admin users
+        if (in_array($role, ['accounting', 'admin'], true)) {
             $rules['faculty'] = ['nullable', 'string', 'max:255'];
         }
 
@@ -67,12 +75,11 @@ class ProfileUpdateRequest extends FormRequest
 
     /**
      * Prepare the data for validation.
-     * If only a `name` field is supplied (legacy tests / simple forms),
-     * split it into first_name / last_name so the model is populated.
+     * Legacy: if only a `name` field is supplied, split it into first/last name.
      */
     protected function prepareForValidation(): void
     {
-        if ($this->filled('name') && !$this->filled('first_name') && !$this->filled('last_name')) {
+        if ($this->filled('name') && ! $this->filled('first_name') && ! $this->filled('last_name')) {
             $parts = explode(' ', trim($this->input('name')), 2);
             $this->merge([
                 'first_name' => $parts[0] ?? '',
@@ -81,11 +88,6 @@ class ProfileUpdateRequest extends FormRequest
         }
     }
 
-    /**
-     * Get custom attributes for validator errors.
-     *
-     * @return array<string, string>
-     */
     public function attributes(): array
     {
         return [
@@ -97,18 +99,13 @@ class ProfileUpdateRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
     public function messages(): array
     {
         return [
-            'phone.regex'      => 'The phone number format is invalid.',
-            'birthday.before'  => 'The birthday must be a date before today.',
-            'email.unique'     => 'This email address is already in use.',
-            'account_id.unique'=> 'This account ID is already in use.',
+            'phone.regex'       => 'The phone number format is invalid.',
+            'birthday.before'   => 'The birthday must be a date before today.',
+            'email.unique'      => 'This email address is already in use.',
+            'account_id.unique' => 'This account ID is already in use.',
         ];
     }
 }

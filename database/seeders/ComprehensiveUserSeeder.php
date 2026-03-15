@@ -219,20 +219,12 @@ class ComprehensiveUserSeeder extends Seeder
                 'balance' => -$data['balance'] // Negative means they owe
             ]);
 
-            // Create Student profile
+            // Create Student profile with student-specific fields only
+            // Personal data is already in the User record
             Student::create([
                 'user_id' => $user->id,
                 'student_id' => $studentId,
-                'last_name' => $lastName,
-                'first_name' => $firstName,
-                'middle_initial' => $middleInitial,
-                'email' => $email,
-                'course' => $course,
-                'year_level' => $data['year_level'],
-                'status' => $studentStatusMap[$data['status']],
-                'birthday' => $birthday,
-                'phone' => $user->phone,
-                'address' => $address,
+                'enrollment_status' => $studentStatusMap[$data['status']],
                 'total_balance' => $data['balance'],
             ]);
 

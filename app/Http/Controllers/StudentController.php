@@ -19,21 +19,27 @@ class StudentController extends Controller
     // ── INDEX — active/pending/suspended students only ────────────────────────
     public function index(Request $request): Response
     {
-        $query = Student::with(['payments', 'transactions', 'account', 'workflowInstances.workflow']);
+        $query = Student::with(['user', 'payments', 'transactions', 'account', 'workflowInstances.workflow']);
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('first_name',      'like', "%{$searchTerm}%")
-                  ->orWhere('last_name',     'like', "%{$searchTerm}%")
-                  ->orWhere('email',         'like', "%{$searchTerm}%")
-                  ->orWhere('student_id',    'like', "%{$searchTerm}%")
-                  ->orWhere('student_number','like', "%{$searchTerm}%")
-                  ->orWhere('course',        'like', "%{$searchTerm}%")
-                  ->orWhere('year_level',    'like', "%{$searchTerm}%")
-                  ->orWhere('phone',         'like', "%{$searchTerm}%")
-                  ->orWhere('address',       'like', "%{$searchTerm}%");
-            });
+            $query->whereHas('user', function ($q) use ($searchTerm) {
+                $q->where('first_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('last_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('email', 'like', "%{$searchTerm}%")
+                  ->orWhere('phone', 'like', "%{$searchTerm}%")
+                  ->orWhere('address', 'like', "%{$searchTerm}%");
+            })
+            ->orWhere('student_id', 'like', "%{$searchTerm}%")
+            ->orWhere('student_number', 'like', "%{$searchTerm}%");
+        }
+
+        if ($request->filled('course')) {
+            $query->whereHas('user', fn($q) => $q->where('course', $request->course));
+        }
+
+        if ($request->filled('year_level')) {
+            $query->whereHas('user', fn($q) => $q->where('year_level', $request->year_level));
         }
 
         if ($request->filled('status')) {
@@ -47,7 +53,7 @@ class StudentController extends Controller
 
         return Inertia::render('Students/Index', [
             'students' => $students,
-            'filters'  => $request->only(['search', 'status']),
+            'filters'  => $request->only(['search', 'status', 'course', 'year_level']),
         ]);
     }
 
@@ -56,18 +62,17 @@ class StudentController extends Controller
     {
         $archiveStatuses = ['graduated', 'dropped', 'inactive'];
 
-        $query = Student::with(['account']);
+        $query = Student::with(['user', 'account']);
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('first_name',      'like', "%{$searchTerm}%")
-                  ->orWhere('last_name',     'like', "%{$searchTerm}%")
-                  ->orWhere('email',         'like', "%{$searchTerm}%")
-                  ->orWhere('student_id',    'like', "%{$searchTerm}%")
-                  ->orWhere('student_number','like', "%{$searchTerm}%")
-                  ->orWhere('course',        'like', "%{$searchTerm}%");
-            });
+            $query->whereHas('user', function ($q) use ($searchTerm) {
+                $q->where('first_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('last_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('email', 'like', "%{$searchTerm}%");
+            })
+            ->orWhere('student_id', 'like', "%{$searchTerm}%")
+            ->orWhere('student_number', 'like', "%{$searchTerm}%");
         }
 
         if ($request->filled('status') && in_array($request->status, $archiveStatuses)) {
@@ -102,11 +107,11 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'student_id'        => 'required|unique:students',
+            'student_id'        => 'required|string|unique:students',
             'last_name'         => 'required|string|max:255',
             'first_name'        => 'required|string|max:255',
             'middle_initial'    => 'nullable|string|max:10',
-            'email'             => 'required|email|unique:students',
+            'email'             => 'required|email|unique:users',
             'course'            => 'required|string',
             'year_level'        => 'required|string',
             'birthday'          => 'nullable|date',
@@ -117,12 +122,43 @@ class StudentController extends Controller
             'user_id'           => 'nullable|exists:users,id',
         ]);
 
+        // If no user_id provided, create the User first with personal info
+        if (empty($validated['user_id'])) {
+            $user = \App\Models\User::create([
+                'email'         => $validated['email'],
+                'last_name'     => $validated['last_name'],
+                'first_name'    => $validated['first_name'],
+                'middle_initial' => $validated['middle_initial'],
+                'course'        => $validated['course'],
+                'year_level'    => $validated['year_level'],
+                'birthday'      => $validated['birthday'],
+                'phone'         => $validated['phone'],
+                'address'       => $validated['address'],
+                'role'          => \App\Enums\UserRoleEnum::STUDENT,
+                'password'      => bcrypt('temporary' . time()), // temporary password
+            ]);
+            $validated['user_id'] = $user->id;
+        }
+
         if (! isset($validated['student_number'])) {
             $validated['student_number'] = 'STU-' . strtoupper(uniqid());
         }
 
         $validated['enrollment_status'] = $validated['enrollment_status'] ?? 'pending';
         $validated['total_balance']     = 0.0;
+
+        // Remove personal data fields — these are now in the User record
+        unset(
+            $validated['last_name'],
+            $validated['first_name'],
+            $validated['middle_initial'],
+            $validated['email'],
+            $validated['course'],
+            $validated['year_level'],
+            $validated['birthday'],
+            $validated['phone'],
+            $validated['address']
+        );
 
         $student = Student::create($validated);
 
@@ -208,7 +244,7 @@ class StudentController extends Controller
             'first_name'        => 'required|string|max:255',
             'last_name'         => 'required|string|max:255',
             'middle_initial'    => 'nullable|string|max:10',
-            'email'             => 'required|email|unique:students,email,' . $student->id,
+            'email'             => 'required|email|unique:users,email,' . $student->user_id,
             'course'            => 'required|string|max:255',
             'year_level'        => 'required|string',
             'birthday'          => 'nullable|date',
@@ -218,9 +254,29 @@ class StudentController extends Controller
             'enrollment_status' => 'sometimes|in:pending,active,suspended,graduated,dropped,inactive',
         ]);
 
+        // Update the related User record with personal data
+        if ($student->user) {
+            $student->user->update([
+                'first_name'     => $validated['first_name'],
+                'last_name'      => $validated['last_name'],
+                'middle_initial' => $validated['middle_initial'],
+                'email'          => $validated['email'],
+                'course'         => $validated['course'],
+                'year_level'     => $validated['year_level'],
+                'birthday'       => $validated['birthday'],
+                'phone'          => $validated['phone'],
+                'address'        => $validated['address'],
+            ]);
+        }
+
+        // Update student record with student-specific data only
         $statusChanged = $student->enrollment_status !== ($validated['enrollment_status'] ?? $student->enrollment_status);
 
-        $student->update($validated);
+        $student->update([
+            'student_id'        => $validated['student_id'],
+            'total_balance'     => $validated['total_balance'],
+            'enrollment_status' => $validated['enrollment_status'] ?? $student->enrollment_status,
+        ]);
 
         if ($statusChanged && $student->enrollment_status === 'active') {
             $activeWorkflow = $student->workflowInstances()->where('status', 'in_progress')->first();

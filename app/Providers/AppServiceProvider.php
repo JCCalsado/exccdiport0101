@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,18 +16,13 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
+     *
+     * NOTE: Do NOT share Inertia data here.
+     * All shared props are managed exclusively by HandleInertiaRequests middleware
+     * to prevent overwrite conflicts and ensure full user objects are passed.
      */
     public function boot(): void
     {
-        Inertia::share([
-        'auth' => fn () => [
-            'user' => auth()->user() ? [
-                'id' => auth()->id(),
-                'name' => auth()->user()->name,
-                'email' => auth()->user()->email,
-                'role' => auth()->user()->role,
-            ] : null,
-        ],
-    ]);
+        //
     }
 }

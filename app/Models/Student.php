@@ -15,26 +15,15 @@ class Student extends Model
     use HasFactory, SoftDeletes;
 
     // ============================================
-    // FILLABLE FIELDS (Combined from both models)
+    // FILLABLE FIELDS (Student-specific only)
     // ============================================
+    // All personal data (name, email, course, phone, etc.) is stored in users table.
+    // This students table only contains student-specific enrollment and financial data.
     protected $fillable = [
-        // Original fields from your existing model
         'user_id',
         'student_id',
-        'last_name',
-        'first_name',
-        'middle_initial',
-        'email',
-        'course',
-        'year_level',
-        'birthday',
-        'phone',
-        'address',
-        'total_balance',
-        
-        // New workflow-related fields
         'student_number',
-        'date_of_birth',
+        'total_balance',
         'enrollment_status',
         'enrollment_date',
         'metadata',
@@ -44,11 +33,9 @@ class Student extends Model
     // CASTS
     // ============================================
     protected $casts = [
-        'birthday' => 'date',
-        'date_of_birth' => 'date',
         'enrollment_date' => 'date',
         'total_balance' => 'decimal:2',
-        'metadata' => 'array', // For storing extra JSON data
+        'metadata' => 'array',
     ];
 
     // ============================================
@@ -122,21 +109,31 @@ class Student extends Model
     // ============================================
     
     /**
-     * Get full name of student
+     * Get full name of student from user relationship
      */
     public function getFullNameAttribute(): string
     {
+        // Lazy load user if not already loaded
+        if (!isset($this->relations['user'])) {
+            $this->load('user');
+        }
+        
+        $user = $this->user;
+        if (!$user) {
+            return 'Unknown Student';
+        }
+        
         $parts = array_filter([
-            $this->first_name,
-            $this->middle_initial ? $this->middle_initial . '.' : null,
-            $this->last_name,
+            $user->last_name,
+            $user->middle_initial ? $user->middle_initial . '.' : null,
+            $user->first_name,
         ]);
         
         return implode(' ', $parts);
     }
 
     /**
-     * Calculate remaining balance (from your original model)
+     * Calculate remaining balance (from transactions)
      */
     public function getRemainingBalanceAttribute()
     {
@@ -166,18 +163,22 @@ class Student extends Model
     }
 
     /**
-     * Scope to filter by course
+     * Scope to filter by course (via user relationship)
      */
     public function scopeOfCourse($query, string $course)
     {
-        return $query->where('course', $course);
+        return $query->whereHas('user', function ($q) use ($course) {
+            $q->where('course', $course);
+        });
     }
 
     /**
-     * Scope to filter by year level
+     * Scope to filter by year level (via user relationship)
      */
     public function scopeOfYearLevel($query, string $yearLevel)
     {
-        return $query->where('year_level', $yearLevel);
+        return $query->whereHas('user', function ($q) use ($yearLevel) {
+            $q->where('year_level', $yearLevel);
+        });
     }
 }

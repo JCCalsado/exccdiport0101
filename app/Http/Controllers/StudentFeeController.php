@@ -1009,7 +1009,7 @@ class StudentFeeController extends Controller
             'last_name'      => 'required|string|max:255',
             'first_name'     => 'required|string|max:255',
             'middle_initial' => 'nullable|string|max:10',
-            'email'          => 'required|email|unique:users,email|unique:students,email',
+            'email'          => 'required|email|unique:users,email',
             'birthday'       => 'required|date',
             'phone'          => 'required|string|max:20',
             'address'        => 'required|string|max:255',
@@ -1049,18 +1049,12 @@ class StudentFeeController extends Controller
                 'password'           => Hash::make('password'),
             ]);
 
+            // Only store student-specific data. Personal info is in the user record.
             Student::create([
                 'user_id'        => $user->id,
                 'student_id'     => $studentId,
-                'last_name'      => $validated['last_name'],
-                'first_name'     => $validated['first_name'],
-                'middle_initial' => $validated['middle_initial'] ?? null,
-                'email'          => $validated['email'],
-                'phone'          => $validated['phone'],
-                'address'        => $validated['address'],
-                'birthday'       => $validated['birthday'],
-                'course'         => $validated['course'],
-                'year_level'     => $validated['year_level'],
+                'enrollment_status' => 'pending',
+                'total_balance'  => 0,
             ]);
 
             DB::commit();

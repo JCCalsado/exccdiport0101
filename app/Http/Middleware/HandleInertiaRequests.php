@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\UserRoleEnum;
 use App\Models\StudentAssessment;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -11,18 +12,8 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that's loaded on the first page visit.
-     *
-     * @see https://inertiajs.com/server-side-setup#root-template
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
@@ -30,10 +21,7 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * Define the props that are shared by default.
-     *
-     * @see https://inertiajs.com/shared-data
-     *
-     * @return array<string, mixed>
+     * This is the SINGLE source of truth for auth user data on the frontend.
      */
     public function share(Request $request): array
     {
@@ -43,11 +31,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name'                 => config('app.name'),
             'quote'                => ['message' => trim($message), 'author' => trim($author)],
-            'auth'                 => ['user' => $request->user()],
+            'auth'                 => ['user' => $this->resolveAuthUser($request)],
             'latestAssessmentInfo' => $this->resolveLatestAssessmentInfo($request),
             'sidebarOpen'          => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'csrf_token'           => csrf_token(),
-            // Flash message for role-based redirects (set by RoleMiddleware)
             'flash'                => [
                 'error'   => $request->session()->pull('flash.error'),
                 'warning' => $request->session()->pull('flash.warning'),
@@ -58,11 +45,57 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * Resolve the full authenticated user object for the frontend.
+     * Exposes profile_picture as `avatar` so frontend components are consistent.
+     * Returns null when unauthenticated.
+     */
+    private function resolveAuthUser(Request $request): ?array
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $role = $user->role instanceof UserRoleEnum
+            ? $user->role->value
+            : (string) $user->role;
+
+        // Build a consistent avatar URL from profile_picture path
+        $avatar = $user->profile_picture
+            ? asset('storage/' . $user->profile_picture)
+            : null;
+
+        return [
+            'id'              => $user->id,
+            'name'            => $user->name,             // "DELA CRUZ, Juan P." — display name
+            'first_name'      => $user->first_name,
+            'last_name'       => $user->last_name,
+            'middle_initial'  => $user->middle_initial,
+            'email'           => $user->email,
+            'role'            => $role,
+            'avatar'          => $avatar,                 // unified field for frontend avatar
+            'profile_picture' => $user->profile_picture, // raw path for settings page
+            'account_id'      => $user->account_id,
+            'course'          => $user->course,
+            'year_level'      => $user->year_level,
+            'is_irregular'    => $user->is_irregular,
+            'birthday'        => $user->birthday?->format('Y-m-d'),
+            'phone'           => $user->phone,
+            'address'         => $user->address,
+            'faculty'         => $user->faculty,
+            'status'          => $user->status,
+            'admin_type'      => $user->admin_type,
+            'department'      => $user->department,
+            'is_active'       => $user->is_active,
+            'email_verified_at' => $user->email_verified_at,
+        ];
+    }
+
+    /**
      * Resolve the latest active assessment info for student users.
-     *
-     * Cached per-user for 5 minutes to avoid a DB hit on every Inertia
-     * request. Cache is invalidated by StudentAssessment::clearUserCache()
-     * whenever an assessment is created or its status changes.
+     * Cached per-user for 5 minutes to avoid a DB hit on every Inertia request.
      */
     private function resolveLatestAssessmentInfo(Request $request): ?array
     {

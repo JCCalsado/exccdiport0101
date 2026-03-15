@@ -68,19 +68,11 @@ class RegisteredUserController extends Controller
                 'role' => 'student', // default new users to student role
             ]);
 
-            // Create Student record with all required fields
+            // Create Student record with only student-specific fields
+            // Personal info is already in the User record
             Student::create([
                 'user_id' => $user->id,
                 'student_id' => $accountId,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'middle_initial' => $user->middle_initial,
-                'email' => $user->email,
-                'course' => $user->course,
-                'year_level' => $user->year_level,
-                'birthday' => $user->birthday,
-                'phone' => $user->phone,
-                'address' => $user->address,
                 'enrollment_status' => 'active',
                 'total_balance' => 0,
             ]);

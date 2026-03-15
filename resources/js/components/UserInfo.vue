@@ -15,15 +15,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { getInitials } = useInitials();
 
-// Compute whether we should show the avatar image
-const showAvatar = computed(() => props.user.avatar && props.user.avatar !== '');
+/**
+ * Avatar URL comes from the unified `avatar` field set in HandleInertiaRequests.
+ * It is already a full /storage/... URL, not a raw path.
+ */
+const avatarUrl = computed(() => props.user.avatar ?? null);
+const initials = computed(() => getInitials(props.user.name));
 </script>
 
 <template>
     <Avatar class="h-8 w-8 overflow-hidden rounded-lg">
-        <AvatarImage v-if="showAvatar" :src="user.avatar!" :alt="user.name" />
-        <AvatarFallback class="rounded-lg text-black dark:text-white">
-            {{ getInitials(user.name) }}
+        <AvatarImage v-if="avatarUrl" :src="avatarUrl" :alt="user.name" />
+        <AvatarFallback class="rounded-lg bg-muted text-black dark:text-white">
+            {{ initials }}
         </AvatarFallback>
     </Avatar>
 

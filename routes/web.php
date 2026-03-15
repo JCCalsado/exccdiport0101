@@ -11,7 +11,6 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\AccountingDashboardController;
 // REMOVED: FeeController (Fee Management disabled)
 // REMOVED: SubjectController (Subject Management disabled)
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\NotificationController;

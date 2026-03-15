@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Enums\UserRoleEnum;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -21,7 +22,7 @@ class ProfileController extends Controller
     {
         return Inertia::render('settings/Profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
+            'status'          => $request->session()->get('status'),
         ]);
     }
 
@@ -31,14 +32,20 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $user = $request->user();
+        $user      = $request->user();
 
-        // For student users, never allow course or year_level to be updated
-        // These fields are managed by administration only
-        if ($user->role === 'student' || $user->role->value === 'student') {
-            unset($validated['course']);
-            unset($validated['year_level']);
+        // Resolve role safely regardless of Enum cast
+        $role = $user->role instanceof UserRoleEnum
+            ? $user->role->value
+            : (string) $user->role;
+
+        // Students cannot change course or year_level — strip from validated data
+        if ($role === 'student') {
+            unset($validated['course'], $validated['year_level']);
         }
+
+        // Remove the legacy 'name' field — it is computed from first/last name
+        unset($validated['name']);
 
         $user->fill($validated);
 
@@ -52,7 +59,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's profile.
+     * Delete the user's account.
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -63,7 +70,6 @@ class ProfileController extends Controller
         $user = $request->user();
 
         Auth::logout();
-
         $user->delete();
 
         $request->session()->invalidate();
@@ -73,30 +79,29 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update profile picture.
+     * Update the user's profile picture.
      */
     public function updatePicture(Request $request): RedirectResponse
     {
         $request->validate([
-            'profile_picture' => 'required|image|max:2048',
+            'profile_picture' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ]);
 
         $user = $request->user();
 
-        // Delete old file if exists
+        // Delete the old file before storing the new one
         if ($user->profile_picture) {
             Storage::disk('public')->delete($user->profile_picture);
         }
 
         $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-
         $user->update(['profile_picture' => $path]);
 
         return back()->with('success', 'Profile picture updated successfully.');
     }
 
     /**
-     * Remove profile picture.
+     * Remove the user's profile picture.
      */
     public function removePicture(Request $request): RedirectResponse
     {
@@ -107,6 +112,6 @@ class ProfileController extends Controller
             $user->update(['profile_picture' => null]);
         }
 
-        return back()->with('success', 'Profile picture removed successfully.');
+        return back()->with('success', 'Profile picture removed.');
     }
 }

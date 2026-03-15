@@ -452,11 +452,13 @@ class TransactionController extends Controller
 
     protected function promoteYearLevel($student): void
     {
+        if (!$student->user) return;
+        
         $levels       = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-        $currentIndex = array_search($student->year_level, $levels);
+        $currentIndex = array_search($student->user->year_level, $levels);
         if ($currentIndex !== false && $currentIndex < count($levels) - 1) {
-            $student->year_level = $levels[$currentIndex + 1];
-            $student->save();
+            $student->user->year_level = $levels[$currentIndex + 1];
+            $student->user->save();
         }
     }
 

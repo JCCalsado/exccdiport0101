@@ -212,7 +212,10 @@ class StudentTransactionHistorySeeder extends Seeder
             $user = User::create([
                 'first_name' => 'Transaction',
                 'last_name' => 'History',
+                'middle_initial' => 'S',
                 'email' => self::EMAIL,
+                'course' => self::COURSE,
+                'year_level' => '3rd Year',
                 'password' => bcrypt('password'),
                 'email_verified_at' => now(),
                 'role' => UserRoleEnum::STUDENT->value,
@@ -227,18 +230,13 @@ class StudentTransactionHistorySeeder extends Seeder
             ]);
         }
 
-        // Create student record
+        // Create student record with student-specific fields only
         $student = Student::create([
             'user_id' => $user->id,
-            'email' => self::EMAIL,
-            'first_name' => 'Transaction',
-            'last_name' => 'History',
-            'middle_initial' => 'S',
             'student_id' => $accountId,
             'student_number' => 'STU-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT),
-            'course' => self::COURSE,
-            'year_level' => '3rd Year',
             'enrollment_status' => 'active',
+            'total_balance' => 0,
         ]);
 
         return $student;
