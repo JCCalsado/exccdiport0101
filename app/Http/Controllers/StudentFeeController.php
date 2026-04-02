@@ -266,63 +266,31 @@ class StudentFeeController extends Controller
         //
         // Only 'enrolled' status is included. 'dropped' and 'completed'
         // records are excluded so those subjects remain available.
-        $studentIds     = $students->pluck('id');
-        $enrollmentsMap = StudentEnrollment::where('status', 'enrolled')
+        $studentIds     = $students->pluck('id'); 
+        
+         $enrollmentsMap = StudentEnrollment::where('status', 'enrolled')
             ->whereIn('user_id', $studentIds)
             ->get(['user_id', 'subject_id', 'school_year'])
             ->groupBy('user_id')
-            ->map(fn ($byUser) => $byUser
+            ->map(fn($rows) => $rows
                 ->groupBy('school_year')
-                ->map(fn ($byYear) => $byYear
-                    ->pluck('subject_id')
-                    ->map(fn ($id) => (int) $id)
-                    ->unique()
-                    ->values()
-                    ->toArray())
+                ->map(fn($byYear) => $byYear->pluck('subject_id')
+                    ->map(fn($id) => (int) $id)->toArray())
                 ->toArray())
             ->toArray();
 
         return Inertia::render('StudentFees/Create', [
             'students'         => $students,
-            'yearLevels'       => ['1st Year', '2nd Year', '3rd Year', '4th Year'],
-            'semesters'        => ['1st Sem', '2nd Sem', 'Summer'],
-            'schoolYears'      => [
-                ($currentYear - 2) . '-' . ($currentYear - 1),
-                ($currentYear - 1) . '-' . ($currentYear),
-                "{$currentYear}-" . ($currentYear + 1),
-                ($currentYear + 1) . '-' . ($currentYear + 2),
-                ($currentYear + 2) . '-' . ($currentYear + 3),
-            ],
-            // Real subjects from DB — subjectMap[course][year_level][semester] = Subject[]
             'subjectMap'       => $this->buildSubjectMap(),
             'courses'          => $this->allCourses(),
-            // Fee rate info for client-side total calculation
-            'tuitionPerUnit'   => (float) config('fees.tuition_per_unit',    364.00),
-            'labFeePerSubject' => (float) config('fees.lab_fee_per_subject', 1656.00),
             'miscItems'        => $miscItems,
             'miscTotal'        => $miscTotal,
-            // Tells Vue which subjects are already enrolled per student/term
-            // so they can be greyed out and blocked from re-selection.
+            'tuitionPerUnit'   => (float) config('fees.tuition_per_unit', 364.00),
+            'labFeePerSubject' => (float) config('fees.lab_fee_per_subject', 1656.00),
             'enrollmentsMap'   => $enrollmentsMap,
         ]);
-    }
-
-    // =========================================================================
-    // STORE — Save a new assessment
-    // =========================================================================
-    //
-    // Accepts selected_subjects[]: array of subject IDs.
-    // Controller fetches each Subject from DB, calculates:
-    //   tuition = Σ (subject.units × tuition_per_unit)
-    //   labs    = Σ (subject.has_lab ? lab_fee_per_subject : 0)
-    //   misc    = fixed miscellaneous block from config
-    //   total   = tuition + labs + misc
-    //
-    // Both Regular and Irregular use the same pathway.
-    // Regular = staff selects all subjects for the student's standard term.
-    // Irregular = staff selects a custom mix of subjects across courses/terms.
-    // =========================================================================
-
+    }   
+       
     public function store(Request $request)
     {
         $base = $request->validate([
@@ -486,7 +454,7 @@ class StudentFeeController extends Controller
                 'total_assessment'  => $grandTotal,
                 'subjects'          => $base['selected_subjects'],
                 'fee_breakdown'     => $feeBreakdown,
-                'created_by'        => auth()->id(),
+                'created_by'        => optional(auth()->user())->getKey(),
                 'status'            => 'active',
             ]);
 
@@ -680,15 +648,15 @@ class StudentFeeController extends Controller
             $storedBreakdown = $latestAssessment->fee_breakdown ?? [];
             if (! empty($storedBreakdown)) {
                 $grouped = collect($storedBreakdown)
-                    ->whereNotIn('category', ['Tuition', 'Laboratory'])
-                    ->groupBy('category');
-                foreach ($grouped as $category => $items) {
-                    $feeBreakdown->push([
-                        'category' => $category,
-                        'total'    => $items->sum('amount'),
-                        'items'    => $items->count(),
-                    ]);
-                }
+                ->whereNotIn('category', ['Tuition', 'Laboratory'])
+                ->groupBy('category');
+            foreach ($grouped as $category => $items) {
+                $feeBreakdown->push([
+                    'category' => $category,
+                    'total'    => collect($items)->sum('amount'),
+                    'items'    => collect($items)->count(),
+                ]);
+            }
             } elseif ((float) $latestAssessment->other_fees > 0) {
                 $feeBreakdown->push([
                     'category' => 'Miscellaneous',
@@ -699,15 +667,15 @@ class StudentFeeController extends Controller
         } else {
             // $transactions is payment-only — fetch charge rows separately for the
             // fee breakdown summary card (this is NOT shown in Payment History).
-            $feeBreakdown = Transaction::where('user_id', $userId)
+           $feeBreakdown = Transaction::where('user_id', $userId)
                 ->where('kind', 'charge')
                 ->get()
                 ->groupBy('type')
                 ->map(fn ($group) => [
-                    'category' => $group->first()->type,
-                    'total'    => $group->sum('amount'),
-                    'items'    => $group->count(),
-                ]);
+                'category' => collect($group)->first()->type ?? '',
+                'total'    => collect($group)->sum('amount'),
+                'items'    => collect($group)->count(),
+            ]);
         }
 
         $backUrl = $request->query('from') === 'archive'
@@ -725,7 +693,7 @@ class StudentFeeController extends Controller
         //
         // Vue uses this to render a ✓ Enrolled badge (green) vs ○ Assessment-only
         // badge (grey) per subject row in the accordion.
-        $assessmentTermIndex = $allAssessments->keyBy(
+        $assessmentTermIndex = collect($allAssessments)->keyBy(
             fn ($a) => $a['school_year'] . '||' . $a['semester']
         );
 
@@ -741,7 +709,7 @@ class StudentFeeController extends Controller
                 // Enrollment exists for a term with no active assessment — skip.
                 continue;
             }
-            $assessmentId = $assessmentTermIndex[$termKey]['id'];
+            $assessmentId = data_get($assessmentTermIndex[$termKey], 'id');
             if (! isset($enrolledSubjectsByAssessment[$assessmentId])) {
                 $enrolledSubjectsByAssessment[$assessmentId] = [];
             }
@@ -921,7 +889,7 @@ class StudentFeeController extends Controller
                     'terms_covered'     => count($allocation),
                     'total_applied'     => $totalApplied,
                     'unallocated'       => $remaining,
-                    'recorded_by'       => auth()->id(),
+                    'recorded_by' => auth()->check() ? auth()->user()->id : null,
                     'requires_approval' => false,
                 ],
             ]);
@@ -1324,7 +1292,7 @@ class StudentFeeController extends Controller
 
         StudentStatusLog::create([
             'student_id'  => $student->id,
-            'changed_by'  => auth()->id(),
+            'changed_by' => auth()->check() ? auth()->user()->id : null,
             'from_status' => $fromStatus,
             'to_status'   => 'dropped',
             'reason'      => $request->input('reason'),

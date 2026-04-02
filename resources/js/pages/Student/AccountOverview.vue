@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import EnrolledSubjectsSkeleton from '@/components/EnrolledSubjectsSkeleton.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
-import { AlertCircle, CalendarClock, CheckCircle, ChevronDown, Clock, CreditCard, XCircle } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { AlertCircle, CalendarClock, CheckCircle, Clock, CreditCard, XCircle } from 'lucide-vue-next';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const { formatCurrency, formatDate, getPaymentTermStatusConfig, getTransactionStatusConfig, getAssessmentStatusConfig } = useDataFormatting();
 
@@ -150,7 +149,7 @@ const props = withDefaults(
     },
 );
 
-const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 'My Account' }];
+const breadcrumbs = [{ title: 'My Account' }];
 
 // Get tab from URL if prop is not working
 const getTabFromUrl = (): 'fees' | 'history' | 'payment' => {
@@ -286,9 +285,6 @@ onMounted(() => {
     // ── Dismiss skeleton once props are fully resolved ────────────────────────
     // nextTick guarantees the skeleton shows for at least one rendered frame
     // before being replaced by real data, preventing a content flash.
-    nextTick(() => {
-        isSubjectsLoading.value = false;
-    });
 });
 
 // Clean up interval on unmount
@@ -400,102 +396,6 @@ const firstUnpaidTermId = computed(() => {
     const unpaid = props.paymentTerms?.filter((t) => t.balance > 0).sort((a, b) => a.term_order - b.term_order);
     return unpaid?.[0]?.id ?? null;
 });
-
-// ── Enrolled Subjects Accordion ───────────────────────────────────────────────
-// FIX #2: Scoped to the CURRENT (latest) assessment only.
-// Previously this built panels for ALL historical assessments, exposing
-// enrolled subjects from past semesters in the current-term view.
-// Now only the assessment that matches latestAssessment is shown.
-const enrolledSubjectPanels = computed(() => {
-    // Only operate on the current assessment — not all historical assessments
-    if (!props.latestAssessment || !props.allAssessments || props.allAssessments.length === 0) return [];
-
-    // Find the full assessment record (with fee_breakdown) matching latestAssessment.id
-    const currentAssessmentFull = props.allAssessments.find((a) => a.id === props.latestAssessment!.id);
-    if (!currentAssessmentFull || !currentAssessmentFull.fee_breakdown?.length) return [];
-
-    // Wrap in array so we reuse the same .map() pattern below
-    return [currentAssessmentFull]
-        .filter((a) => a.fee_breakdown && a.fee_breakdown.length > 0)
-        .map((a) => {
-            const subjectRows = a.fee_breakdown.filter((item) => item.category === 'Tuition' || item.category === 'Laboratory');
-
-            const subjectMap: Record<
-                number,
-                {
-                    subject_id: number;
-                    code: string;
-                    name: string;
-                    units: number;
-                    tuitionAmount: number;
-                    labAmount: number;
-                    hasLab: boolean;
-                    isEnrolled: boolean;
-                }
-            > = {};
-
-            const enrolledIds = new Set((props.enrolledSubjectsByAssessment ?? {})[a.id] ?? []);
-
-            for (const row of subjectRows) {
-                const sid = row.subject_id;
-                if (sid === undefined) continue;
-
-                if (!subjectMap[sid]) {
-                    subjectMap[sid] = {
-                        subject_id: sid,
-                        code: row.code ?? '—',
-                        name: row.name,
-                        units: row.units ?? 0,
-                        tuitionAmount: 0,
-                        labAmount: 0,
-                        hasLab: false,
-                        isEnrolled: enrolledIds.has(sid),
-                    };
-                }
-
-                if (row.category === 'Tuition') {
-                    subjectMap[sid].tuitionAmount = parseFloat(String(row.amount));
-                    subjectMap[sid].units = row.units ?? subjectMap[sid].units;
-                    if (!subjectMap[sid].name || subjectMap[sid].name.startsWith('Laboratory')) {
-                        subjectMap[sid].name = row.name;
-                    }
-                } else if (row.category === 'Laboratory') {
-                    subjectMap[sid].labAmount = parseFloat(String(row.amount));
-                    subjectMap[sid].hasLab = true;
-                }
-            }
-
-            const subjects = Object.values(subjectMap);
-            const totalUnits = subjects.reduce((s, sub) => s + sub.units, 0);
-
-            return {
-                assessmentId: a.id,
-                label: `${a.year_level} — ${a.semester}`,
-                schoolYear: a.school_year,
-                course: a.course ?? '—',
-                totalUnits,
-                subjectCount: subjects.length,
-                subjects,
-            };
-        })
-        .filter((panel) => panel.subjects.length > 0);
-});
-
-const expandedSubjectPanels = ref<Set<number>>(new Set());
-
-// ── Skeleton loading state ────────────────────────────────────────────────────
-// Starts true so the skeleton renders on the first frame.
-// Cleared inside onMounted → nextTick so it only resolves after Vue has
-// finished the initial DOM update with prop data available.
-const isSubjectsLoading = ref(true);
-
-function toggleSubjectPanel(assessmentId: number) {
-    if (expandedSubjectPanels.value.has(assessmentId)) {
-        expandedSubjectPanels.value.delete(assessmentId);
-    } else {
-        expandedSubjectPanels.value.add(assessmentId);
-    }
-}
 
 // ── Current-term helpers ──────────────────────────────────────────────────────
 // Derive the start-year string from the school_year field (e.g. "2025-2026" → "2025")
@@ -1106,148 +1006,100 @@ const accountBalance = computed(() => {
                             </div>
                         </div>
 
-                        <!-- ── Enrolled Subjects Accordion ──────────────────────────────── -->
+                        <!-- ── Fee Breakdown ──────────────────────────────── -->
                         <div class="mt-8 border-t pt-6">
-                            <h3 class="text-md mb-4 flex items-center gap-2 font-semibold text-gray-800">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 text-gray-500"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                >
-                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                                </svg>
-                                ENROLLED SUBJECTS
-                            </h3>
+                            <h3 class="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground">Fee Breakdown</h3>
 
-                            <!-- ── Skeleton state ── -->
-                            <template v-if="isSubjectsLoading">
-                                <EnrolledSubjectsSkeleton variant="compact" :rows="5" />
-                            </template>
+                            <div v-if="!latestAssessment" class="rounded-lg border border-dashed border-gray-200 py-8 text-center">
+                                <p class="text-sm text-gray-400">No assessment available.</p>
+                            </div>
 
-                            <!-- ── Real data ── -->
-                            <template v-else-if="enrolledSubjectPanels.length > 0">
-                                <div
-                                    v-for="panel in enrolledSubjectPanels"
-                                    :key="panel.assessmentId"
-                                    class="mb-3 overflow-hidden rounded-lg border border-gray-200 bg-white"
-                                >
-                                    <!-- Panel header — click to expand/collapse -->
-                                    <button
-                                        type="button"
-                                        class="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50"
-                                        @click="toggleSubjectPanel(panel.assessmentId)"
-                                    >
-                                        <div>
-                                            <span class="font-medium text-gray-800">{{ panel.label }}</span>
-                                            <span class="ml-2 text-xs text-gray-500">{{ panel.schoolYear }}</span>
-                                            <span
-                                                v-if="panel.course !== '—'"
-                                                class="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700"
-                                            >
-                                                {{ panel.course }}
-                                            </span>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs text-gray-500">
-                                                {{ panel.subjectCount }} subject{{ panel.subjectCount !== 1 ? 's' : '' }} · {{ panel.totalUnits }} units
-                                            </span>
-                                            <ChevronDown
-                                                class="h-4 w-4 text-gray-400 transition-transform duration-200"
-                                                :class="{ 'rotate-180': expandedSubjectPanels.has(panel.assessmentId) }"
-                                            />
-                                        </div>
-                                    </button>
+                            <template v-else>
+                                <!-- Compute values from fee_breakdown -->
+                                <div class="overflow-hidden rounded-lg border border-gray-200">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-50 border-b border-gray-200">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Fee Item</th>
+                                                <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">Units</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
 
-                                    <!-- Subjects table — shown when panel is expanded -->
-                                    <div v-show="expandedSubjectPanels.has(panel.assessmentId)">
-                                        <table class="w-full border-collapse text-sm">
-                                            <thead class="border-t border-gray-200 bg-gray-50">
-                                                <tr>
-                                                    <th class="px-4 py-2.5 text-left font-semibold text-gray-600">Code</th>
-                                                    <th class="px-4 py-2.5 text-left font-semibold text-gray-600">Subject</th>
-                                                    <th class="px-4 py-2.5 text-center font-semibold text-gray-600">Units</th>
-                                                    <th class="px-4 py-2.5 text-right font-semibold text-gray-600">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-gray-100">
-                                                <tr
-                                                    v-for="subject in panel.subjects"
-                                                    :key="subject.subject_id"
-                                                    class="transition-colors hover:bg-gray-50"
-                                                >
-                                                    <td class="px-4 py-2.5 font-mono text-xs text-gray-500">
-                                                        {{ subject.code }}
-                                                    </td>
-                                                    <td class="px-4 py-2.5 text-gray-800">
-                                                        {{ subject.name }}
-                                                        <span
-                                                            v-if="subject.hasLab"
-                                                            class="ml-1.5 rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700"
-                                                        >
-                                                            Lab
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-4 py-2.5 text-center text-gray-600">
-                                                        {{ subject.units }}
-                                                    </td>
-                                                    <td class="px-4 py-2.5 text-right">
-                                                        <span
-                                                            v-if="subject.isEnrolled"
-                                                            class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
-                                                        >
-                                                            ✓ Enrolled
-                                                        </span>
-                                                        <span
-                                                            v-else
-                                                            class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500"
-                                                        >
-                                                            ○ Not Confirmed
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                            <tfoot class="border-t-2 border-gray-200 bg-gray-50">
-                                                <tr>
-                                                    <td colspan="2" class="px-4 py-2 text-xs font-semibold text-gray-600">Total</td>
-                                                    <td class="px-4 py-2 text-center text-xs font-bold text-gray-800">
-                                                        {{ panel.totalUnits }}
-                                                    </td>
-                                                    <td></td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
+                                            <!-- Tuition Fee row — sum of all Tuition category items -->
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 text-gray-700">
+                                                    Tuition Fee
+                                                    <p class="text-xs text-gray-400">
+                                                        {{ allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Tuition').reduce((s, i) => s + (i.units ?? 0), 0) ?? 0 }} LEC units × ₱{{ (364).toLocaleString() }}
+                                                    </p>
+                                                </td>
+                                                <td class="px-4 py-3 text-center text-gray-700">
+                                                    {{ allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Tuition').reduce((s, i) => s + (i.units ?? 0), 0) ?? 0 }}
+                                                </td>
+                                                <td class="px-4 py-3 text-right font-medium text-gray-900">
+                                                    {{ formatCurrency(allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Tuition').reduce((s, i) => s + i.amount, 0) ?? latestAssessment.tuition_fee) }}
+                                                </td>
+                                            </tr>
+
+                                            <!-- Lab Fee row -->
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 text-gray-700">
+                                                    Laboratory Fee
+                                                    <p class="text-xs text-gray-400">
+                                                        {{ allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Laboratory').length ?? 0 }} lab subject(s) × ₱{{ (1656).toLocaleString() }}
+                                                    </p>
+                                                </td>
+                                                <td class="px-4 py-3 text-center text-gray-700">
+                                                    {{ allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Laboratory').reduce((s, i) => s + (i.units ?? 0), 0) ?? 0 }}
+                                                </td>
+                                                <td class="px-4 py-3 text-right font-medium text-gray-900">
+                                                    {{ formatCurrency(allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Laboratory').reduce((s, i) => s + i.amount, 0) ?? 0) }}
+                                                </td>
+                                            </tr>
+
+                                            <!-- Misc Fee row -->
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 text-gray-700">
+                                                    Miscellaneous Fee
+                                                    <p class="text-xs text-gray-400">Entrep, Registration, LMS, Library, Athletic, etc.</p>
+                                                </td>
+                                                <td class="px-4 py-3 text-center text-gray-400">—</td>
+                                                <td class="px-4 py-3 text-right font-medium text-gray-900">
+                                                    {{ formatCurrency(latestAssessment.other_fees) }}
+                                                </td>
+                                            </tr>
+
+                                        </tbody>
+                                        <tfoot class="border-t-2 border-gray-300 bg-gray-50">
+                                            <tr>
+                                                <td class="px-4 py-3 font-bold text-gray-900">Total Assessment Fee</td>
+                                                <td class="px-4 py-3 text-center text-xs font-semibold text-gray-600">
+                                                    <!-- Total units -->
+                                                    {{ (allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Tuition').reduce((s, i) => s + (i.units ?? 0), 0) ?? 0) +
+                                                    (allAssessments.find(a => a.id === latestAssessment!.id)?.fee_breakdown?.filter(i => i.category === 'Laboratory').reduce((s, i) => s + (i.units ?? 0), 0) ?? 0) }} units total
+                                                </td>
+                                                <td class="px-4 py-3 text-right text-base font-bold text-gray-900">
+                                                    {{ formatCurrency(latestAssessment.total_assessment) }}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <!-- Terms of Payment badges -->
+                                <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-500">Terms of Payment</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span v-for="term in paymentTerms" :key="term.id"
+                                            class="rounded-full px-3 py-1 text-xs font-medium"
+                                            :class="term.balance <= 0 ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'">
+                                            {{ term.term_name }}{{ term.balance <= 0 ? ' ✓' : '' }}
+                                        </span>
                                     </div>
                                 </div>
                             </template>
-
-                            <!-- ── Empty state — assessment exists but no subject breakdown yet ── -->
-                            <div
-                                v-else-if="props.allAssessments && props.allAssessments.length > 0"
-                                class="rounded-lg border border-dashed border-gray-200 py-8 text-center"
-                            >
-                                <p class="text-sm text-gray-400">No subject breakdown available for your current assessment.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment History Tab -->
-                    <div v-if="activeTab === 'history'">
-                        <div class="mb-5 flex items-center justify-between">
-                            <div>
-                                <h2 class="text-base font-semibold text-foreground">Payment History</h2>
-                                <p v-if="latestAssessment" class="mt-0.5 text-xs text-muted-foreground">
-                                    Showing payments for
-                                    <strong class="text-foreground">{{ latestAssessment.semester }} {{ latestAssessment.school_year }}</strong>
-                                    &middot; {{ latestAssessment.assessment_number }}
-                                </p>
-                                <p v-else class="mt-0.5 text-xs text-muted-foreground">Showing all payment history — no active assessment found</p>
-                            </div>
                         </div>
 
                         <!-- Pending Payments Section -->
