@@ -350,7 +350,7 @@ const payNow = () => {
                 <h2 class="text-lg font-semibold">Current Balance</h2>
                 <p class="text-gray-500">{{ hasCredit ? 'You have a credit balance' : 'Your outstanding balance' }}</p>
                 <p class="mt-2 text-4xl font-bold" :class="hasCredit ? 'text-green-600' : accountBalance > 0 ? 'text-red-600' : 'text-green-600'">
-                    {{ hasCredit ? '−' : '' }}₱{{ formatCurrency(displayBalance) }}
+                    {{ hasCredit ? '−' : '' }}{{ formatCurrency(displayBalance) }}
                 </p>
                 <p v-if="hasCredit" class="mt-1 text-sm text-green-600">Credit will be applied to your next assessment.</p>
             </div>
@@ -398,16 +398,16 @@ const payNow = () => {
                     <div class="flex items-center gap-10 text-right">
                         <div>
                             <p class="text-xs text-gray-500">Total Assessed</p>
-                            <p class="font-bold text-red-600">₱{{ formatCurrency(calculateTermSummary(String(termKey), transactions).total_assessment) }}</p>
+                            <p class="font-bold text-red-600">{{ formatCurrency(calculateTermSummary(String(termKey), transactions).total_assessment) }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500">Total Paid</p>
-                            <p class="font-bold text-green-600">₱{{ formatCurrency(calculateTermSummary(String(termKey), transactions).total_paid) }}</p>
+                            <p class="font-bold text-green-600">{{ formatCurrency(calculateTermSummary(String(termKey), transactions).total_paid) }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500">Balance</p>
                             <p class="font-bold" :class="calculateTermSummary(String(termKey), transactions).current_balance > 0 ? 'text-red-600' : 'text-green-600'">
-                                ₱{{ formatCurrency(Math.abs(calculateTermSummary(String(termKey), transactions).current_balance)) }}
+                                {{ formatCurrency(Math.abs(calculateTermSummary(String(termKey), transactions).current_balance)) }}
                             </p>
                         </div>
 
@@ -492,7 +492,7 @@ const payNow = () => {
                                         <span v-else class="text-gray-400">—</span>
                                     </td>
                                     <td class="p-3 font-semibold" :class="t.kind === 'charge' ? 'text-red-600' : 'text-green-600'">
-                                        {{ t.kind === 'charge' ? '−' : '+' }}₱{{ formatCurrency(t.amount) }}
+                                        {{ t.kind === 'charge' ? '−' : '+' }}{{ formatCurrency(t.amount) }}
                                     </td>
                                     <td class="p-3">
                                         <span
@@ -743,13 +743,13 @@ const payNow = () => {
                                 <div class="col-span-2">
                                     <p class="text-xs text-gray-500">Amount</p>
                                     <p class="text-2xl font-bold" :class="selectedTransaction.kind === 'charge' ? 'text-red-600' : 'text-green-600'">
-                                        {{ selectedTransaction.kind === 'charge' ? '−' : '+' }}₱{{ formatCurrency(selectedTransaction.amount) }}
+                                        {{ selectedTransaction.kind === 'charge' ? '−' : '+' }}{{ formatCurrency(selectedTransaction.amount) }}
                                     </p>
                                 </div>
                                 <div v-if="!isStaff" class="col-span-2">
                                     <p class="text-xs text-gray-500">Overall Remaining Balance</p>
                                     <p class="text-lg font-bold" :class="accountBalance > 0 ? 'text-red-600' : 'text-green-600'">
-                                        ₱{{ formatCurrency(displayBalance) }}
+                                        {{ formatCurrency(displayBalance) }}
                                         <span v-if="hasCredit" class="text-sm font-normal text-green-600">(Credit)</span>
                                     </p>
                                 </div>

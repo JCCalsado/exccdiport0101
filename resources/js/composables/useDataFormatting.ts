@@ -35,17 +35,13 @@ export function formatCurrency(amount: number | null | undefined, showSymbol = t
     }
 
     try {
-        const formatter = new Intl.NumberFormat('en-PH', {
-            style: 'currency',
-            currency: 'PHP',
+        const num = typeof amount === 'number' ? amount : parseFloat(amount as unknown as string);
+        const formatted = num.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
-
-        const formatted = formatter.format(amount);
-        return formatted;
+        return showSymbol ? `₱${formatted}` : formatted;
     } catch {
-        // Fallback if Intl formatting fails
         const numStr = (typeof amount === 'number' ? amount : parseFloat(amount as unknown as string)).toFixed(2);
         return showSymbol ? `₱${numStr}` : numStr;
     }

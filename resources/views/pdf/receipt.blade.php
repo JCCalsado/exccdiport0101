@@ -6,7 +6,7 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
+            font-family: DejaVu Sans, sans-serif;
             font-size: 11px;
             color: #222;
             margin: 0;
@@ -241,7 +241,7 @@
     <div class="payment-box">
         <p class="pay-for">Payment for:</p>
         <p class="pay-label">{{ $paymentFor }}</p>
-        <p class="pay-amount">₱{{ number_format($transaction->amount, 2) }}</p>
+        <p class="pay-amount">&#8369;{{ number_format($transaction->amount, 2) }}</p>
         <p class="pay-meta">
             Academic Term: <span>{{ $academicTerm }}</span><br>
             Payment Method: <span>{{ $method }}</span><br>
@@ -265,29 +265,29 @@
     <div class="balance-box">
         <div class="balance-row">
             <span>This Payment Amount:</span>
-            <span style="color:#065f46; font-weight:bold;">₱{{ number_format($transaction->amount, 2) }}</span>
+            <span style="color:#065f46; font-weight:bold;">&#8369;{{ number_format($transaction->amount, 2) }}</span>
         </div>
         <div class="balance-row">
             <span>Total Balance Before This Payment:</span>
-            <span>₱{{ number_format($balanceBefore, 2) }}</span>
+            <span>&#8369;{{ number_format($balanceBefore, 2) }}</span>
         </div>
         @if($remainingBalance < 0)
             <div class="balance-row total credit">
                 <span>Remaining Balance (Credit):</span>
-                <span>−₱{{ number_format(abs($remainingBalance), 2) }}</span>
+                <span>−&#8369;{{ number_format(abs($remainingBalance), 2) }}</span>
             </div>
             <p style="font-size:9px; color:#065f46; margin-top:4px; font-style:italic;">
-                ✔ You have a credit of ₱{{ number_format(abs($remainingBalance), 2) }} that will be applied to your next assessment.
+                ✔ You have a credit of &#8369;{{ number_format(abs($remainingBalance), 2) }} that will be applied to your next assessment.
             </p>
         @elseif($remainingBalance == 0)
             <div class="balance-row total" style="color:#065f46;">
                 <span>Remaining Balance:</span>
-                <span>₱0.00 — Fully Paid</span>
+                <span>&#8369;0.00 — Fully Paid</span>
             </div>
         @else
             <div class="balance-row total">
                 <span>Remaining Balance:</span>
-                <span>₱{{ number_format($remainingBalance, 2) }}</span>
+                <span>&#8369;{{ number_format($remainingBalance, 2) }}</span>
             </div>
         @endif
     </div>
