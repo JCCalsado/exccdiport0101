@@ -1310,6 +1310,11 @@ class StudentFeeController extends Controller
 
     public function createStudent()
     {
+        // Ensure only Admin can create students
+        if (auth()->user()->role !== UserRoleEnum::ADMIN) {
+            abort(403, 'Only administrators can create new students.');
+        }
+
         return Inertia::render('StudentFees/CreateStudent', [
             'courses'    => $this->allCourses(),
             'yearLevels' => ['1st Year', '2nd Year', '3rd Year', '4th Year'],
@@ -1318,6 +1323,11 @@ class StudentFeeController extends Controller
 
     public function storeStudent(Request $request)
     {
+        // Ensure only Admin can create students
+        if (auth()->user()->role !== UserRoleEnum::ADMIN) {
+            abort(403, 'Only administrators can create new students.');
+        }
+
         $validated = $request->validate([
             'last_name'      => 'required|string|max:255',
             'first_name'     => 'required|string|max:255',

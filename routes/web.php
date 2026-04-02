@@ -67,7 +67,18 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 });
 
 // ============================================
-// STUDENT FEE MANAGEMENT ROUTES
+// STUDENT CREATION ROUTES (Admin Only)
+// ============================================
+// Student creation is restricted to Admin role only to maintain clear governance.
+// Accounting staff cannot create new students, but can manage assessments and payments.
+// ============================================
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('student-fees')->group(function () {
+    Route::get('/create-student', [StudentFeeController::class, 'createStudent'])->name('student-fees.create-student');
+    Route::post('/store-student', [StudentFeeController::class, 'storeStudent'])->name('student-fees.store-student');
+});
+
+// ============================================
+// STUDENT FEE MANAGEMENT ROUTES (Admin + Accounting)
 // ============================================
 //
 // All {userId} parameters are constrained to numeric strings via whereNumber()
@@ -87,8 +98,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('student-fees')->group(function () {
     Route::get('/', [StudentFeeController::class, 'index'])->name('student-fees.index');
-    Route::get('/create-student', [StudentFeeController::class, 'createStudent'])->name('student-fees.create-student');
-    Route::post('/store-student', [StudentFeeController::class, 'storeStudent'])->name('student-fees.store-student');
     Route::get('/create', [StudentFeeController::class, 'create'])->name('student-fees.create');
     Route::post('/', [StudentFeeController::class, 'store'])->name('student-fees.store');
 

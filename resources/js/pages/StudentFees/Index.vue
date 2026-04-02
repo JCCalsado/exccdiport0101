@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import { Edit, Eye, Plus, Search, TrendingDown, TrendingUp, UserPlus, UserX } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
@@ -62,6 +62,9 @@ interface Props {
 const props = defineProps<Props>();
 
 const { formatCurrency } = useDataFormatting();
+const page = usePage();
+
+const isAdmin = computed(() => (page.props.auth as any).user?.role === 'admin');
 
 const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 'Student Fee Management' }];
 
@@ -261,12 +264,10 @@ const submitDrop = () => {
                     <p class="ccdi-section-desc">Manage student assessments and fee records</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Link :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    <Link v-if="isAdmin" :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
                         Add Student
                     </Link>
                     <Link :href="route('student-fees.create')" class="ccdi-btn-primary">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         Create Assessment
                     </Link>
                 </div>

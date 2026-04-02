@@ -48,6 +48,7 @@ const mainNavItems = computed<NavItem[]>(() => {
 });
 
 const footerNavItems: NavItem[] = [];
+
 </script>
 
 <template>
