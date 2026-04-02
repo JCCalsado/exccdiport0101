@@ -2,16 +2,21 @@
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import {
+    Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
+    SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Banknote, Bell, BookOpen, CheckCircle2, CreditCard, GraduationCap, History, LayoutGrid, Receipt, Users } from 'lucide-vue-next';
+import {
+    Banknote, Bell, BookOpen, CheckCircle2, ClipboardList,
+    CreditCard, GraduationCap, History, LayoutGrid, Receipt, Users,
+} from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const safeRoute = (name: string, params?: any): string => {
-    try { return route(name, params); }
-    catch { return '#'; }
+    try { return route(name, params); } catch { return '#'; }
 };
 
 const page = usePage();
@@ -20,23 +25,24 @@ const userRole = computed(() => (page.props.auth as any)?.user?.role ?? 'student
 const mainNavItems = computed<NavItem[]>(() => {
     const role = userRole.value;
     const items: NavItem[] = [
-        // Student
-        { title: 'Dashboard',         href: safeRoute('student.dashboard'), icon: LayoutGrid,   roles: ['student'] },
-        { title: 'My Account',        href: safeRoute('student.account'),   icon: CreditCard,   roles: ['student'] },
-        { title: 'Transaction History', href: safeRoute('transactions.index'), icon: History,   roles: ['student'] },
+        // ── Student ──
+        { title: 'Dashboard',           href: safeRoute('student.dashboard'),   icon: LayoutGrid,   roles: ['student'] },
+        { title: 'My Account',          href: safeRoute('student.account'),     icon: CreditCard,   roles: ['student'] },
+        { title: 'Transaction History', href: safeRoute('transactions.index'),  icon: History,      roles: ['student'] },
 
-        // Admin
-        { title: 'Admin Dashboard',   href: safeRoute('admin.dashboard'),    icon: LayoutGrid,  roles: ['admin'] },
-        { title: 'Admin Users',       href: safeRoute('users.index'),        icon: Users,       roles: ['admin'] },
-        { title: 'Archives',          href: safeRoute('students.archive'),   icon: GraduationCap, roles: ['admin'] },
-        { title: 'Notifications',     href: '/admin/notifications',          icon: Bell,        roles: ['admin'] },
+        // ── Admin ──
+        { title: 'Admin Dashboard',     href: safeRoute('admin.dashboard'),     icon: LayoutGrid,   roles: ['admin'] },
+        { title: 'Admin Users',         href: safeRoute('users.index'),         icon: Users,        roles: ['admin'] },
+        { title: 'Student Archive',     href: safeRoute('students.archive'),    icon: GraduationCap, roles: ['admin'] },
+        { title: 'Notifications',       href: '/admin/notifications',           icon: Bell,         roles: ['admin'] },
+        { title: 'Subjects',            href: safeRoute('subjects.index'),      icon: BookOpen,     roles: ['admin'] },
 
-        // Accounting
-        { title: 'Accounting Dashboard', href: safeRoute('accounting.dashboard'), icon: Banknote, roles: ['accounting'] },
+        // ── Accounting ──
+        { title: 'Accounting Dashboard', href: safeRoute('accounting.dashboard'), icon: Banknote,   roles: ['accounting'] },
 
-        // Admin + Accounting
-        { title: 'Student Fee Management', href: safeRoute('student-fees.index'), icon: Receipt,      roles: ['accounting', 'admin'] },
-        { title: 'Payment Approvals',      href: safeRoute('approvals.index'),    icon: CheckCircle2, roles: ['accounting', 'admin'] },
+        // ── Admin + Accounting ──
+        { title: 'Student Fee Management', href: safeRoute('student-fees.index'),  icon: Receipt,      roles: ['accounting', 'admin'] },
+        { title: 'Payment Approvals',      href: safeRoute('approvals.index'),     icon: CheckCircle2, roles: ['accounting', 'admin'] },
     ];
     return items.filter((item) => !item.roles || item.roles.includes(role));
 });

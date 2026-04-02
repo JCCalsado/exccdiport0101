@@ -278,46 +278,50 @@ const dismissReminder = (id: number) => {
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <!-- Total Assessment -->
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                    <div class="ccdi-icon-box bg-blue-100">
                         <FileText :size="20" class="text-blue-600" />
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-xs font-medium text-muted-foreground">Total Assessment</p>
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Assessment</p>
                         <p class="text-xl font-bold text-foreground">{{ formatCurrency(normalizedStats.total_fees) }}</p>
+                        <p class="text-xs text-muted-foreground">Current semester</p>
                     </div>
                 </div>
                 <!-- Total Paid -->
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+                    <div class="ccdi-icon-box bg-emerald-100">
                         <CheckCircle :size="20" class="text-emerald-600" />
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-xs font-medium text-muted-foreground">Total Paid</p>
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Paid</p>
                         <p class="text-xl font-bold text-emerald-600">{{ formatCurrency(normalizedStats.total_paid) }}</p>
+                        <p class="text-xs text-muted-foreground">All verified payments</p>
                     </div>
                 </div>
                 <!-- Remaining -->
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl" :class="normalizedStats.remaining_balance > 0 ? 'bg-red-100' : 'bg-emerald-100'">
+                    <div class="ccdi-icon-box" :class="normalizedStats.remaining_balance > 0 ? 'bg-red-100' : 'bg-emerald-100'">
                         <Wallet :size="20" :class="normalizedStats.remaining_balance > 0 ? 'text-red-600' : 'text-emerald-600'" />
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-xs font-medium text-muted-foreground">Remaining</p>
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Remaining</p>
                         <p class="text-xl font-bold" :class="normalizedStats.remaining_balance > 0 ? 'text-red-600' : 'text-emerald-600'">
                             {{ formatCurrency(normalizedStats.remaining_balance) }}
                         </p>
+                        <p class="text-xs text-muted-foreground">Outstanding balance</p>
                     </div>
                 </div>
                 <!-- Pending Charges -->
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl" :class="pendingChargesInfo.hasWarning ? 'bg-amber-100' : 'bg-muted'">
+                    <div class="ccdi-icon-box" :class="pendingChargesInfo.hasWarning ? 'bg-amber-100' : 'bg-muted'">
                         <Clock :size="20" :class="pendingChargesInfo.hasWarning ? 'text-amber-600' : 'text-muted-foreground'" />
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-xs font-medium text-muted-foreground">Pending Charges</p>
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending Terms</p>
                         <p class="text-xl font-bold" :class="pendingChargesInfo.hasWarning ? 'text-amber-600' : 'text-foreground'">
                             {{ pendingChargesInfo.count }}
                         </p>
+                        <p class="text-xs text-muted-foreground">{{ pendingChargesInfo.count === 0 ? 'All settled' : 'Awaiting payment' }}</p>
                     </div>
                 </div>
             </div>

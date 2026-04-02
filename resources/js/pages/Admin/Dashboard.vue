@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { Archive, Bell, CheckCircle2, Receipt, Shield, TrendingUp, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -103,11 +104,38 @@ const getColorClass = (color: string) => {
 
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <div v-for="stat in adminStats" :key="stat.title" class="ccdi-stat-card">
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box bg-blue-100"><Shield :size="20" class="text-blue-600" /></div>
                     <div class="min-w-0">
-                        <p class="truncate text-xs font-medium text-muted-foreground">{{ stat.title }}</p>
-                        <p class="text-xl font-bold text-foreground">{{ stat.value }}</p>
-                        <p class="text-xs text-muted-foreground">{{ stat.description }}</p>
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Admins</p>
+                        <p class="text-xl font-bold text-foreground">{{ props.stats?.total_admins || 0 }}</p>
+                        <p class="text-xs text-muted-foreground">{{ props.stats?.active_admins || 0 }} active</p>
+                    </div>
+                </div>
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box bg-purple-100"><Users :size="20" class="text-purple-600" /></div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Users</p>
+                        <p class="text-xl font-bold text-foreground">{{ props.stats?.total_users || 0 }}</p>
+                        <p class="text-xs text-muted-foreground">{{ props.stats?.total_students || 0 }} students</p>
+                    </div>
+                </div>
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box" :class="(props.stats?.pending_approvals || 0) > 0 ? 'bg-amber-100' : 'bg-muted'">
+                        <CheckCircle2 :size="20" :class="(props.stats?.pending_approvals || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending Approvals</p>
+                        <p class="text-xl font-bold" :class="(props.stats?.pending_approvals || 0) > 0 ? 'text-amber-600' : 'text-foreground'">{{ props.stats?.pending_approvals || 0 }}</p>
+                        <p class="text-xs text-muted-foreground">Awaiting action</p>
+                    </div>
+                </div>
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box bg-emerald-100"><TrendingUp :size="20" class="text-emerald-600" /></div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">System Status</p>
+                        <p class="text-xl font-bold text-emerald-600">Operational</p>
+                        <p class="text-xs text-muted-foreground">All systems healthy</p>
                     </div>
                 </div>
             </div>
@@ -118,24 +146,24 @@ const getColorClass = (color: string) => {
                 <div class="ccdi-card p-5">
                     <h2 class="mb-4 text-base font-semibold text-foreground">Quick Actions</h2>
                     <p class="mb-4 text-xs text-muted-foreground">Common administrative tasks</p>
-                    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <Link :href="route('users.create')" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
-                            Add Admin User
+                            <Users :size="14" class="flex-shrink-0 opacity-50" /> Add Admin User
                         </Link>
                         <Link href="/admin/notifications/create" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
-                            Manage Notifications
+                            <Bell :size="14" class="flex-shrink-0 opacity-50" /> Manage Notifications
                         </Link>
                         <Link :href="route('users.index')" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
-                            View All Admins
+                            <Shield :size="14" class="flex-shrink-0 opacity-50" /> View All Admins
                         </Link>
                         <Link :href="route('student-fees.index')" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
-                            View Students
+                            <Receipt :size="14" class="flex-shrink-0 opacity-50" /> Student Fee Management
                         </Link>
                         <Link :href="route('approvals.index')" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700">
-                            Payment Approvals
+                            <CheckCircle2 :size="14" class="flex-shrink-0 opacity-50" /> Payment Approvals
                         </Link>
                         <Link :href="route('students.archive')" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700">
-                            Archives
+                            <Archive :size="14" class="flex-shrink-0 opacity-50" /> Student Archive
                         </Link>
                     </div>
                 </div>

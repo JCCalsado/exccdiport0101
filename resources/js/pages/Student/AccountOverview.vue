@@ -821,100 +821,95 @@ const accountBalance = computed(() => {
 
             <!-- Header -->
             <div class="mb-6">
-                <h1 class="text-3xl font-bold">My Account Overview</h1>
-                <div class="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                    <div v-if="latestAssessment">
-                        <span>{{ latestAssessment.semester }} - {{ latestAssessment.school_year }}</span>
+                <h1 class="ccdi-section-title">My Account Overview</h1>
+                <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                    <div v-if="latestAssessment" class="flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
+                        <span>{{ latestAssessment.semester }} · {{ latestAssessment.school_year }}</span>
                     </div>
-                    <div v-if="latestAssessment">
-                        <span>Assessment No: {{ latestAssessment.assessment_number }}</span>
+                    <div v-if="latestAssessment" class="font-mono text-xs">
+                        {{ latestAssessment.assessment_number }}
                     </div>
-                    <div v-if="latestAssessment">
-                        <span :class="getAssessmentStatusConfig(latestAssessment.status).textColor">{{ latestAssessment.status }}</span>
-                    </div>
-                    <div v-if="user">
-                        <span
-                            :class="[
-                                'rounded-full px-3 py-1 text-xs font-semibold',
-                                user.is_irregular ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700',
-                            ]"
-                            >{{ user.is_irregular ? 'Irregular' : 'Regular' }}</span
-                        >
-                    </div>
+                    <span v-if="latestAssessment" class="ccdi-badge-green text-xs">
+                        {{ latestAssessment.status }}
+                    </span>
+                    <span v-if="user" :class="user.is_irregular ? 'ccdi-badge-yellow' : 'ccdi-badge-blue'">
+                        {{ user.is_irregular ? 'Irregular' : 'Regular' }}
+                    </span>
                 </div>
             </div>
 
             <!-- Balance Cards -->
-            <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <!-- Total Assessment -->
-                <div class="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
-                    <div class="mb-2 flex items-center justify-between">
-                        <div class="rounded-lg bg-blue-100 p-3">
-                            <CreditCard :size="24" class="text-blue-600" />
-                        </div>
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box bg-blue-100">
+                        <CreditCard :size="22" class="text-blue-600" />
                     </div>
-                    <h3 class="mb-2 text-sm font-medium text-gray-600">Total Assessment Fee</h3>
-                    <p class="text-3xl font-bold text-blue-600">{{ formatCurrency(totalAssessmentFee) }}</p>
-                    <p v-if="latestAssessment" class="mt-2 text-xs text-gray-500">
-                        Tuition: {{ formatCurrency(latestAssessment.tuition_fee) }} • Other: {{ formatCurrency(latestAssessment.other_fees) }}
-                    </p>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Assessment Fee</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(totalAssessmentFee) }}</p>
+                        <p v-if="latestAssessment" class="mt-0.5 text-xs text-muted-foreground">
+                            Tuition: {{ formatCurrency(latestAssessment.tuition_fee) }} · Other: {{ formatCurrency(latestAssessment.other_fees) }}
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Total Paid -->
-                <div class="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
-                    <div class="mb-2 flex items-center justify-between">
-                        <div class="rounded-lg bg-green-100 p-3">
-                            <CheckCircle :size="24" class="text-green-600" />
-                        </div>
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box bg-emerald-100">
+                        <CheckCircle :size="22" class="text-emerald-600" />
                     </div>
-                    <h3 class="mb-2 text-sm font-medium text-gray-600">Total Paid</h3>
-                    <p class="text-3xl font-bold text-green-600">{{ formatCurrency(totalPaid) }}</p>
-                    <p class="mt-2 text-xs text-gray-500">
-                        <span v-if="latestAssessment"> {{ latestAssessment.semester }} {{ latestAssessment.school_year }} </span>
-                        <span v-else>All payments</span>
-                        &mdash; {{ paymentHistory.filter((t) => t.status === 'paid').length }} payment(s)
-                    </p>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Paid</p>
+                        <p class="text-2xl font-bold text-emerald-600">{{ formatCurrency(totalPaid) }}</p>
+                        <p class="mt-0.5 text-xs text-muted-foreground">
+                            <span v-if="latestAssessment">{{ latestAssessment.semester }} {{ latestAssessment.school_year }}</span>
+                            <span v-else>All payments</span>
+                            &mdash; {{ paymentHistory.filter((t) => t.status === 'paid').length }} payment(s)
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Current Balance -->
-                <div class="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg">
-                    <div class="mb-2 flex items-center justify-between">
-                        <div :class="['rounded-lg p-3', remainingBalance > 0 ? 'bg-red-100' : 'bg-green-100']">
-                            <component
-                                :is="remainingBalance > 0 ? AlertCircle : CheckCircle"
-                                :size="24"
-                                :class="remainingBalance > 0 ? 'text-red-600' : 'text-green-600'"
-                            />
-                        </div>
+                <div class="ccdi-stat-card">
+                    <div class="ccdi-icon-box" :class="remainingBalance > 0 ? 'bg-red-100' : 'bg-emerald-100'">
+                        <component
+                            :is="remainingBalance > 0 ? AlertCircle : CheckCircle"
+                            :size="22"
+                            :class="remainingBalance > 0 ? 'text-red-600' : 'text-emerald-600'"
+                        />
                     </div>
-                    <h3 class="mb-2 text-sm font-medium text-gray-600">Current Balance</h3>
-                    <p class="text-3xl font-bold" :class="remainingBalance > 0 ? 'text-red-600' : 'text-green-600'">
-                        {{ formatCurrency(remainingBalance) }}
-                    </p>
-                    <p class="mt-2 text-xs text-gray-500">
-                        {{ remainingBalance > 0 ? 'Amount due' : 'Fully paid' }}
-                    </p>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Balance</p>
+                        <p class="text-2xl font-bold" :class="remainingBalance > 0 ? 'text-red-600' : 'text-emerald-600'">
+                            {{ formatCurrency(remainingBalance) }}
+                        </p>
+                        <p class="mt-0.5 text-xs text-muted-foreground">
+                            {{ remainingBalance > 0 ? 'Amount due' : 'Fully paid' }}
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <!-- Tabs -->
-            <div class="mb-6 rounded-lg bg-white shadow-md">
-                <div class="border-b">
-                    <nav class="flex gap-4 px-6">
+            <div class="mb-6 ccdi-card">
+                <div class="border-b border-border">
+                    <nav class="flex gap-1 px-4">
                         <button
                             @click="activeTab = 'fees'"
                             :class="[
-                                'border-b-2 px-2 py-4 text-sm font-medium transition-colors',
-                                activeTab === 'fees' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700',
+                                'border-b-2 px-4 py-3.5 text-sm font-medium transition-colors',
+                                activeTab === 'fees' ? 'border-blue-600 text-blue-600' : 'border-transparent text-muted-foreground hover:text-foreground',
                             ]"
                         >
-                            Fees & Assessment
+                            Fees &amp; Assessment
                         </button>
                         <button
                             @click="activeTab = 'history'"
                             :class="[
-                                'border-b-2 px-2 py-4 text-sm font-medium transition-colors',
-                                activeTab === 'history' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700',
+                                'border-b-2 px-4 py-3.5 text-sm font-medium transition-colors',
+                                activeTab === 'history' ? 'border-blue-600 text-blue-600' : 'border-transparent text-muted-foreground hover:text-foreground',
                             ]"
                         >
                             Payment History
@@ -922,8 +917,8 @@ const accountBalance = computed(() => {
                         <button
                             @click="activeTab = 'payment'"
                             :class="[
-                                'border-b-2 px-2 py-4 text-sm font-medium transition-colors',
-                                activeTab === 'payment' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700',
+                                'border-b-2 px-4 py-3.5 text-sm font-medium transition-colors',
+                                activeTab === 'payment' ? 'border-blue-600 text-blue-600' : 'border-transparent text-muted-foreground hover:text-foreground',
                             ]"
                         >
                             Make Payment
@@ -935,7 +930,7 @@ const accountBalance = computed(() => {
                 <div class="p-6">
                     <!-- Fees Tab -->
                     <div v-if="activeTab === 'fees'">
-                        <h2 class="mb-4 text-lg font-semibold">CURRENT ASSESSMENT</h2>
+                        <h2 class="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Current Assessment</h2>
 
                         <!-- Assessment Info Banner -->
                         <div v-if="latestAssessment" class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -970,27 +965,27 @@ const accountBalance = computed(() => {
 
                         <!-- Payment Terms Table -->
                         <div v-if="paymentTerms && paymentTerms.length" class="mt-8 border-t pt-6">
-                            <h3 class="text-md mb-4 flex items-center gap-2 font-semibold text-gray-800">
-                                <Clock :size="20" />
-                                PAYMENT TERMS
+                            <h3 class="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                <Clock :size="15" />
+                                Payment Terms
                             </h3>
-                            <div class="overflow-x-auto">
+                            <div class="overflow-x-auto rounded-2xl border border-border">
                                 <table class="w-full border-collapse">
                                     <thead>
-                                        <tr class="border-b-2 border-gray-300">
-                                            <th class="px-4 py-3 text-left font-semibold text-gray-700">Payment Term</th>
-                                            <th class="px-4 py-3 text-right font-semibold text-gray-700">Original Amount</th>
-                                            <th class="px-4 py-3 text-right font-semibold text-gray-700">Current Balance</th>
-                                            <th class="px-4 py-3 text-right font-semibold text-gray-700">Due Date</th>
-                                            <th class="px-4 py-3 text-center font-semibold text-gray-700">Status</th>
-                                            <th class="px-4 py-3 text-center font-semibold text-gray-700">Actions</th>
+                                        <tr class="border-b border-border bg-muted/40">
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Term</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Original Amount</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Balance</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Due Date</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr
                                             v-for="term in paymentTerms"
                                             :key="term.id"
-                                            class="border-b border-gray-200 transition-colors hover:bg-gray-50"
+                                            class="border-b border-border transition-colors hover:bg-muted/30"
                                         >
                                             <td class="px-4 py-3 text-gray-900">{{ term.term_name || 'N/A' }}</td>
                                             <td class="px-4 py-3 text-right text-gray-700">{{ formatCurrency(term.amount) }}</td>
@@ -1243,15 +1238,15 @@ const accountBalance = computed(() => {
 
                     <!-- Payment History Tab -->
                     <div v-if="activeTab === 'history'">
-                        <div class="mb-4 flex items-center justify-between">
+                        <div class="mb-5 flex items-center justify-between">
                             <div>
-                                <h2 class="text-lg font-semibold">Payment History</h2>
-                                <p v-if="latestAssessment" class="mt-0.5 text-xs text-gray-500">
+                                <h2 class="text-base font-semibold text-foreground">Payment History</h2>
+                                <p v-if="latestAssessment" class="mt-0.5 text-xs text-muted-foreground">
                                     Showing payments for
-                                    <strong>{{ latestAssessment.semester }} {{ latestAssessment.school_year }}</strong>
-                                    — {{ latestAssessment.assessment_number }}
+                                    <strong class="text-foreground">{{ latestAssessment.semester }} {{ latestAssessment.school_year }}</strong>
+                                    &middot; {{ latestAssessment.assessment_number }}
                                 </p>
-                                <p v-else class="mt-0.5 text-xs text-gray-500">Showing all payment history (no active assessment found)</p>
+                                <p v-else class="mt-0.5 text-xs text-muted-foreground">Showing all payment history — no active assessment found</p>
                             </div>
                         </div>
 
