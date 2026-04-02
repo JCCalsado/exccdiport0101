@@ -286,8 +286,8 @@ const feeCalculationSummary = computed(() => {
     if (totalUnits <= 0) return '';
 
     const parts = [];
-    if (totalUnits > 0) parts.push(`${totalUnits} unit${totalUnits !== 1 ? 's' : ''} × ₱${tuitionPerUnit.toFixed(2)}`);
-    if (labCount > 0) parts.push(`${labCount} lab${labCount !== 1 ? 's' : ''} × ₱${labPerSubject.toFixed(2)}`);
+    if (totalUnits > 0) parts.push(`${totalUnits} LEC unit${totalUnits !== 1 ? 's' : ''} × ₱${tuitionPerUnit.toFixed(2)}`);
+    if (labCount > 0) parts.push(`${labCount} LAB unit${labCount !== 1 ? 's' : ''} × ₱${labPerSubject.toFixed(2)}`);
     if (totalMiscellaneous.value > 0) parts.push(`₱${totalMiscellaneous.value.toFixed(2)} misc`);
 
     return parts.length > 0 ? parts.join(' + ') : '—';
@@ -417,7 +417,8 @@ function buildSubjectPanel(a: Assessment) {
             subject_id: number;
             code: string;
             name: string;
-            units: number;
+            lecUnits: number;
+            labUnits: number;
             tuitionAmount: number;
             labAmount: number;
             hasLab: boolean;
@@ -436,7 +437,8 @@ function buildSubjectPanel(a: Assessment) {
                 subject_id: sid,
                 code: row.code ?? '—',
                 name: row.name,
-                units: row.units ?? 0,
+                lecUnits: 0,
+                labUnits: 0,
                 tuitionAmount: 0,
                 labAmount: 0,
                 hasLab: false,
@@ -446,18 +448,21 @@ function buildSubjectPanel(a: Assessment) {
 
         if (row.category === 'Tuition') {
             subjectMap[sid].tuitionAmount = parseFloat(String(row.amount));
-            subjectMap[sid].units = row.units ?? subjectMap[sid].units;
+            subjectMap[sid].lecUnits = row.units ?? subjectMap[sid].lecUnits;
             if (!subjectMap[sid].name || subjectMap[sid].name.startsWith('Laboratory')) {
                 subjectMap[sid].name = row.name;
             }
         } else if (row.category === 'Laboratory') {
             subjectMap[sid].labAmount = parseFloat(String(row.amount));
+            subjectMap[sid].labUnits = row.units ?? 0;
             subjectMap[sid].hasLab = true;
         }
     }
 
     const subjects = Object.values(subjectMap);
-    const totalUnits = subjects.reduce((s, sub) => s + sub.units, 0);
+    const totalLecUnits = subjects.reduce((s, sub) => s + sub.lecUnits, 0);
+    const totalLabUnits = subjects.reduce((s, sub) => s + sub.labUnits, 0);
+    const totalUnits = totalLecUnits + totalLabUnits;
     const totalTuition = subjects.reduce((s, sub) => s + sub.tuitionAmount, 0);
     const totalLab = subjects.reduce((s, sub) => s + sub.labAmount, 0);
     const enrolledCount = subjects.filter((sub) => sub.isEnrolled).length;
@@ -467,6 +472,8 @@ function buildSubjectPanel(a: Assessment) {
         label: `${a.year_level} — ${a.semester}`,
         schoolYear: a.school_year,
         course: a.course ?? '—',
+        totalLecUnits,
+        totalLabUnits,
         totalUnits,
         totalTuition,
         totalLab,
@@ -922,58 +929,16 @@ const getStudentStatusColor = (status: string) => {
                     <div class="flex items-center justify-between rounded-xl border border-border bg-card p-4">
                         <div>
                             <p class="font-semibold text-foreground">Laboratory Fees</p>
-                            <p class="text-xs text-muted-foreground">{{ labItems.length }} subject(s) with lab · ₱1,656.00 each</p>
                         </div>
                         <span class="text-lg font-bold text-purple-600">{{ formatCurrency(totalLab) }}</span>
                     </div>
 
-                    <!-- ── SECTION 3: Miscellaneous Fees — expanded ── -->
-                    <div class="rounded-xl border border-amber-200 bg-amber-50/40">
-                        <div class="flex items-center justify-between p-4">
-                            <div>
-                                <p class="font-semibold text-foreground">Miscellaneous Fees</p>
-                                <p class="text-xs text-muted-foreground">Fixed per semester · 17 fee categories</p>
-                            </div>
-                            <span class="text-lg font-bold text-amber-600">{{ formatCurrency(totalMiscellaneous) }}</span>
+                    <!-- ── SECTION 3: Miscellaneous Fees (Summary Only) ── -->
+                    <div class="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+                        <div>
+                            <p class="font-semibold text-foreground">Miscellaneous Fees</p>
                         </div>
-                        <!-- Individual misc fee rows -->
-                        <div class="border-t border-amber-200 px-4 pb-3 pt-2">
-                            <div v-for="group in miscellaneousItemsByGroup" :key="group.label" class="mb-3">
-                                <p class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700">{{ group.label }}</p>
-                                <div v-for="item in group.items" :key="item.name" class="ccdi-fee-row">
-                                    <span class="text-gray-600">{{ item.name }}</span>
-                                    <span class="font-medium tabular-nums text-gray-800">{{ formatCurrency(item.amount) }}</span>
-                                </div>
-                                <div class="mt-1 flex justify-between text-xs font-semibold text-amber-700">
-                                    <span>{{ group.label }} subtotal</span>
-                                    <span>{{ formatCurrency(group.total) }}</span>
-                                </div>
-                            </div>
-                            <!-- Fallback: show all 17 CCDI misc fees when no breakdown in DB -->
-                            <div v-if="miscellaneousItemsByGroup.length === 0" class="space-y-0.5 py-1">
-                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-700">AY 2025-2026 Schedule of Fees</p>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Entrep Fee</span><span class="font-medium tabular-nums text-gray-800">₱600.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Registration Fee</span><span class="font-medium tabular-nums text-gray-800">₱600.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">LMS</span><span class="font-medium tabular-nums text-gray-800">₱450.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Library Fee</span><span class="font-medium tabular-nums text-gray-800">₱450.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Athletic Fee</span><span class="font-medium tabular-nums text-gray-800">₱550.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">PRISAA</span><span class="font-medium tabular-nums text-gray-800">₱300.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Publication Fee</span><span class="font-medium tabular-nums text-gray-800">₱200.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Audio-Visual Fee</span><span class="font-medium tabular-nums text-gray-800">₱250.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">ID</span><span class="font-medium tabular-nums text-gray-800">₱300.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">BICCS/PCCL/League</span><span class="font-medium tabular-nums text-gray-800">₱150.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Faculty Development</span><span class="font-medium tabular-nums text-gray-800">₱250.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Guidance Services</span><span class="font-medium tabular-nums text-gray-800">₱225.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Medical</span><span class="font-medium tabular-nums text-gray-800">₱300.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Insurance Fee</span><span class="font-medium tabular-nums text-gray-800">₱100.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Cultural Arts Fee</span><span class="font-medium tabular-nums text-gray-800">₱175.00</span></div>
-                                <div class="ccdi-fee-row"><span class="text-gray-600">Maintenance Fee</span><span class="font-medium tabular-nums text-gray-800">₱400.00</span></div>
-                                <div class="mt-2 flex justify-between border-t border-amber-300 pt-2 text-xs font-bold text-amber-800">
-                                    <span>Total Miscellaneous (fixed per semester)</span>
-                                    <span>₱6,956.00</span>
-                                </div>
-                            </div>
-                        </div>
+                        <span class="text-lg font-bold text-amber-600">{{ formatCurrency(totalMiscellaneous) }}</span>
                     </div>
 
                     <!-- ── TOTAL ASSESSMENT ── -->
@@ -1188,9 +1153,10 @@ const getStudentStatusColor = (status: string) => {
                                             <th class="px-5 py-2.5 text-left">Status</th>
                                             <th class="px-5 py-2.5 text-left">Code</th>
                                             <th class="px-5 py-2.5 text-left">Subject Name</th>
-                                            <th class="px-5 py-2.5 text-center">Units</th>
-                                            <th class="px-5 py-2.5 text-right">Unit Cost</th>
-                                            <th class="px-5 py-2.5 text-right">Lab Fee</th>
+                                            <th class="px-5 py-2.5 text-center">LEC Units</th>
+                                            <th class="px-5 py-2.5 text-center">LAB Units</th>
+                                            <th class="px-5 py-2.5 text-right">Tuition Cost</th>
+                                            <th class="px-5 py-2.5 text-right">Lab Cost</th>
                                             <th class="px-5 py-2.5 text-right">Total</th>
                                         </tr>
                                     </thead>
@@ -1231,13 +1197,19 @@ const getStudentStatusColor = (status: string) => {
                                             </td>
                                             <td class="px-5 py-3 text-center">
                                                 <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                                                    {{ subject.units }} unit{{ subject.units !== 1 ? 's' : '' }}
+                                                    {{ subject.lecUnits }} unit{{ subject.lecUnits !== 1 ? 's' : '' }}
                                                 </span>
+                                            </td>
+                                            <td class="px-5 py-3 text-center">
+                                                <span v-if="subject.labUnits > 0" class="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700">
+                                                    {{ subject.labUnits }} unit{{ subject.labUnits !== 1 ? 's' : '' }}
+                                                </span>
+                                                <span v-else class="text-xs text-gray-300">—</span>
                                             </td>
                                             <td class="px-5 py-3 text-right">
                                                 <span class="text-xs text-gray-500">
-                                                    {{ subject.units }} ×
-                                                    {{ formatCurrency(subject.units > 0 ? subject.tuitionAmount / subject.units : 0) }}
+                                                    {{ subject.lecUnits }} ×
+                                                    {{ formatCurrency(subject.lecUnits > 0 ? subject.tuitionAmount / subject.lecUnits : 0) }}
                                                 </span>
                                                 <p class="font-medium text-gray-900">{{ formatCurrency(subject.tuitionAmount) }}</p>
                                             </td>
@@ -1255,9 +1227,10 @@ const getStudentStatusColor = (status: string) => {
                                     <tfoot>
                                         <tr class="border-t-2 border-gray-200 bg-gray-50 text-sm font-semibold">
                                             <td colspan="3" class="px-5 py-3 text-gray-700">
-                                                Subtotal — {{ termPanel.subjectCount }} subjects · {{ termPanel.totalUnits }} total units
+                                                Subtotal — {{ termPanel.subjectCount }} subjects
                                             </td>
-                                            <td class="px-5 py-3 text-center text-gray-700">—</td>
+                                            <td class="px-5 py-3 text-center text-gray-700">{{ termPanel.totalLecUnits }}</td>
+                                            <td class="px-5 py-3 text-center text-gray-700">{{ termPanel.totalLabUnits }}</td>
                                             <td class="px-5 py-3 text-right text-gray-900">{{ formatCurrency(termPanel.totalTuition) }}</td>
                                             <td class="px-5 py-3 text-right text-purple-700">
                                                 <span v-if="termPanel.totalLab > 0">{{ formatCurrency(termPanel.totalLab) }}</span>
