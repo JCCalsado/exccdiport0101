@@ -781,7 +781,7 @@ function statusColor(status: string) {
                         </div>
                         <div class="mt-2 flex items-center justify-between">
                             <div class="space-y-1">
-                                <p class="text-sm font-medium text-gray-700">{{ totalUnits }} units</p>
+                                <p class="text-sm font-medium text-gray-700">{{ totalUnits }} Units = {{ lecUnitsTotal }} LEC · {{ labUnitsTotal }} LAB</p>
                                 <p class="text-xs text-gray-600">School Year: {{ effectiveSchoolYear }}</p>
                                 <p class="text-xs text-gray-600">5 payment terms will be generated</p>
                             </div>
@@ -901,6 +901,17 @@ function statusColor(status: string) {
                             <h2 class="font-semibold text-gray-900">Subject Picker — Irregular</h2>
                         </div>
                         <span class="text-xs text-amber-700">Select subjects from any course, year, and semester</span>
+                    </div>
+
+                    <!-- Assessment Summary -->
+                    <div class="border-b px-5 py-4">
+                        <div class="flex items-center justify-between">
+                            <div class="space-y-1">
+                                <p class="text-sm font-medium text-gray-700">{{ totalUnits }} Units = {{ lecUnitsTotal }} LEC · {{ labUnitsTotal }} LAB</p>
+                                <p class="text-xs text-gray-600">School Year: {{ effectiveSchoolYear }}</p>
+                                <p class="text-xs text-gray-600">5 payment terms will be generated</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Picker selectors -->
@@ -1123,7 +1134,7 @@ function statusColor(status: string) {
                         </div>
                         <div class="space-y-0.5 text-right text-xs opacity-75">
                             <p>{{ assessmentType === 'irregular' ? 'Irregular' : 'Regular' }} Assessment</p>
-                            <p>{{ totalUnits }} units · {{ labSubjectCount }} lab subjects</p>
+                            <p>{{ totalUnits }} Units = {{ lecUnitsTotal }} LEC · {{ labUnitsTotal }} LAB</p>
                             <p>School Year: {{ effectiveSchoolYear || '—' }}</p>
                             <p>5 payment terms will be generated</p>
                         </div>

@@ -247,6 +247,18 @@ class StudentFeeController extends Controller
         $miscItems = config('fees.miscellaneous', []);
         $miscTotal = collect($miscItems)->sum('amount');
 
+        // Define year levels, semesters, and school years for the form
+        $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+        $semesters = ['1st Sem', '2nd Sem', 'Summer'];
+        
+        // Generate school years: previous, current, and next
+        $currentYear = now()->year;
+        $schoolYears = [
+            ($currentYear - 1) . '-' . $currentYear,
+            $currentYear . '-' . ($currentYear + 1),
+            ($currentYear + 1) . '-' . ($currentYear + 2),
+        ];
+
         // ── Enrolled subjects per student ─────────────────────────────────────
         // Structure: enrollmentsMap[userId][schoolYear] = int[]
         //
@@ -281,6 +293,9 @@ class StudentFeeController extends Controller
 
         return Inertia::render('StudentFees/Create', [
             'students'         => $students,
+            'yearLevels'       => $yearLevels,
+            'semesters'        => $semesters,
+            'schoolYears'      => $schoolYears,
             'subjectMap'       => $this->buildSubjectMap(),
             'courses'          => $this->allCourses(),
             'miscItems'        => $miscItems,
