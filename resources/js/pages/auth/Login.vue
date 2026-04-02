@@ -51,7 +51,7 @@ const submit = async () => {
 <template>
     <Head title="Log in" />
 
-    <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12" style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 60%, #f0f9ff 100%);">
+    <div class="flex min-h-screen items-center justify-center px-4 py-12" style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background-image: url('/images/ccdi-banner.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
         <div class="w-full max-w-sm">
             <!-- Logo -->
             <div class="mb-8 text-center">
