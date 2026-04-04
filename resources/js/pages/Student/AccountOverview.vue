@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
-import { AlertCircle, CalendarClock, CheckCircle, Clock, CreditCard, XCircle } from 'lucide-vue-next';
+import { AlertCircle, CalendarClock, CheckCircle, Clock, XCircle } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const { formatCurrency, formatDate, getPaymentTermStatusConfig, getTransactionStatusConfig, getAssessmentStatusConfig } = useDataFormatting();
@@ -743,9 +743,6 @@ const accountBalance = computed(() => {
             <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <!-- Total Assessment -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-blue-100">
-                        <CreditCard :size="22" class="text-blue-600" />
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Assessment Fee</p>
                         <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(totalAssessmentFee) }}</p>
@@ -757,9 +754,6 @@ const accountBalance = computed(() => {
 
                 <!-- Total Paid -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-emerald-100">
-                        <CheckCircle :size="22" class="text-emerald-600" />
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Paid</p>
                         <p class="text-2xl font-bold text-emerald-600">{{ formatCurrency(totalPaid) }}</p>
@@ -773,13 +767,6 @@ const accountBalance = computed(() => {
 
                 <!-- Current Balance -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box" :class="remainingBalance > 0 ? 'bg-red-100' : 'bg-emerald-100'">
-                        <component
-                            :is="remainingBalance > 0 ? AlertCircle : CheckCircle"
-                            :size="22"
-                            :class="remainingBalance > 0 ? 'text-red-600' : 'text-emerald-600'"
-                        />
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Balance</p>
                         <p class="text-2xl font-bold" :class="remainingBalance > 0 ? 'text-red-600' : 'text-emerald-600'">

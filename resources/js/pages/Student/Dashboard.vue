@@ -3,7 +3,7 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { AlertCircle, Bell, CalendarClock, CheckCircle, Clock, CreditCard, FileText, Wallet } from 'lucide-vue-next';
+import { AlertCircle, Bell, CalendarClock, CheckCircle } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const { formatCurrency, formatDate, getTransactionStatusConfig, formatTransactionType } = useDataFormatting();
@@ -278,9 +278,6 @@ const dismissReminder = (id: number) => {
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <!-- Total Assessment -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-blue-100">
-                        <FileText :size="20" class="text-blue-600" />
-                    </div>
                     <div class="min-w-0">
                         <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Assessment</p>
                         <p class="text-xl font-bold text-foreground">{{ formatCurrency(normalizedStats.total_fees) }}</p>
@@ -289,9 +286,6 @@ const dismissReminder = (id: number) => {
                 </div>
                 <!-- Total Paid -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-emerald-100">
-                        <CheckCircle :size="20" class="text-emerald-600" />
-                    </div>
                     <div class="min-w-0">
                         <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Paid</p>
                         <p class="text-xl font-bold text-emerald-600">{{ formatCurrency(normalizedStats.total_paid) }}</p>
@@ -300,9 +294,6 @@ const dismissReminder = (id: number) => {
                 </div>
                 <!-- Remaining -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box" :class="normalizedStats.remaining_balance > 0 ? 'bg-red-100' : 'bg-emerald-100'">
-                        <Wallet :size="20" :class="normalizedStats.remaining_balance > 0 ? 'text-red-600' : 'text-emerald-600'" />
-                    </div>
                     <div class="min-w-0">
                         <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Remaining</p>
                         <p class="text-xl font-bold" :class="normalizedStats.remaining_balance > 0 ? 'text-red-600' : 'text-emerald-600'">
@@ -313,9 +304,6 @@ const dismissReminder = (id: number) => {
                 </div>
                 <!-- Pending Charges -->
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box" :class="pendingChargesInfo.hasWarning ? 'bg-amber-100' : 'bg-muted'">
-                        <Clock :size="20" :class="pendingChargesInfo.hasWarning ? 'text-amber-600' : 'text-muted-foreground'" />
-                    </div>
                     <div class="min-w-0">
                         <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending Terms</p>
                         <p class="text-xl font-bold" :class="pendingChargesInfo.hasWarning ? 'text-amber-600' : 'text-foreground'">
@@ -366,22 +354,14 @@ const dismissReminder = (id: number) => {
                             <Link :href="route('transactions.index')" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">View All →</Link>
                         </div>
                         <div v-if="!recentTransactions.length" class="flex flex-col items-center justify-center py-12 text-center">
-                            <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                                <FileText :size="20" class="text-muted-foreground" />
-                            </div>
                             <p class="text-sm font-medium text-muted-foreground">No transactions yet</p>
                             <p class="mt-1 text-xs text-muted-foreground">Payments you make will appear here</p>
                         </div>
                         <div v-else class="divide-y divide-border">
                             <div v-for="transaction in recentTransactions" :key="transaction.id" class="flex items-center justify-between px-5 py-3.5 hover:bg-muted/50 transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100">
-                                        <CreditCard :size="16" class="text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-foreground">{{ formatTransactionType(transaction.type) }}</p>
-                                        <p class="text-xs text-muted-foreground">{{ transaction.reference || 'N/A' }} · {{ transaction.created_at ? formatDate(transaction.created_at) : '-' }}</p>
-                                    </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-foreground">{{ formatTransactionType(transaction.type) }}</p>
+                                    <p class="text-xs text-muted-foreground">{{ transaction.reference || 'N/A' }} · {{ transaction.created_at ? formatDate(transaction.created_at) : '-' }}</p>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-sm font-semibold text-foreground">{{ formatCurrency(transaction.amount) }}</p>
@@ -400,16 +380,13 @@ const dismissReminder = (id: number) => {
                     <div class="ccdi-card p-5">
                         <h2 class="mb-3.5 text-base font-semibold text-foreground">Quick Actions</h2>
                         <div class="space-y-2">
-                            <Link :href="route('student.account')" class="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
-                                <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100"><Wallet :size="16" class="text-blue-600" /></div>
+                            <Link :href="route('student.account')" class="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
                                 View Account
                             </Link>
-                            <Link :href="route('student.account', { tab: 'payment' })" class="flex w-full items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm font-medium text-emerald-800 transition-all hover:bg-emerald-100">
-                                <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-200"><CreditCard :size="16" class="text-emerald-700" /></div>
+                            <Link :href="route('student.account', { tab: 'payment' })" class="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm font-medium text-emerald-800 transition-all hover:bg-emerald-100">
                                 Make Payment
                             </Link>
-                            <Link :href="route('transactions.index')" class="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
-                                <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-purple-100"><FileText :size="16" class="text-purple-600" /></div>
+                            <Link :href="route('transactions.index')" class="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
                                 Transaction History
                             </Link>
                         </div>

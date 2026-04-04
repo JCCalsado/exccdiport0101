@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
-import { Edit, Eye, Plus, Search, TrendingDown, TrendingUp, UserPlus, UserX } from 'lucide-vue-next';
+import { Edit, Eye, Plus, Search, UserPlus, UserX } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 interface PaymentTerm {
@@ -198,13 +198,6 @@ const getBalanceClasses = (student: Student): string => {
     }
 };
 
-const getBalanceIcon = (student: Student) => {
-    const timing = getBalanceTimingStatus(student);
-    if (timing === 'red') return TrendingDown;
-    if (timing === 'green') return TrendingUp;
-    return null;
-};
-
 const getBalanceBadge = (student: Student): { label: string; cls: string } | null => {
     const timing = getBalanceTimingStatus(student);
     if (timing === 'red') return { label: 'Behind', cls: 'bg-red-100 text-red-700 border border-red-200' };
@@ -276,9 +269,6 @@ const submitDrop = () => {
             <!-- Stats -->
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100">
-                        <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Students</p>
                         <p class="text-xl font-bold text-foreground">{{ summary.shownStudents }}</p>
@@ -286,18 +276,12 @@ const submitDrop = () => {
                     </div>
                 </div>
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-100">
-                        <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Outstanding</p>
                         <p class="text-xl font-bold text-red-600">₱{{ summary.totalOutstanding.toLocaleString('en-PH', { minimumFractionDigits: 2 }) }}</p>
                     </div>
                 </div>
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-100">
-                        <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fully Paid</p>
                         <p class="text-xl font-bold text-emerald-600">{{ summary.fullyPaid }}</p>
@@ -305,9 +289,6 @@ const submitDrop = () => {
                     </div>
                 </div>
                 <div class="ccdi-stat-card">
-                    <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100">
-                        <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Behind Schedule</p>
                         <p class="text-xl font-bold" :class="summary.behindSchedule > 0 ? 'text-amber-600' : 'text-foreground'">{{ summary.behindSchedule }}</p>
@@ -394,9 +375,6 @@ const submitDrop = () => {
 
                 <!-- Empty state -->
                 <div v-if="!students.data?.length" class="flex flex-col items-center justify-center py-16 text-center">
-                    <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                        <svg class="h-6 w-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    </div>
                     <p class="text-base font-semibold text-foreground">No students found</p>
                     <p class="mt-1 text-sm text-muted-foreground">Try adjusting the search filters above</p>
                 </div>

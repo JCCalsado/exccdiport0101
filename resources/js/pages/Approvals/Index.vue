@@ -170,9 +170,6 @@ const submitRejection = () => {
             <!-- Stats -->
             <div class="grid grid-cols-3 gap-4">
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-amber-100">
-                        <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending</p>
                         <p class="text-xl font-bold text-amber-600">{{ pendingCount }}</p>
@@ -180,9 +177,6 @@ const submitRejection = () => {
                     </div>
                 </div>
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-emerald-100">
-                        <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Approved</p>
                         <p class="text-xl font-bold text-emerald-600">{{ approvedCount }}</p>
@@ -190,9 +184,6 @@ const submitRejection = () => {
                     </div>
                 </div>
                 <div class="ccdi-stat-card">
-                    <div class="ccdi-icon-box bg-red-100">
-                        <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rejected</p>
                         <p class="text-xl font-bold text-red-600">{{ rejectedCount }}</p>

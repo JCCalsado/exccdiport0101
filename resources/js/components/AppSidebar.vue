@@ -35,7 +35,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         { title: 'Admin Users',         href: safeRoute('users.index'),         icon: Users,        roles: ['admin'] },
         { title: 'Student Archive',     href: safeRoute('students.archive'),    icon: GraduationCap, roles: ['admin'] },
         { title: 'Notifications',       href: '/admin/notifications',           icon: Bell,         roles: ['admin'] },
-        { title: 'Subjects',            href: safeRoute('subjects.index'),      icon: BookOpen,     roles: ['admin'] },
+        // { title: 'Subjects',            href: safeRoute('subjects.index'),      icon: BookOpen,     roles: ['admin'] },
 
         // ── Accounting ──
         { title: 'Accounting Dashboard', href: safeRoute('accounting.dashboard'), icon: Banknote,   roles: ['accounting'] },

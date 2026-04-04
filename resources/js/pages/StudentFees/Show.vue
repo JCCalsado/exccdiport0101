@@ -14,12 +14,9 @@ import {
     BookOpen,
     CheckCircle2,
     ChevronDown,
-    CreditCard,
     Download,
     FlaskConical,
     Plus,
-    TrendingDown,
-    TrendingUp,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
@@ -118,9 +115,6 @@ const balanceCardConfig = computed(() => {
         case 'paid':
             return {
                 bg: 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200',
-                iconBg: 'bg-green-100',
-                icon: CheckCircle2,
-                iconColor: 'text-green-600',
                 labelColor: 'text-green-700',
                 amountColor: 'text-green-700',
                 badge: { label: 'Fully Paid', cls: 'bg-green-500 text-white' },
@@ -128,9 +122,6 @@ const balanceCardConfig = computed(() => {
         case 'on_track':
             return {
                 bg: 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200',
-                iconBg: 'bg-blue-100',
-                icon: TrendingUp,
-                iconColor: 'text-blue-600',
                 labelColor: 'text-blue-700',
                 amountColor: 'text-blue-700',
                 badge: { label: 'On Track', cls: 'bg-blue-500 text-white' },
@@ -138,9 +129,6 @@ const balanceCardConfig = computed(() => {
         default:
             return {
                 bg: 'bg-gradient-to-r from-red-50 to-rose-50 border-red-200',
-                iconBg: 'bg-red-100',
-                icon: TrendingDown,
-                iconColor: 'text-red-600',
                 labelColor: 'text-red-700',
                 amountColor: 'text-red-700',
                 badge: { label: 'Behind Schedule', cls: 'bg-red-500 text-white' },
@@ -980,10 +968,7 @@ const getStudentStatusColor = (status: string) => {
                     </div>
 
                     <!-- ── Balance Card ── -->
-                    <div :class="['mt-2 flex items-center gap-4 rounded-xl border-2 p-4', balanceCardConfig.bg]">
-                        <div :class="['rounded-xl p-3', balanceCardConfig.iconBg]">
-                            <component :is="balanceCardConfig.icon" :class="['h-6 w-6', balanceCardConfig.iconColor]" />
-                        </div>
+                    <div :class="['mt-2 rounded-xl border-2 p-4', balanceCardConfig.bg]">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="text-sm" :class="balanceCardConfig.labelColor">Remaining Balance</p>
