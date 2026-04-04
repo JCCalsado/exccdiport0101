@@ -1,21 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const page = usePage();
-
-const backgrounds = [
-    '/images/bg1.jpg', '/images/bg2.jpg', '/images/bg3.jpg', '/images/bg4.jpg',
-    '/images/bg5.jpg', '/images/bg6.jpg', '/images/bg7.jpg', '/images/bg11.jpg',
-    '/images/bg12.jpg', '/images/bg13.jpg', '/images/bg14.jpg', '/images/bg15.jpg', '/images/bg16.jpg',
-];
-
-const currentIndex = ref(0);
-let interval: number;
-
-onMounted(() => { interval = window.setInterval(() => { currentIndex.value = (currentIndex.value + 1) % backgrounds.length; }, 5000); });
-onUnmounted(() => { clearInterval(interval); });
-const translateX = computed(() => `-${currentIndex.value * 100}%`);
+const backgroundImage = '/images/BackgroundImage.jpg';
 </script>
 
 <template>
@@ -24,11 +11,7 @@ const translateX = computed(() => `-${currentIndex.value * 100}%`);
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     </Head>
 
-    <div class="relative min-h-screen overflow-hidden text-white" style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif;">
-        <!-- Slideshow -->
-        <div class="absolute inset-0 flex transition-transform duration-1000 ease-in-out" :style="{ transform: `translateX(${translateX})` }">
-            <div v-for="(bg, index) in backgrounds" :key="index" class="min-h-screen min-w-full bg-cover bg-center bg-no-repeat" :style="{ backgroundImage: `url(${bg})` }" />
-        </div>
+    <div class="relative min-h-screen overflow-hidden text-white" style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background-image: url('/images/BackgroundImage.jpg'); background-size: cover; background-position: center; background-attachment: fixed;">
 
         <!-- Overlay -->
         <div class="relative z-10 flex min-h-screen flex-col" style="background: linear-gradient(135deg, rgba(10,30,70,0.88) 0%, rgba(15,50,110,0.80) 50%, rgba(5,20,55,0.85) 100%);">
@@ -97,11 +80,7 @@ const translateX = computed(() => `-${currentIndex.value * 100}%`);
                 </div>
             </main>
 
-            <!-- Dot indicators -->
-            <div class="flex justify-center gap-1.5 pb-8">
-                <div v-for="(_, i) in backgrounds" :key="i" class="h-1 rounded-full transition-all duration-300"
-                    :style="{ width: i === currentIndex ? '20px' : '6px', background: i === currentIndex ? '#fff' : 'rgba(255,255,255,0.3)' }" />
-            </div>
+
         </div>
     </div>
 </template>
