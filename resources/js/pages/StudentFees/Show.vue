@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useDataFormatting } from '@/composables/useDataFormatting';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import {
     AlertCircle,
     ArrowLeft,
@@ -72,6 +72,8 @@ const props = defineProps<Props>();
 // ─── Assessment selector ──────────────────────────────────────────────────────
 
 const { formatCurrency } = useDataFormatting();
+const page = usePage();
+const isAccounting = computed(() => (page.props.auth as any).user?.role === 'accounting');
 
 const selectedAssessmentId = ref<number | null>(props.assessment?.id ?? null);
 
@@ -693,7 +695,7 @@ const getStudentStatusColor = (status: string) => {
                     <a :href="exportUrl" target="_blank">
                         <Button variant="outline" size="sm"> <Download class="mr-2 h-4 w-4" /> Export PDF </Button>
                     </a>
-                    <Dialog v-model:open="showPaymentDialog">
+                    <Dialog v-if="isAccounting" v-model:open="showPaymentDialog">
                         <DialogTrigger as-child>
                             <Button size="sm"><Plus class="mr-2 h-4 w-4" /> Record Payment</Button>
                         </DialogTrigger>

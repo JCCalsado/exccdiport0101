@@ -67,7 +67,10 @@ const page = usePage();
 const isAdmin = computed(() => (page.props.auth as any).user?.role === 'admin');
 const isAccounting = computed(() => (page.props.auth as any).user?.role === 'accounting');
 
-const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 'Student Fee Management' }];
+const pageTitle = computed(() => isAdmin ? 'Student Management' : 'Student Fee Management');
+const pageDescription = computed(() => isAdmin ? 'View student information and create new students' : 'Manage student assessments and fee records');
+
+const breadcrumbs = computed(() => [{ title: 'Dashboard', href: route('dashboard') }, { title: pageTitle.value }]);
 
 // Expose props for template
 const courses = computed(() => props.courses);
@@ -254,8 +257,8 @@ const submitDrop = () => {
             <!-- Page Header -->
             <div class="ccdi-page-header">
                 <div>
-                    <h1 class="ccdi-section-title">Student Fee Management</h1>
-                    <p class="ccdi-section-desc">Manage student assessments and fee records</p>
+                    <h1 class="ccdi-section-title">{{ pageTitle }}</h1>
+                    <p class="ccdi-section-desc">{{ pageDescription }}</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <Link v-if="isAdmin" :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
@@ -365,7 +368,7 @@ const submitDrop = () => {
                                     <Link :href="route('student-fees.edit', student.id)" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700" title="Edit">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                     </Link>
-                                    <button v-if="student.status !== 'graduated'" @click="archiveStudent(student.id, student.name)" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700" title="Archive">
+                                    <button v-if="student.status !== 'graduated'" @click="openDrop(student)" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700" title="Archive">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8m-9 4h4" /></svg>
                                     </button>
                                 </div>

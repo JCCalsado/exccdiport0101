@@ -33,15 +33,14 @@ const mainNavItems = computed<NavItem[]>(() => {
         // ── Admin ──
         { title: 'Admin Dashboard',     href: safeRoute('admin.dashboard'),     icon: LayoutGrid,   roles: ['admin'] },
         { title: 'Admin Users',         href: safeRoute('users.index'),         icon: Users,        roles: ['admin'] },
+        { title: 'Student Management',  href: safeRoute('student-fees.index'),  icon: GraduationCap, roles: ['admin'] },
         { title: 'Student Archive',     href: safeRoute('students.archive'),    icon: GraduationCap, roles: ['admin'] },
         { title: 'Notifications',       href: '/admin/notifications',           icon: Bell,         roles: ['admin'] },
         // { title: 'Subjects',            href: safeRoute('subjects.index'),      icon: BookOpen,     roles: ['admin'] },
 
         // ── Accounting ──
         { title: 'Accounting Dashboard', href: safeRoute('accounting.dashboard'), icon: Banknote,   roles: ['accounting'] },
-
-        // ── Admin + Accounting ──
-        { title: 'Student Fee Management', href: safeRoute('student-fees.index'),  icon: Receipt,      roles: ['accounting', 'admin'] },
+        { title: 'Student Fee Management', href: safeRoute('student-fees.index'),  icon: Receipt,      roles: ['accounting'] },
         { title: 'Payment Approvals',      href: safeRoute('approvals.index'),     icon: CheckCircle2, roles: ['accounting', 'admin'] },
     ];
     return items.filter((item) => !item.roles || item.roles.includes(role));
