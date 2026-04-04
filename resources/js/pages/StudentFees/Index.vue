@@ -65,6 +65,7 @@ const { formatCurrency } = useDataFormatting();
 const page = usePage();
 
 const isAdmin = computed(() => (page.props.auth as any).user?.role === 'admin');
+const isAccounting = computed(() => (page.props.auth as any).user?.role === 'accounting');
 
 const breadcrumbs = [{ title: 'Dashboard', href: route('dashboard') }, { title: 'Student Fee Management' }];
 
@@ -260,7 +261,7 @@ const submitDrop = () => {
                     <Link v-if="isAdmin" :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
                         Add Student
                     </Link>
-                    <Link :href="route('student-fees.create')" class="ccdi-btn-primary">
+                    <Link v-if="isAccounting" :href="route('student-fees.create')" class="ccdi-btn-primary">
                         Create Assessment
                     </Link>
                 </div>

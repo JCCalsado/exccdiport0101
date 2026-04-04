@@ -142,16 +142,16 @@ const getColorClass = (color: string) => {
                     <p class="mb-4 text-xs text-muted-foreground">Common administrative tasks</p>
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <Link :href="route('users.create')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
-                            Add Admin User
+                            Add Staff
                         </Link>
-                        <Link href="/admin/notifications/create" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
-                            Manage Notifications
+                        <Link :href="route('student-fees.create-student')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
+                            Add Student
                         </Link>
                         <Link :href="route('users.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
-                            View All Admins
+                            View Staffs
                         </Link>
-                        <Link :href="route('student-fees.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
-                            Student Fee Management
+                        <Link :href="route('notifications.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
+                            Manage Notifications
                         </Link>
                         <Link :href="route('approvals.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700">
                             Payment Approvals
