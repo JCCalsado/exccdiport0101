@@ -9,7 +9,7 @@ import {
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
-    Banknote, Bell, BookOpen, CheckCircle2, ClipboardList,
+    Banknote, BarChart3, Bell, BookOpen, CheckCircle2, ClipboardList,
     CreditCard, GraduationCap, History, LayoutGrid, Receipt, Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -41,6 +41,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         // ── Accounting ──
         { title: 'Accounting Dashboard', href: safeRoute('accounting.dashboard'), icon: Banknote,   roles: ['accounting'] },
         { title: 'Student Fee Management', href: safeRoute('student-fees.index'),  icon: Receipt,      roles: ['accounting'] },
+        { title: 'Financial Reports',      href: safeRoute('accounting.financial-reports'), icon: BarChart3, roles: ['accounting'] },
         { title: 'Payment Approvals',      href: safeRoute('approvals.index'),     icon: CheckCircle2, roles: ['accounting', 'admin'] },
     ];
     return items.filter((item) => !item.roles || item.roles.includes(role));

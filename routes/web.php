@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Accounting\FinancialReportsController;
 use App\Http\Controllers\AccountingDashboardController;
 use App\Http\Controllers\AccountingTransactionController;
 use App\Http\Controllers\AdminController;
@@ -155,6 +156,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->group(fu
 Route::middleware(['auth', 'verified', 'role:accounting,admin'])->prefix('accounting')->group(function () {
     Route::get('/dashboard', [AccountingDashboardController::class, 'index'])->name('accounting.dashboard');
     Route::get('/transactions', [TransactionController::class, 'index'])->name('accounting.transactions.index');
+    Route::get('/financial-reports', [FinancialReportsController::class, 'index'])->name('accounting.financial-reports');
+    Route::get('/financial-reports/export', [FinancialReportsController::class, 'export'])->name('accounting.financial-reports.export');
 });
 
 // ============================================
