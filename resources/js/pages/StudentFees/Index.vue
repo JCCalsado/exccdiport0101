@@ -249,22 +249,32 @@ const submitDrop = () => {
 
 <template>
     <AppLayout>
-        <Head title="Student Fee Management" />
+        <Head :title="pageTitle" />
 
         <div class="w-full space-y-5 p-6">
             <Breadcrumbs :items="breadcrumbs" />
 
-            <!-- Page Header -->
-            <div class="ccdi-page-header">
+            <!-- Page Header — Admin -->
+            <div v-if="isAdmin" class="ccdi-page-header border-l-4 border-l-blue-600 bg-gradient-to-r from-blue-50 to-transparent">
                 <div>
-                    <h1 class="ccdi-section-title">{{ pageTitle }}</h1>
-                    <p class="ccdi-section-desc">{{ pageDescription }}</p>
+                    <h1 class="ccdi-section-title text-blue-900">Student Management</h1>
+                    <p class="ccdi-section-desc text-blue-700">View and manage student information across the institution</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Link v-if="isAdmin" :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
+                    <Link :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
                         Add Student
                     </Link>
-                    <Link v-if="isAccounting" :href="route('student-fees.create')" class="ccdi-btn-primary">
+                </div>
+            </div>
+
+            <!-- Page Header — Accounting -->
+            <div v-else class="ccdi-page-header border-l-4 border-l-green-600 bg-gradient-to-r from-green-50 to-transparent">
+                <div>
+                    <h1 class="ccdi-section-title text-green-900">Student Fee Management</h1>
+                    <p class="ccdi-section-desc text-green-700">Create assessments, manage fees, and record student payments</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Link :href="route('student-fees.create')" class="ccdi-btn-primary">
                         Create Assessment
                     </Link>
                 </div>
