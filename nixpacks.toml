@@ -16,4 +16,4 @@ cmds = [
 ]
 
 [start]
-cmd = "php artisan migrate --force && php-fpm & nginx -g 'daemon off;'"
+cmd = "mkdir -p /var/log/nginx && php artisan migrate --force && php-fpm & nginx -g 'daemon off;'"
