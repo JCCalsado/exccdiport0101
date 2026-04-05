@@ -379,14 +379,14 @@ const dismissReminder = (id: number) => {
                     <!-- Quick Actions -->
                     <div class="ccdi-card p-5">
                         <h2 class="mb-3.5 text-base font-semibold text-foreground">Quick Actions</h2>
-                        <div class="space-y-2">
-                            <Link :href="route('student.account')" class="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+                        <div class="space-y-2.5">
+                            <Link :href="route('student.account')" class="block w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
                                 View Account
                             </Link>
-                            <Link :href="route('student.account', { tab: 'payment' })" class="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm font-medium text-emerald-800 transition-all hover:bg-emerald-100">
+                            <Link :href="route('student.account', { tab: 'payment' })" class="block w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center text-sm font-medium text-emerald-800 transition-all hover:bg-emerald-100">
                                 Make Payment
                             </Link>
-                            <Link :href="route('transactions.index')" class="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
+                            <Link :href="route('transactions.index')" class="block w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
                                 Transaction History
                             </Link>
                         </div>
