@@ -23,7 +23,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('auth/Register');
+        return Inertia::render('auth/Register', [
+            'courses' => $this->allCourses(),
+        ]);
     }
 
     /**
@@ -131,5 +133,25 @@ class RegisteredUserController extends Controller
         }
 
         return $newAccountId;
+    }
+
+    /**
+     * Get all available courses from the system.
+     *
+     * Reads from a hardcoded list. This should be moved to a config or database
+     * table (Courses model) in a future refactor.
+     */
+    private function allCourses(): array
+    {
+        return [
+            'BS Information Technology',
+            'BS Computer Science',
+            'BS Electronics and Communications Engineering',
+            'BS Electrical Engineering',
+            'BS Mechanical Engineering',
+            'BS Civil Engineering',
+            'BS Business Administration',
+            'BS Accounting Information Systems',
+        ];
     }
 }

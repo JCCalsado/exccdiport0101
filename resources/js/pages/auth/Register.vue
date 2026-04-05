@@ -8,6 +8,10 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
+defineProps<{
+    courses: string[];
+}>();
+
 const form = useForm({
     last_name: '',
     first_name: '',
@@ -86,7 +90,12 @@ const submit = () => {
                 <!-- Course -->
                 <div class="grid gap-2">
                     <Label for="course">Course</Label>
-                    <Input id="course" type="text" required v-model="form.course" placeholder="BS Computer Science" />
+                    <select id="course" v-model="form.course" required class="rounded border px-3 py-2">
+                        <option value="">Select a course</option>
+                        <option v-for="course in courses" :key="course" :value="course">
+                            {{ course }}
+                        </option>
+                    </select>
                     <InputError :message="form.errors.course" />
                 </div>
 
