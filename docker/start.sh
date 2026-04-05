@@ -1,14 +1,23 @@
-#!/bin/sh
+events {}
 
-echo "Running Laravel setup..."
+http {
+    include /etc/nginx/mime.types;
+    access_log /dev/stdout;
+    error_log /dev/stderr;
 
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan migrate --force
+    server {
+        listen 8080;
+        root /app/public;
+        index index.php;
 
-echo "Starting PHP-FPM..."
-php-fpm -D
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
 
-echo "Starting Nginx..."
-exec nginx -g "daemon off;"
+        location ~ \.php$ {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }
+}
