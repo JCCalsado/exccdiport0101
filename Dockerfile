@@ -1,126 +1,52 @@
-# Stage 1: Build stage
-FROM php:8.2-fpm-alpine AS builder
+FROM php:8.2-fpm
 
 # Install system dependencies
-RUN apk add --no-cache \
-    curl \
+RUN apt-get update && apt-get install -y \
+    nginx \
+    nodejs \
+    npm \
     git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
     zip \
     unzip \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    libxml2-dev \
-    freetype-dev \
-    libzip-dev \
-    icu-dev \
-    oniguruma-dev \
-    nodejs \
-    npm
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && apt-get clean
 
-# Install PHP extensions
-RUN docker-php-ext-install \
-    pdo \
-    pdo_mysql \
-    mbstring \
-    xml \
-    curl \
-    zip \
-    gd \
-    intl \
-    bcmath \
-    tokenizer \
-    fileinfo \
-    openssl
+# Create nginx log directory (this fixes your error!)
+RUN mkdir -p /var/log/nginx \
+    && touch /var/log/nginx/access.log \
+    && touch /var/log/nginx/error.log
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Set working directory
 WORKDIR /app
 
-# Copy application files
+# Copy project files
 COPY . .
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Build frontend assets
-RUN npm ci && npm run build
+# Install Node dependencies and build frontend
+RUN npm install && npm run build
 
-# Stage 2: Runtime stage
-FROM php:8.2-fpm-alpine
+# Set permissions
+RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
+    && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Install runtime dependencies
-RUN apk add --no-cache \
-    nginx \
-    curl \
-    libpng \
-    libjpeg-turbo \
-    libxml2 \
-    freetype \
-    libzip \
-    icu \
-    oniguruma \
-    supervisor
+# Copy nginx config
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-# Install PHP extensions
-RUN docker-php-ext-install \
-    pdo \
-    pdo_mysql \
-    mbstring \
-    xml \
-    curl \
-    zip \
-    gd \
-    intl \
-    bcmath \
-    tokenizer \
-    fileinfo \
-    openssl
+# Copy startup script
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
 
-# Create app directory
-WORKDIR /app
-
-# Copy application from builder
-COPY --from=builder /app /app
-
-# Create necessary directories
-RUN mkdir -p /var/log/nginx && \
-    touch /var/log/nginx/access.log && \
-    touch /var/log/nginx/error.log && \
-    chown -R nobody:nobody /var/log/nginx
-
-# Create storage directories and set permissions
-RUN mkdir -p storage/logs \
-    storage/app \
-    storage/app/public \
-    storage/framework/cache \
-    storage/framework/sessions \
-    storage/framework/views \
-    bootstrap/cache && \
-    chown -R nobody:nobody /app/storage /app/bootstrap/cache
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy php-fpm configuration
-RUN mkdir -p /usr/local/etc/php-fpm.d && \
-    echo '[www]\nuser = nobody\ngroup = nobody\nlisten = 127.0.0.1:9000\nchdir = /app' > /usr/local/etc/php-fpm.d/www.conf
-
-# Copy supervisor configuration
-RUN mkdir -p /etc/supervisor/conf.d && \
-    echo '[supervisord]\nnodaemon=true\n\n[program:php-fpm]\ncommand=php-fpm\nnumprocs=1\nautostart=true\nautorestart=true\nstderr_logfile=/var/log/php-fpm.log\nstdout_logfile=/var/log/php-fpm.log\n\n[program:nginx]\ncommand=nginx -g "daemon off;"\nnumprocs=1\nautostart=true\nautorestart=true\nstderr_logfile=/var/log/nginx/error.log\nstdout_logfile=/var/log/nginx/access.log' > /etc/supervisor/conf.d/app.conf
-
-# Cache Laravel config, routes, and views
-RUN php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
-
-# Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/ || exit 1
-
-# Start application
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/app.conf"]
+CMD ["/start.sh"]
