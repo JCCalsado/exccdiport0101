@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     npm \
     git \
     curl \
+    gettext-base \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -40,13 +41,13 @@ RUN npm install && npm run build
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
     && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Copy nginx config
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+# Copy nginx config as a template (envsubst renders it at startup)
+COPY docker/nginx.conf /etc/nginx/nginx.conf.template
 
 # Copy startup script
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 8080
+EXPOSE ${PORT:-8080}
 
 CMD ["/start.sh"]
