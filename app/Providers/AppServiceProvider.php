@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\StudentPaymentTerm;
 use App\Observers\StudentPaymentTermObserver;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL; // Huwag kalimutan itong import sa taas
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -77,5 +78,9 @@ class AppServiceProvider extends ServiceProvider
         //   Local dev   → Telescope (full request inspection)
         //   Staging     → Both (Telescope for debugging + Pulse for perf baseline)
         //   Production  → Pulse only
+
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
