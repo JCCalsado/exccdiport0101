@@ -1,23 +1,16 @@
-events {}
+#!/bin/bash
+set -e
 
-http {
-    include /etc/nginx/mime.types;
-    access_log /dev/stdout;
-    error_log /dev/stderr;
+# Create nginx log directories
+mkdir -p /var/log/nginx
+touch /var/log/nginx/access.log
+touch /var/log/nginx/error.log
 
-    server {
-        listen 8080;
-        root /app/public;
-        index index.php;
+# Run migrations
+php artisan migrate --force
 
-        location / {
-            try_files $uri $uri/ /index.php?$query_string;
-        }
+# Start php-fpm in background
+php-fpm &
 
-        location ~ \.php$ {
-            fastcgi_pass 127.0.0.1:9000;
-            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-            include fastcgi_params;
-        }
-    }
-}
+# Start nginx in foreground
+nginx -g 'daemon off;'
