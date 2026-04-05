@@ -46,4 +46,56 @@ ENV PORT=8080
 # Expose the port
 EXPOSE 8080
 
+
+Loading...
+
+You sent 4 photos
+Kent John
 CMD php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; frankenphp php-server --listen :$PORT
+You sent
+Deploy Logs
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Starting Container
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Error: unknown flag: --http
+   INFO  Nothing to migrate.  
+   INFO  Configuration cached successfully.  
+   INFO  Blade templates cached successfully.  
+Kent John
+isang diretso yan
+You sent
+Kent John
+CMD php artisan migrate --force; php artisan config:cache; php artisan route:cache; php artisan view:cache; frankenphp php-server --listen :8080
