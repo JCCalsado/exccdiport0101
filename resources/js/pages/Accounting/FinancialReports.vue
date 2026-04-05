@@ -62,6 +62,16 @@ const collectionRate = computed(() => {
     return Math.round((props.summary.totalPaid / total) * 100)
 })
 
+const filteredPaymentMethods = computed(() => {
+    return props.paymentMethods.filter(
+        (m) =>
+            m.method.toLowerCase() !== 'credit card' &&
+            m.method.toLowerCase() !== 'credit_card' &&
+            m.method.toLowerCase() !== 'debit card' &&
+            m.method.toLowerCase() !== 'debit_card',
+    )
+})
+
 const applyFilters = () => {
     router.get(
         route('accounting.financial-reports'),
@@ -253,11 +263,11 @@ const exportPDF = () => {
                     <CardTitle>Payment Method Breakdown</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div v-if="paymentMethods.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+                    <div v-if="filteredPaymentMethods.length === 0" class="py-6 text-center text-sm text-muted-foreground">
                         No payment data for this period.
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                        <div v-for="method in paymentMethods" :key="method.method" class="rounded-lg border border-border p-4">
+                        <div v-for="method in filteredPaymentMethods" :key="method.method" class="rounded-lg border border-border p-4">
                             <div class="text-sm font-medium text-muted-foreground capitalize">{{ method.method }}</div>
                             <div class="mt-2 text-2xl font-bold">{{ method.count }}</div>
                             <div class="mt-1 text-xs text-muted-foreground">{{ formatCurrency(method.total) }}</div>
