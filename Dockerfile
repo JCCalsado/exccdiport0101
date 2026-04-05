@@ -1,6 +1,6 @@
 FROM php:8.2-fpm-alpine
 
-# Install dependencies
+# Install dependencies including supervisor
 RUN apk add --no-cache \
     nginx \
     nodejs \
@@ -13,6 +13,7 @@ RUN apk add --no-cache \
     libzip-dev \
     zip \
     unzip \
+    supervisor \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Install Composer
@@ -34,20 +35,31 @@ RUN npm install && npm run build
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache && \
     chmod -R 775 /app/storage /app/bootstrap/cache
 
-# ========== ANG MAHALAGANG PARTE ==========
-# Gumawa ng log folder para kay Nginx na may tamang permission
+# Create log directories with proper permissions
 RUN mkdir -p /var/log/nginx /var/run && \
     chown -R nginx:nginx /var/log/nginx /var/run && \
     chmod -R 755 /var/log/nginx /var/run && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log
 
+# Configure PHP-FPM to listen on TCP port 9000
+RUN echo "[www]" > /usr/local/etc/php-fpm.d/docker.conf && \
+    echo "listen = 127.0.0.1:9000" >> /usr/local/etc/php-fpm.d/docker.conf && \
+    echo "listen.allowed_clients = 127.0.0.1" >> /usr/local/etc/php-fpm.d/docker.conf
+
 # Copy Nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-# Copy and prepare startup script
+# Copy Supervisor configuration
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy startup script
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
+
+# Create supervisor log directory
+RUN mkdir -p /var/log/supervisor && \
+    chown -R nobody:nobody /var/log/supervisor
 
 # Expose port
 EXPOSE 80
