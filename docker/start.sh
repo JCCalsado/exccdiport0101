@@ -1,13 +1,14 @@
-#!/bin/bash
+#!/bin/sh
 
-# Run Laravel setup
+echo "Running Laravel setup..."
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 php artisan migrate --force
 
-# Start PHP-FPM in background
-php-fpm &
+echo "Starting PHP-FPM..."
+php-fpm -D
 
-# Start Nginx
-nginx -g "daemon off;"
+echo "Starting Nginx..."
+exec nginx -g "daemon off;"
