@@ -1,14 +1,19 @@
 #!/bin/sh
-echo "=== STEP 1: Migrate ==="
-php artisan migrate --force
-echo "=== STEP 2: Starting PHP-FPM ==="
-php-fpm -D 2>&1
-echo "PHP-FPM exit code: $?"
-sleep 2
-echo "=== STEP 3: Test nginx ==="
-nginx -t 2>&1
-echo "Nginx test exit code: $?"
-echo "=== STEP 4: Starting Nginx ==="
-nginx -g "daemon off;" 2>&1
-echo "Nginx exit code: $?"
-echo "=== DONE ==="
+set -e
+
+# Siguraduhing may log directory at tama ang permission
+mkdir -p /var/log/nginx /var/run
+chown -R nginx:nginx /var/log/nginx /var/run
+chmod -R 755 /var/log/nginx /var/run
+
+# I-redirect logs para siguradong hindi na maghanap ng physical file
+ln -sf /dev/stdout /var/log/nginx/access.log 2>/dev/null || true
+ln -sf /dev/stderr /var/log/nginx/error.log 2>/dev/null || true
+
+# Start PHP-FPM (kung ginagamit niyo)
+if command -v php-fpm >/dev/null 2>&1; then
+    php-fpm -D
+fi
+
+# Start Nginx
+nginx -g "daemon off;"

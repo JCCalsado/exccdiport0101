@@ -2,55 +2,12 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ccdi-portal
-    restart: unless-stopped
-    working_dir: /app
+    build: .
+    ports:
+      - "80:80"
     environment:
       - APP_ENV=production
       - APP_DEBUG=false
-      - APP_URL=http://localhost:8080
-      - DB_CONNECTION=mysql
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_DATABASE=${DB_DATABASE:-ccdi_portal}
-      - DB_USERNAME=${DB_USERNAME:-ccdi_user}
-      - DB_PASSWORD=${DB_PASSWORD:-secret}
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mysql
-    networks:
-      - ccdi-network
     volumes:
       - ./storage:/app/storage
       - ./bootstrap/cache:/app/bootstrap/cache
-
-  mysql:
-    image: mysql:8.0
-    container_name: ccdi-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${DB_DATABASE:-ccdi_portal}
-      MYSQL_USER: ${DB_USERNAME:-ccdi_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - ccdi-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-
-networks:
-  ccdi-network:
-    driver: bridge
-
-volumes:
-  mysql_data:
