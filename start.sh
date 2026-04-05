@@ -1,20 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-# Create nginx log directories
-mkdir -p /var/log/nginx
-touch /var/log/nginx/access.log
-touch /var/log/nginx/error.log
+# Ensure log directories exist with proper permissions
+mkdir -p /var/log/nginx /var/run /var/log/supervisor
+chown -R nginx:nginx /var/log/nginx /var/run
+chown -R nobody:nobody /var/log/supervisor
+chmod -R 755 /var/log/nginx /var/run /var/log/supervisor
 
-# Run migrations
-php artisan migrate --force
+# Redirect logs to stdout/stderr for container visibility
+ln -sf /dev/stdout /var/log/nginx/access.log 2>/dev/null || true
+ln -sf /dev/stderr /var/log/nginx/error.log 2>/dev/null || true
 
-# Generate nginx config from template, defaulting PORT to 8080
-export PORT="${PORT:-8080}"
-envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-
-# Start php-fpm in background
-php-fpm &
-
-# Start nginx in foreground
-nginx -g 'daemon off;'
+# Start supervisor (manages both php-fpm and nginx)
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
