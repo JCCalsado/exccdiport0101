@@ -44,3 +44,6 @@ yarn-error.log
 /tests/test_carryover.php
 /tests/test_payment_system.php
 /tests/verify_seeder.php
+**/caddy
+frankenphp
+frankenphp-worker.php
