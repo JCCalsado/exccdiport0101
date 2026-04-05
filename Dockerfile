@@ -46,9 +46,21 @@ RUN mkdir -p /var/log/nginx /var/run && \
 # Copy Nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
+# Configure PHP-FPM to listen on TCP port 9000
+RUN echo "[www]" > /usr/local/etc/php-fpm.d/docker.conf && \
+    echo "listen = 127.0.0.1:9000" >> /usr/local/etc/php-fpm.d/docker.conf && \
+    echo "listen.allowed_clients = 127.0.0.1" >> /usr/local/etc/php-fpm.d/docker.conf
+
+# Copy Supervisor configuration
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Copy and prepare startup script
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
+
+# Create supervisor log directory
+RUN mkdir -p /var/log/supervisor && \
+    chown -R nobody:nobody /var/log/supervisor
 
 # Expose port
 EXPOSE 80
