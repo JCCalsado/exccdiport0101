@@ -14,18 +14,13 @@ interface PaymentMethod {
     total: number
 }
 
-interface OutstandingTerm {
-    id: number
+interface OutstandingStudent {
+    accountId: string
+    studentName: string
+    course: string
+    total: number
     balance: number
-    assessment: {
-        total_assessment: number
-        student: {
-            user: {
-                account_id: string
-                name: string
-            }
-        }
-    }
+    status: string
 }
 
 interface Props {
@@ -40,7 +35,7 @@ interface Props {
         byMonth: Array<{ month: string; total: number }>
     }
     paymentMethods: PaymentMethod[]
-    outstandingStudents: OutstandingTerm[]
+    outstandingStudents: OutstandingStudent[]
     filters: {
         schoolYear: string
         semester: string
@@ -113,14 +108,14 @@ const exportPDF = () => {
                 <CardContent>
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
                         <div class="flex-1">
-                            <label class="block text-sm font-medium text-foreground mb-1">School Year</label>
-                            <select v-model="selectedSchoolYear" class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <label for="school-year" class="block text-sm font-medium text-foreground mb-1">School Year</label>
+                            <select id="school-year" name="school_year" v-model="selectedSchoolYear" class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
                                 <option v-for="year in schoolYears" :key="year" :value="year">{{ year }}</option>
                             </select>
                         </div>
                         <div class="flex-1">
-                            <label class="block text-sm font-medium text-foreground mb-1">Semester</label>
-                            <select v-model="selectedSemester" class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <label for="semester" class="block text-sm font-medium text-foreground mb-1">Semester</label>
+                            <select id="semester" name="semester" v-model="selectedSemester" class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
                                 <option v-for="sem in semesters" :key="sem" :value="sem">{{ sem }}</option>
                             </select>
                         </div>
@@ -277,11 +272,11 @@ const exportPDF = () => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
-                                <tr v-for="term in outstandingStudents" :key="term.id" class="hover:bg-muted/30">
-                                    <td class="px-4 py-3 text-sm text-muted-foreground">{{ term.assessment?.student?.user?.account_id ?? 'N/A' }}</td>
-                                    <td class="px-4 py-3 text-sm font-medium">{{ term.assessment?.student?.user?.name ?? 'Unknown' }}</td>
-                                    <td class="px-4 py-3 text-right text-sm">{{ formatCurrency(term.assessment?.total_assessment ?? 0) }}</td>
-                                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600">{{ formatCurrency(term.balance) }}</td>
+                                <tr v-for="(student, index) in outstandingStudents" :key="index" class="hover:bg-muted/30">
+                                    <td class="px-4 py-3 text-sm text-muted-foreground">{{ student.accountId }}</td>
+                                    <td class="px-4 py-3 text-sm font-medium">{{ student.studentName }}</td>
+                                    <td class="px-4 py-3 text-right text-sm">{{ formatCurrency(student.total) }}</td>
+                                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600">{{ formatCurrency(student.balance) }}</td>
                                 </tr>
                             </tbody>
                         </table>

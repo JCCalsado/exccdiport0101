@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Accounting;
 use App\Http\Controllers\Controller;
 use App\Models\StudentAssessment;
 use App\Models\StudentPaymentTerm;
-use App\Models\Transaction;
+use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -41,10 +41,9 @@ class FinancialReportsController extends Controller
             ->sum('total_assessment');
 
         // FIX 1: totalPaid was using whereYear() only — ignored semester.
-        // Now scoped through paymentTerm → assessment to match school_year + semester.
-        $totalPaid = Transaction::where('kind', 'payment')
-            ->where('status', 'paid')
-            ->whereHas('studentPaymentTerm.assessment', function ($q) use ($schoolYear, $semester) {
+        // Now scoped through assessment to match school_year + semester.
+        $totalPaid = Payment::where('status', 'completed')
+            ->whereHas('assessment', function ($q) use ($schoolYear, $semester) {
                 $q->where('school_year', $schoolYear)
                   ->where('semester', $semester);
             })
@@ -68,10 +67,9 @@ class FinancialReportsController extends Controller
             ->get();
 
         // FIX 2: byMonthSummary was using whereYear() only — ignored semester.
-        // Now scoped through paymentTerm → assessment.
-        $byMonthSummary = Transaction::where('kind', 'payment')
-            ->where('status', 'paid')
-            ->whereHas('studentPaymentTerm.assessment', function ($q) use ($schoolYear, $semester) {
+        // Now scoped through assessment.
+        $byMonthSummary = Payment::where('status', 'completed')
+            ->whereHas('assessment', function ($q) use ($schoolYear, $semester) {
                 $q->where('school_year', $schoolYear)
                   ->where('semester', $semester);
             })
@@ -90,14 +88,13 @@ class FinancialReportsController extends Controller
 
         // FIX 3: paymentMethods had NO filters at all — showed all-time totals
         // regardless of school year or semester. Now properly scoped.
-        $paymentMethods = Transaction::where('kind', 'payment')
-            ->where('status', 'paid')
-            ->whereHas('studentPaymentTerm.assessment', function ($q) use ($schoolYear, $semester) {
+        $paymentMethods = Payment::where('status', 'completed')
+            ->whereHas('assessment', function ($q) use ($schoolYear, $semester) {
                 $q->where('school_year', $schoolYear)
                   ->where('semester', $semester);
             })
-            ->selectRaw("COALESCE(payment_channel, 'Unspecified') as method, COUNT(*) as count, SUM(amount) as total")
-            ->groupBy('payment_channel')
+            ->selectRaw("COALESCE(payment_method, 'Unspecified') as method, COUNT(*) as count, SUM(amount) as total")
+            ->groupBy('payment_method')
             ->orderByDesc('total')
             ->get();
 
@@ -174,9 +171,8 @@ class FinancialReportsController extends Controller
         // ------------------------------------------------------------------
 
         // FIX 1 (export): totalPaid scoped to semester via assessment relationship.
-        $totalPaid = Transaction::where('kind', 'payment')
-            ->where('status', 'paid')
-            ->whereHas('studentPaymentTerm.assessment', function ($q) use ($schoolYear, $semester) {
+        $totalPaid = Payment::where('status', 'completed')
+            ->whereHas('assessment', function ($q) use ($schoolYear, $semester) {
                 $q->where('school_year', $schoolYear)
                   ->where('semester', $semester);
             })
