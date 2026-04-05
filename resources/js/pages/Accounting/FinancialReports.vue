@@ -109,13 +109,23 @@ const exportPDF = () => {
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
                         <div class="flex-1">
                             <label for="school-year" class="block text-sm font-medium text-foreground mb-1">School Year</label>
-                            <select id="school-year" name="school_year" v-model="selectedSchoolYear" class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <select
+                                id="school-year"
+                                name="school_year"
+                                v-model="selectedSchoolYear"
+                                class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
                                 <option v-for="year in schoolYears" :key="year" :value="year">{{ year }}</option>
                             </select>
                         </div>
                         <div class="flex-1">
                             <label for="semester" class="block text-sm font-medium text-foreground mb-1">Semester</label>
-                            <select id="semester" name="semester" v-model="selectedSemester" class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <select
+                                id="semester"
+                                name="semester"
+                                v-model="selectedSemester"
+                                class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
                                 <option v-for="sem in semesters" :key="sem" :value="sem">{{ sem }}</option>
                             </select>
                         </div>
@@ -179,6 +189,9 @@ const exportPDF = () => {
                     </CardHeader>
                     <CardContent>
                         <div class="space-y-4">
+                            <div v-if="charts.byCourse.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+                                No assessment data for this period.
+                            </div>
                             <div v-for="course in charts.byCourse" :key="course.course" class="flex items-end gap-3">
                                 <div class="flex-1 min-w-0">
                                     <div class="text-sm font-medium text-foreground truncate">{{ course.course }}</div>
@@ -186,11 +199,7 @@ const exportPDF = () => {
                                         <div
                                             class="h-full bg-blue-500"
                                             :style="{
-                                                width:
-                                                    (course.total /
-                                                        Math.max(...charts.byCourse.map((c) => c.total))) *
-                                                    100 +
-                                                    '%',
+                                                width: (course.total / Math.max(...charts.byCourse.map((c) => c.total))) * 100 + '%',
                                             }"
                                         ></div>
                                     </div>
@@ -214,6 +223,9 @@ const exportPDF = () => {
                     </CardHeader>
                     <CardContent>
                         <div class="space-y-4">
+                            <div v-if="charts.byMonth.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+                                No payment data for this period.
+                            </div>
                             <div v-for="month in charts.byMonth" :key="month.month" class="flex items-end gap-3">
                                 <div class="flex-1 min-w-0">
                                     <div class="text-sm font-medium text-foreground">{{ month.month }}</div>
@@ -221,11 +233,7 @@ const exportPDF = () => {
                                         <div
                                             class="h-full bg-green-500"
                                             :style="{
-                                                width:
-                                                    (month.total /
-                                                        Math.max(...charts.byMonth.map((m) => m.total), 1)) *
-                                                    100 +
-                                                    '%',
+                                                width: (month.total / Math.max(...charts.byMonth.map((m) => m.total), 1)) * 100 + '%',
                                             }"
                                         ></div>
                                     </div>
@@ -245,6 +253,9 @@ const exportPDF = () => {
                     <CardTitle>Payment Method Breakdown</CardTitle>
                 </CardHeader>
                 <CardContent>
+                    <div v-if="paymentMethods.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+                        No payment data for this period.
+                    </div>
                     <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                         <div v-for="method in paymentMethods" :key="method.method" class="rounded-lg border border-border p-4">
                             <div class="text-sm font-medium text-muted-foreground capitalize">{{ method.method }}</div>
@@ -265,23 +276,37 @@ const exportPDF = () => {
                         <table class="min-w-full divide-y divide-border">
                             <thead class="bg-muted/50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account ID</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Student Name</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Assessment</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outstanding Balance</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Account ID
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Student Name
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Course
+                                    </th>
+                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Total Assessment
+                                    </th>
+                                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Outstanding Balance
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
                                 <tr v-for="(student, index) in outstandingStudents" :key="index" class="hover:bg-muted/30">
                                     <td class="px-4 py-3 text-sm text-muted-foreground">{{ student.accountId }}</td>
                                     <td class="px-4 py-3 text-sm font-medium">{{ student.studentName }}</td>
+                                    <td class="px-4 py-3 text-sm text-muted-foreground">{{ student.course }}</td>
                                     <td class="px-4 py-3 text-right text-sm">{{ formatCurrency(student.total) }}</td>
-                                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600">{{ formatCurrency(student.balance) }}</td>
+                                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600">
+                                        {{ formatCurrency(student.balance) }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                         <div v-if="outstandingStudents.length === 0" class="py-8 text-center">
-                            <p class="text-sm text-muted-foreground">No outstanding balances found</p>
+                            <p class="text-sm text-muted-foreground">No outstanding balances for this period.</p>
                         </div>
                     </div>
                 </CardContent>
