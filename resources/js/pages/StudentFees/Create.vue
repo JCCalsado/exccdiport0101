@@ -326,13 +326,13 @@ const labSubjectCount = computed(() => selectedSubjects.value.filter((s) => s.la
 // ─── Student list filtering ───────────────────────────────────────────────────
 
 const filteredStudents = computed(() => {
-    if (!studentSearch.value) return props.students;
-    const s = studentSearch.value.toLowerCase();
+    const s = (studentSearch.value ?? '').toLowerCase();
+    if (!s) return props.students;
     return props.students.filter(
         (st) =>
-            st.account_id.toLowerCase().includes(s) ||
-            st.name.toLowerCase().includes(s) ||
-            st.email.toLowerCase().includes(s) ||
+            (st.account_id ?? '').toLowerCase().includes(s) ||
+            (st.name ?? '').toLowerCase().includes(s) ||
+            (st.email ?? '').toLowerCase().includes(s) ||
             (st.course ?? '').toLowerCase().includes(s),
     );
 });
