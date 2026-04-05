@@ -74,4 +74,12 @@ class UserPolicy
     {
         return $user->id === $model->id;
     }
+
+    /**
+     * Check if user is an active admin (for general authorization).
+     */
+    public function isAdmin(User $user): bool
+    {
+        return $user->isAdmin() && $user->is_active;
+    }
 }

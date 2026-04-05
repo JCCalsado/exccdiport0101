@@ -70,21 +70,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 // ============================================
 // STUDENT FEE MANAGEMENT ROUTES (Admin + Accounting)
 // ============================================
-// Both roles can access index, show, edit, and drop routes
-// Admin: Can view, edit, create students, archive — labeled as "Student Management"
-// Accounting: Can view, create assessments, edit assessments, record payments, archive — labeled as "Student Fee Management"
+// Admin + Accounting: Can view (index, show)
+// Admin only: Can edit, update assessments
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('student-fees')->group(function () {
     Route::get('/', [StudentFeeController::class, 'index'])->name('student-fees.index');
     Route::get('/{userId}', [StudentFeeController::class, 'show'])
         ->whereNumber('userId')
         ->name('student-fees.show');
-    Route::get('/{userId}/edit', [StudentFeeController::class, 'edit'])
-        ->whereNumber('userId')
-        ->name('student-fees.edit');
-    Route::put('/{userId}', [StudentFeeController::class, 'update'])
-        ->whereNumber('userId')
-        ->name('student-fees.update');
     Route::get('/{userId}/export-pdf', [StudentFeeController::class, 'exportPdf'])
         ->whereNumber('userId')
         ->name('student-fees.export-pdf');
@@ -92,6 +85,15 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('studen
         ->whereNumber('user')
         ->name('student-fees.drop');
 });
+
+// Admin-only edit and update routes
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('student-fees')->group(function () {
+    Route::get('/{userId}/edit', [StudentFeeController::class, 'edit'])
+        ->whereNumber('userId')
+        ->name('student-fees.edit');
+    Route::put('/{userId}', [StudentFeeController::class, 'update'])
+        ->whereNumber('userId')
+        ->name('student-fees.update');
 
 // Admin-only routes for student creation
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('student-fees')->group(function () {

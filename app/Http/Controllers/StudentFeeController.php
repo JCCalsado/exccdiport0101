@@ -955,6 +955,8 @@ class StudentFeeController extends Controller
 
     public function edit($userId)
     {
+        $this->authorize('isAdmin');
+
         $student = User::with(['student', 'account'])
             ->students()
             ->findOrFail($userId);
@@ -1001,6 +1003,8 @@ class StudentFeeController extends Controller
 
     public function update(Request $request, $userId)
     {
+        $this->authorize('isAdmin');
+
         $validated = $request->validate([
             'last_name'            => 'required|string|max:255',
             'first_name'           => 'required|string|max:255',
