@@ -194,7 +194,7 @@ const pickerSubjects = computed<SubjectItem[]>(() => {
 const regularGroups = computed(() => {
     const course = activeCourse.value;
     if (!course || !props.subjectMap[course]) return {};
-    const search = subjectSearch.value.toLowerCase();
+    const search = (subjectSearch.value ?? '').toLowerCase();
     const result: Record<string, Record<string, SubjectItem[]>> = {};
     for (const yl of Object.keys(props.subjectMap[course])) {
         for (const sem of Object.keys(props.subjectMap[course][yl])) {
