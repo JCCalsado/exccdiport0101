@@ -45,3 +45,8 @@ ENV PORT=8080
 
 # Expose the port
 EXPOSE 8080
+
+CMD php artisan migrate --force; \
+    php artisan config:cache; \
+    php artisan view:cache; \
+    frankenphp php-server --listen :8080 --http
