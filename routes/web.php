@@ -94,6 +94,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('student-fees')->g
     Route::put('/{userId}', [StudentFeeController::class, 'update'])
         ->whereNumber('userId')
         ->name('student-fees.update');
+});
 
 // Admin-only routes for student creation
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('student-fees')->group(function () {
