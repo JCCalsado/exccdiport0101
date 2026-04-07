@@ -6,19 +6,19 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            font-size: 11px;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10px;
             color: #222;
             margin: 0;
-            padding: 20px;
+            padding: 12px 16px;
         }
-
+ 
         /* ── Header ─────────────────────────────────────────────── */
         .header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             border-bottom: 2px solid #222;
-            padding-bottom: 12px;
+            padding-bottom: 8px;
         }
         .header h1 {
             margin: 0 0 4px;
@@ -43,9 +43,9 @@
             color: #555;
             margin-top: 4px;
         }
-
+ 
         /* ── Section wrappers ────────────────────────────────────── */
-        .section { margin-bottom: 18px; }
+        .section { margin-bottom: 10px; }
         .section-title {
             font-size: 11px;
             font-weight: bold;
@@ -56,13 +56,13 @@
             border-bottom: 1px solid #ccc;
             color: #333;
         }
-
+ 
         /* ── Info grid (student details) ────────────────────────── */
         .info-table { width: 100%; border-collapse: collapse; }
         .info-table td { padding: 3px 6px; vertical-align: top; }
         .info-table .lbl { font-weight: bold; width: 28%; color: #444; }
         .info-table .val { color: #222; }
-
+ 
         /* ── Data tables ─────────────────────────────────────────── */
         table.data {
             width: 100%;
@@ -72,7 +72,7 @@
         table.data th,
         table.data td {
             border: 1px solid #ccc;
-            padding: 6px 8px;
+            padding: 4px 6px;
         }
         table.data th {
             background-color: #f2f2f2;
@@ -82,10 +82,10 @@
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-
+ 
         .row-total { font-weight: bold; background-color: #f9f9f9; }
         .row-grand { font-weight: bold; background-color: #e8e8e8; font-size: 12px; }
-
+ 
         /* ── Balance summary box ─────────────────────────────────── */
         .balance-box {
             border: 2px solid #333;
@@ -106,7 +106,7 @@
             font-size: 14px;
             font-weight: bold;
         }
-
+ 
         /* ── Payment terms pills ─────────────────────────────────── */
         .terms-grid {
             display: table;
@@ -136,10 +136,10 @@
         .status-partial { background: #fed7aa; color: #92400e; }
         .status-pending { background: #fef9c3; color: #713f12; }
         .status-overdue { background: #fee2e2; color: #991b1b; }
-
+ 
         /* ── Signatures ──────────────────────────────────────────── */
         .signature-section {
-            margin-top: 40px;
+            margin-top: 20px;
             display: table;
             width: 100%;
         }
@@ -151,23 +151,23 @@
         }
         .sig-line {
             border-top: 1px solid #555;
-            margin: 40px 10px 4px;
+            margin: 24px 10px 4px;
         }
         .sig-label { font-size: 9px; color: #555; }
-
+ 
         /* ── Footer ──────────────────────────────────────────────── */
         .footer {
-            margin-top: 30px;
+            margin-top: 16px;
             text-align: center;
             font-size: 9px;
             color: #888;
             border-top: 1px solid #eee;
-            padding-top: 8px;
+            padding-top: 6px;
         }
     </style>
 </head>
 <body>
-
+ 
 {{-- ══ Header ══ --}}
 <div class="header">
     <h1>{{ strtoupper(config('school.name', 'Computer Communication Development Institute')) }}</h1>
@@ -188,7 +188,7 @@
         {{ $assessment->year_level }} &mdash; {{ $assessment->semester }} &middot; S.Y. {{ $assessment->school_year }}
     </p>
 </div>
-
+ 
 {{-- ══ Student Information ══ --}}
 {{-- NOTE: $student is already the User model from exportPdf() --}}
 <div class="section">
@@ -221,7 +221,7 @@
         </tr>
     </table>
 </div>
-
+ 
 {{-- ══ Fee Assessment ══ --}}
 <div class="section">
     <div class="section-title">Fee Assessment</div>
@@ -234,20 +234,20 @@
             </tr>
         </thead>
         <tbody>
-
+ 
             {{-- ── Subjects / Tuition items ── --}}
             @php
                 $subjects   = $assessment->subjects   ?? [];
                 $feeBreak   = $assessment->fee_breakdown ?? [];
                 $chargeRows = $transactions->where('kind', 'charge');
-
+ 
                 // Prefer assessment data (fee_breakdown + subjects) over raw transactions.
                 // Fall back to charge transactions when the assessment JSON fields are empty.
                 $hasAssessmentData = !empty($subjects) || !empty($feeBreak);
             @endphp
-
+ 
             @if($hasAssessmentData)
-
+ 
                 {{-- ── Tuition rows from stored subjects JSON ── --}}
                 @foreach($subjects as $subject)
                 <tr>
@@ -261,7 +261,7 @@
                     <td class="text-right">₱{{ number_format($subject['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
-
+ 
                 {{-- ── Other fee rows from stored fee_breakdown JSON ── --}}
                 @foreach($feeBreak as $fee)
                 <tr>
@@ -270,9 +270,9 @@
                     <td class="text-right">₱{{ number_format($fee['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
-
+ 
             @else
-
+ 
                 {{-- ── Fallback: derive from charge transactions ── --}}
                 @foreach($chargeRows->groupBy('type') as $category => $items)
                     @foreach($items as $item)
@@ -283,7 +283,7 @@
                     </tr>
                     @endforeach
                 @endforeach
-
+ 
                 @if($chargeRows->isEmpty())
                 <tr>
                     <td colspan="3" style="text-align:center; color:#999;">
@@ -291,9 +291,9 @@
                     </td>
                 </tr>
                 @endif
-
+ 
             @endif
-
+ 
             {{-- ── Subtotals ── --}}
             <tr class="row-total">
                 <td colspan="2" class="text-right">Tuition Fee Total:</td>
@@ -310,7 +310,7 @@
         </tbody>
     </table>
 </div>
-
+ 
 {{-- ══ Payment Schedule ══ --}}
 @if($paymentTerms->count() > 0)
 <div class="section">
@@ -346,7 +346,7 @@
     </div>
 </div>
 @endif
-
+ 
 {{-- ══ Payment History ══ --}}
 @if($payments->count() > 0)
 <div class="section">
@@ -382,7 +382,7 @@
     </table>
 </div>
 @endif
-
+ 
 {{-- ══ Balance Summary ══ --}}
 <div class="section">
     <div class="section-title">Balance Summary</div>
@@ -408,7 +408,7 @@
         </div>
     </div>
 </div>
-
+ 
 {{-- ══ Signatures ══ --}}
 <div class="signature-section">
     <div class="sig-box">
@@ -424,12 +424,12 @@
         <div class="sig-label">Student's Signature</div>
     </div>
 </div>
-
+ 
 {{-- ══ Footer ══ --}}
 <div class="footer">
     <p>Generated on {{ now()->format('F d, Y h:i A') }}</p>
     <p>This is a computer-generated document. Please keep this for your records.</p>
 </div>
-
+ 
 </body>
 </html>

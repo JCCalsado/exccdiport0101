@@ -7,7 +7,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import { Edit, Eye, Plus, Search, UserPlus, UserX } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
-
+ 
 interface PaymentTerm {
     id: number;
     term_name: string;
@@ -17,13 +17,13 @@ interface PaymentTerm {
     status: string;
     due_date: string | null;
 }
-
+ 
 interface Assessment {
     id: number;
     total_assessment: number;
     paymentTerms: PaymentTerm[];
 }
-
+ 
 interface Student {
     id: number;
     account_id: string;
@@ -34,13 +34,13 @@ interface Student {
     account: { balance: number } | null;
     latestAssessment: Assessment | null;
 }
-
+ 
 interface PaginationLink {
     url: string | null;
     label: string;
     active: boolean;
 }
-
+ 
 interface Props {
     students: {
         data: Student[];
@@ -58,32 +58,32 @@ interface Props {
     yearLevels: string[];
     statuses: Record<string, string>;
 }
-
+ 
 const props = defineProps<Props>();
-
+ 
 const { formatCurrency } = useDataFormatting();
 const page = usePage();
-
+ 
 const isAdmin = computed(() => (page.props.auth as any).user?.role === 'admin');
 const isAccounting = computed(() => (page.props.auth as any).user?.role === 'accounting');
-
+ 
 const pageTitle = computed(() => isAdmin ? 'Student Management' : 'Student Fee Management');
 const pageDescription = computed(() => isAdmin ? 'View student information and create new students' : 'Manage student assessments and fee records');
-
+ 
 const breadcrumbs = computed(() => [{ title: 'Dashboard', href: route('dashboard') }, { title: pageTitle.value }]);
-
+ 
 // Expose props for template
 const courses = computed(() => props.courses);
 const yearLevels = computed(() => props.yearLevels);
 const statuses = computed(() => props.statuses);
-
+ 
 const searchForm = ref({
     search: props.filters.search || '',
     course: props.filters.course || '',
     year_level: props.filters.year_level || '',
     status: props.filters.status || '',
 });
-
+ 
 let searchTimeout: ReturnType<typeof setTimeout>;
 const performSearch = () => {
     clearTimeout(searchTimeout);
@@ -100,15 +100,15 @@ const performSearch = () => {
         );
     }, 300);
 };
-
+ 
 watch(searchForm, () => {
     performSearch();
 }, { deep: true });
-
+ 
 const search = () => {
     performSearch();
 };
-
+ 
 const getStatusColor = (status: string) => {
     switch (status) {
         case 'active':
@@ -121,7 +121,7 @@ const getStatusColor = (status: string) => {
             return 'bg-gray-500 text-white';
     }
 };
-
+ 
 const getStatusConfig = (status: string) => {
     const map: Record<string, { badge: string; label: string }> = {
         active: { badge: 'bg-green-100 text-green-800 border border-green-200', label: 'Active' },
@@ -132,7 +132,7 @@ const getStatusConfig = (status: string) => {
     };
     return map[status] ?? { badge: 'bg-gray-100 text-gray-800 border border-gray-200', label: status };
 };
-
+ 
 /**
  * Accurate remaining balance — resolved in priority order:
  *
@@ -147,17 +147,17 @@ const getStatusConfig = (status: string) => {
 const getRemainingBalance = (student: Student): number => {
     const accountBal = parseFloat(String(student.account?.balance ?? 0));
     if (accountBal > 0) return accountBal;
-
+ 
     // Fallback: sum unpaid payment term balances from the eager-loaded assessment
     const terms = student.latestAssessment?.paymentTerms ?? [];
     if (terms.length > 0) {
         const termsTotal = terms.reduce((sum: number, t: PaymentTerm) => sum + parseFloat(String(t.balance)), 0);
         if (termsTotal > 0) return termsTotal;
     }
-
+ 
     return 0;
 };
-
+ 
 /**
  * Payment timing status:
  * - Count total terms and how many are paid.
@@ -171,23 +171,23 @@ const getRemainingBalance = (student: Student): number => {
 const getBalanceTimingStatus = (student: Student): 'red' | 'green' | 'zero' | null => {
     const terms = student.latestAssessment?.paymentTerms;
     if (!terms || terms.length === 0) return null;
-
+ 
     const balance = getRemainingBalance(student);
-
+ 
     if (balance === 0) return 'zero';
-
+ 
     const sorted = [...terms].sort((a, b) => a.term_order - b.term_order);
     const firstTerm = sorted[0];
-
+ 
     // If the very first term has not been paid at all → behind schedule
     if (firstTerm.status === 'pending' || parseFloat(String(firstTerm.balance)) >= parseFloat(String(firstTerm.amount))) {
         return 'red';
     }
-
+ 
     // First term is at least partially paid → on schedule
     return 'green';
 };
-
+ 
 const getBalanceClasses = (student: Student): string => {
     const timing = getBalanceTimingStatus(student);
     switch (timing) {
@@ -201,7 +201,7 @@ const getBalanceClasses = (student: Student): string => {
             return 'text-gray-900 font-medium';
     }
 };
-
+ 
 const getBalanceBadge = (student: Student): { label: string; cls: string } | null => {
     const timing = getBalanceTimingStatus(student);
     if (timing === 'red') return { label: 'Behind', cls: 'bg-red-100 text-red-700 border border-red-200' };
@@ -209,36 +209,36 @@ const getBalanceBadge = (student: Student): { label: string; cls: string } | nul
     if (timing === 'zero') return { label: 'Fully Paid', cls: 'bg-blue-100 text-blue-700 border border-blue-200' };
     return null;
 };
-
+ 
 // Summary stats
 const totalStudents = computed(() => props.students.data.length);
 const totalOutstanding = computed(() => props.students.data.reduce((sum, s) => sum + getRemainingBalance(s), 0));
 const fullyPaidCount = computed(() => props.students.data.filter((s) => getRemainingBalance(s) === 0).length);
 const behindCount = computed(() => props.students.data.filter((s) => getBalanceTimingStatus(s) === 'red').length);
-
+ 
 const summary = computed(() => ({
     shownStudents: totalStudents.value,
     totalOutstanding: totalOutstanding.value,
     fullyPaid: fullyPaidCount.value,
     behindSchedule: behindCount.value,
 }));
-
+ 
 // ── Drop modal ─────────────────────────────────────────────────────────────
 const dropModal = ref(false);
 const selectedDropStudent = ref<Student | null>(null);
 const dropForm = useForm({ reason: '' });
-
+ 
 const openDrop = (student: Student) => {
     selectedDropStudent.value = student;
     dropForm.reset();
     dropModal.value = true;
 };
-
+ 
 const closeDrop = () => {
     dropModal.value = false;
     selectedDropStudent.value = null;
 };
-
+ 
 const submitDrop = () => {
     if (!selectedDropStudent.value) return;
     dropForm.post(route('student-fees.drop', selectedDropStudent.value.id), {
@@ -246,14 +246,14 @@ const submitDrop = () => {
     });
 };
 </script>
-
+ 
 <template>
     <AppLayout>
         <Head :title="pageTitle" />
-
+ 
         <div class="w-full space-y-5 p-6">
             <Breadcrumbs :items="breadcrumbs" />
-
+ 
             <!-- Page Header — Admin -->
             <div v-if="isAdmin" class="ccdi-page-header border-l-4 border-l-blue-600 bg-gradient-to-r from-blue-50 to-transparent">
                 <div>
@@ -266,7 +266,7 @@ const submitDrop = () => {
                     </Link>
                 </div>
             </div>
-
+ 
             <!-- Page Header — Accounting -->
             <div v-else class="ccdi-page-header border-l-4 border-l-green-600 bg-gradient-to-r from-green-50 to-transparent">
                 <div>
@@ -279,7 +279,7 @@ const submitDrop = () => {
                     </Link>
                 </div>
             </div>
-
+ 
             <!-- Stats -->
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div class="ccdi-stat-card">
@@ -310,7 +310,7 @@ const submitDrop = () => {
                     </div>
                 </div>
             </div>
-
+ 
             <!-- Filters -->
             <div class="ccdi-card p-4">
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -334,7 +334,7 @@ const submitDrop = () => {
                     </select>
                 </div>
             </div>
-
+ 
             <!-- Table -->
             <div class="ccdi-card overflow-hidden">
                 <table class="min-w-full divide-y divide-border">
@@ -354,7 +354,7 @@ const submitDrop = () => {
                             <td class="px-5 py-3.5 text-xs font-mono text-muted-foreground">{{ student.account_id }}</td>
                             <td class="px-5 py-3.5">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold" :class="getStatusColor(student.status)">
                                         {{ student.name.split(',')[0]?.charAt(0) ?? '?' }}
                                     </div>
                                     <span class="text-sm font-medium text-foreground">{{ student.name }}</span>
@@ -386,13 +386,13 @@ const submitDrop = () => {
                         </tr>
                     </tbody>
                 </table>
-
+ 
                 <!-- Empty state -->
                 <div v-if="!students.data?.length" class="flex flex-col items-center justify-center py-16 text-center">
                     <p class="text-base font-semibold text-foreground">No students found</p>
                     <p class="mt-1 text-sm text-muted-foreground">Try adjusting the search filters above</p>
                 </div>
-
+ 
                 <!-- Legend + Pagination -->
                 <div class="flex flex-col gap-3 border-t border-border bg-muted/20 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-4 text-xs text-muted-foreground">
@@ -407,4 +407,52 @@ const submitDrop = () => {
             </div>
         </div>
     </AppLayout>
+ 
+    <!-- ── Archive / Drop Modal ────────────────────────────────────────── -->
+    <Teleport to="body">
+        <div v-if="dropModal" class="fixed inset-0 z-50 flex items-center justify-center">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/50" @click="closeDrop" />
+ 
+            <!-- Dialog -->
+            <div class="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+                <h2 class="text-base font-semibold text-foreground">Archive Student</h2>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    You are about to archive
+                    <span class="font-medium text-foreground">{{ selectedDropStudent?.name }}</span>.
+                    This will mark them as dropped and move them to the archive.
+                </p>
+ 
+                <div class="mt-4">
+                    <label class="mb-1 block text-xs font-medium text-foreground">Reason <span class="text-red-500">*</span></label>
+                    <textarea
+                        v-model="dropForm.reason"
+                        rows="3"
+                        placeholder="Enter reason for archiving..."
+                        class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    />
+                    <p v-if="dropForm.errors.reason" class="mt-1 text-xs text-red-600">{{ dropForm.errors.reason }}</p>
+                </div>
+ 
+                <div class="mt-5 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+                        @click="closeDrop"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        :disabled="dropForm.processing || !dropForm.reason.trim()"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        @click="submitDrop"
+                    >
+                        <span v-if="dropForm.processing">Archiving…</span>
+                        <span v-else>Archive Student</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>
