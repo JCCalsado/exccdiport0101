@@ -248,11 +248,11 @@
  
             @if($hasAssessmentData)
  
-                {{-- ── Tuition rows from stored subjects JSON ── --}}
-                @foreach($subjects as $subject)
+                {{-- ── Tuition rows from stored subjects JSON (LIMIT TO 3) ── --}}
+                @foreach(array_slice($subjects, 0, 3) as $subject)
                 <tr>
                     <td>Tuition</td>
-                    <td>
+                    <td style="font-size:8px;">
                         {{ $subject['name'] ?? ($subject['code'] ?? 'Subject') }}
                         @if(!empty($subject['units']))
                             ({{ $subject['units'] }} units)
@@ -261,17 +261,33 @@
                     <td class="text-right">₱{{ number_format($subject['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
- 
-                {{-- ── Other fee rows from stored fee_breakdown JSON ── --}}
-                @foreach($feeBreak as $fee)
+
+                {{-- ── Show "...and more" if subjects exceed 3 ── --}}
+                @if(count($subjects) > 3)
+                <tr style="font-style:italic;">
+                    <td colspan="3" style="text-align:center; color:#999; font-size:8px;">
+                        ...and {{ count($subjects) - 3 }} more subject(s)
+                    </td>
+                </tr>
+                @endif
+
+                {{-- ── Other fee rows from stored fee_breakdown JSON (LIMIT TO 2) ── --}}
+                @foreach(array_slice($feeBreak, 0, 2) as $fee)
                 <tr>
                     <td>{{ $fee['category'] ?? 'Miscellaneous' }}</td>
-                    <td>{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
+                    <td style="font-size:8px;">{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
                     <td class="text-right">₱{{ number_format($fee['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
- 
-            @else
+
+                {{-- ── Show "...and more" if fees exceed 2 ── --}}
+                @if(count($feeBreak) > 2)
+                <tr style="font-style:italic;">
+                    <td colspan="3" style="text-align:center; color:#999; font-size:8px;">
+                        ...and {{ count($feeBreak) - 2 }} more fee(s)
+                    </td>
+                </tr>
+                @endif
  
                 {{-- ── Fallback: derive from charge transactions ── --}}
                 @foreach($chargeRows->groupBy('type') as $category => $items)
