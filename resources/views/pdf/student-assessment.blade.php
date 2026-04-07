@@ -7,59 +7,61 @@
         * { box-sizing: border-box; }
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 8px;
             color: #222;
             margin: 0;
-            padding: 12px 16px;
+            padding: 6px 8px;
+            page-break-after: avoid;
         }
  
         /* ── Header ─────────────────────────────────────────────── */
         .header {
             text-align: center;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #222;
-            padding-bottom: 8px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 3px;
         }
         .header h1 {
-            margin: 0 0 4px;
-            font-size: 16px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .header .address {
-            font-size: 9px;
-            color: #555;
-            margin: 2px 0;
-        }
-        .header .doc-title {
-            margin-top: 10px;
-            font-size: 13px;
-            font-weight: bold;
+            margin: 0 0 1px;
+            font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .header .assessment-no {
-            font-size: 11px;
+        .header .address {
+            font-size: 7px;
             color: #555;
-            margin-top: 4px;
+            margin: 0.5px 0;
+            line-height: 1.2;
+        }
+        .header .doc-title {
+            margin-top: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .header .assessment-no {
+            font-size: 8px;
+            color: #555;
+            margin-top: 1px;
         }
  
         /* ── Section wrappers ────────────────────────────────────── */
-        .section { margin-bottom: 10px; }
+        .section { margin-bottom: 3px; }
         .section-title {
-            font-size: 11px;
+            font-size: 8px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #ccc;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+            padding-bottom: 1px;
+            border-bottom: 0.5px solid #ccc;
             color: #333;
         }
  
         /* ── Info grid (student details) ────────────────────────── */
         .info-table { width: 100%; border-collapse: collapse; }
-        .info-table td { padding: 3px 6px; vertical-align: top; }
+        .info-table td { padding: 1px 2px; vertical-align: top; font-size: 7.5px; }
         .info-table .lbl { font-weight: bold; width: 28%; color: #444; }
         .info-table .val { color: #222; }
  
@@ -67,43 +69,44 @@
         table.data {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 4px;
         }
         table.data th,
         table.data td {
-            border: 1px solid #ccc;
-            padding: 4px 6px;
+            border: 0.5px solid #ccc;
+            padding: 2px 3px;
+            font-size: 7.5px;
         }
         table.data th {
             background-color: #f2f2f2;
             font-weight: bold;
-            font-size: 10px;
             text-transform: uppercase;
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
  
         .row-total { font-weight: bold; background-color: #f9f9f9; }
-        .row-grand { font-weight: bold; background-color: #e8e8e8; font-size: 12px; }
+        .row-grand { font-weight: bold; background-color: #e8e8e8; font-size: 9px; }
  
         /* ── Balance summary box ─────────────────────────────────── */
         .balance-box {
-            border: 2px solid #333;
-            border-radius: 4px;
-            padding: 10px 14px;
-            margin-top: 6px;
+            border: 0.5px solid #333;
+            border-radius: 1px;
+            padding: 2px 3px;
+            margin-top: 2px;
         }
         .balance-row {
             display: flex;
             justify-content: space-between;
-            padding: 3px 0;
-            font-size: 11px;
+            padding: 1px 0;
+            font-size: 7.5px;
+            line-height: 1.1;
         }
         .balance-row.grand {
-            border-top: 2px solid #333;
-            margin-top: 4px;
-            padding-top: 6px;
-            font-size: 14px;
+            border-top: 0.5px solid #333;
+            margin-top: 1px;
+            padding-top: 1px;
+            font-size: 9px;
             font-weight: bold;
         }
  
@@ -139,7 +142,7 @@
  
         /* ── Signatures ──────────────────────────────────────────── */
         .signature-section {
-            margin-top: 20px;
+            margin-top: 6px;
             display: table;
             width: 100%;
         }
@@ -147,22 +150,23 @@
             display: table-cell;
             width: 33%;
             text-align: center;
-            padding: 0 10px;
+            padding: 0 3px;
         }
         .sig-line {
-            border-top: 1px solid #555;
-            margin: 24px 10px 4px;
+            border-top: 0.5px solid #555;
+            margin: 8px 3px 1px;
+            height: 12px;
         }
-        .sig-label { font-size: 9px; color: #555; }
+        .sig-label { font-size: 6px; color: #555; }
  
         /* ── Footer ──────────────────────────────────────────────── */
         .footer {
-            margin-top: 16px;
+            margin-top: 4px;
             text-align: center;
-            font-size: 9px;
-            color: #888;
-            border-top: 1px solid #eee;
-            padding-top: 6px;
+            font-size: 7px;
+            color: #999;
+            border-top: 0.5px solid #eee;
+            padding-top: 2px;
         }
     </style>
 </head>
@@ -184,7 +188,7 @@
     </p>
     <p class="doc-title">Certificate of Matriculation / Assessment Form</p>
     <p class="assessment-no">Assessment No: {{ $assessment->assessment_number }}</p>
-    <p class="assessment-no" style="font-size:11px; font-weight:bold; margin-top:4px;">
+    <p class="assessment-no" style="font-size:8px; font-weight:bold; margin-top:2px;">
         {{ $assessment->year_level }} &mdash; {{ $assessment->semester }} &middot; S.Y. {{ $assessment->school_year }}
     </p>
 </div>
@@ -248,11 +252,11 @@
  
             @if($hasAssessmentData)
  
-                {{-- ── Tuition rows from stored subjects JSON (LIMIT TO 3) ── --}}
-                @foreach(array_slice($subjects, 0, 3) as $subject)
+                {{-- ── Tuition rows from stored subjects JSON (LIMIT TO 6) ── --}}
+                @foreach(array_slice($subjects, 0, 6) as $subject)
                 <tr>
                     <td>Tuition</td>
-                    <td style="font-size:8px;">
+                    <td style="font-size:7px;">
                         {{ $subject['name'] ?? ($subject['code'] ?? 'Subject') }}
                         @if(!empty($subject['units']))
                             ({{ $subject['units'] }} units)
@@ -262,31 +266,29 @@
                 </tr>
                 @endforeach
 
-                {{-- ── Show "...and more" if subjects exceed 3 ── --}}
-                @if(count($subjects) > 3)
+                {{-- ── Show "...and more" if subjects exceed 6 ── --}}
+                @if(count($subjects) > 6)
                 <tr style="font-style:italic;">
-                    <td colspan="3" style="text-align:center; color:#999; font-size:8px;">
-                        ...and {{ count($subjects) - 3 }} more subject(s)
+                    <td colspan="3" style="text-align:center; color:#999; font-size:7px;">
+                        ...and {{ count($subjects) - 6 }} more subject(s)
                     </td>
                 </tr>
                 @endif
 
-                {{-- ── Other fee rows from stored fee_breakdown JSON (LIMIT TO 2) ── --}}
-                @foreach(array_slice($feeBreak, 0, 2) as $fee)
+                {{-- ── Other fee rows from stored fee_breakdown JSON (LIMIT TO 1) ── --}}
+                @foreach(array_slice($feeBreak, 0, 1) as $fee)
                 <tr>
                     <td>{{ $fee['category'] ?? 'Miscellaneous' }}</td>
-                    <td style="font-size:8px;">{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
+                    <td style="font-size:7px;">{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
                     <td class="text-right">₱{{ number_format($fee['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
 
-                {{-- ── Show "...and more" if fees exceed 2 ── --}}
-                @if(count($feeBreak) > 2)
+                {{-- ── Show "...and more" if fees exceed 1 ── --}}
+                @if(count($feeBreak) > 1)
                 <tr style="font-style:italic;">
-                    <td colspan="3" style="text-align:center; color:#999; font-size:8px;">
-                        ...and {{ count($feeBreak) - 2 }} more fee(s)
-                    </td>
-                </tr>
+                    <td colspan="3" style="text-align:center; color:#999; font-size:7px;">
+                        ...and {{ count($feeBreak) - 1 }} more fee(s)
                 @endif
  
                 {{-- ── Fallback: derive from charge transactions ── --}}
