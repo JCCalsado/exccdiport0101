@@ -2,452 +2,378 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Assessment Receipt — {{ $student->account_id }}</title>
+    <title>Certificate of Matriculation — {{ $student->account_id }}</title>
     <style>
         * { box-sizing: border-box; }
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 8px;
+            font-size: 9px;
             color: #222;
             margin: 0;
-            padding: 6px 8px;
+            padding: 8px 10px;
             page-break-after: avoid;
         }
- 
-        /* ── Header ─────────────────────────────────────────────── */
+
         .header {
             text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             border-bottom: 1px solid #222;
-            padding-bottom: 3px;
+            padding-bottom: 4px;
         }
         .header h1 {
-            margin: 0 0 1px;
-            font-size: 12px;
+            margin: 0 0 2px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: bold;
         }
-        .header .address {
-            font-size: 7px;
+        .school-branch {
+            font-size: 9px;
             color: #555;
-            margin: 0.5px 0;
-            line-height: 1.2;
+            margin: 0;
         }
         .header .doc-title {
-            margin-top: 3px;
-            font-size: 9px;
+            margin-top: 2px;
+            font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
-        .header .assessment-no {
-            font-size: 8px;
-            color: #555;
-            margin-top: 1px;
+
+        .student-info {
+            display: table;
+            width: 100%;
+            margin-bottom: 6px;
+            border-collapse: collapse;
         }
- 
-        /* ── Section wrappers ────────────────────────────────────── */
-        .section { margin-bottom: 3px; }
-        .section-title {
+        .info-col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding-right: 10px;
+        }
+        .info-col:last-child {
+            padding-right: 0;
+            padding-left: 10px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 3px;
             font-size: 8px;
+        }
+        .info-label {
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 2px;
+            width: 100px;
+            margin-right: 5px;
+        }
+        .info-value {
+            flex: 1;
+            border-bottom: 1px solid #222;
             padding-bottom: 1px;
-            border-bottom: 0.5px solid #ccc;
-            color: #333;
         }
- 
-        /* ── Info grid (student details) ────────────────────────── */
-        .info-table { width: 100%; border-collapse: collapse; }
-        .info-table td { padding: 1px 2px; vertical-align: top; font-size: 7.5px; }
-        .info-table .lbl { font-weight: bold; width: 28%; color: #444; }
-        .info-table .val { color: #222; }
- 
-        /* ── Data tables ─────────────────────────────────────────── */
-        table.data {
+
+        .content-wrapper {
+            display: table;
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
-        table.data th,
-        table.data td {
-            border: 0.5px solid #ccc;
-            padding: 2px 3px;
-            font-size: 7.5px;
+        .main-col {
+            display: table-cell;
+            width: 65%;
+            vertical-align: top;
+            border-right: 1px solid #ccc;
+            padding-right: 8px;
         }
-        table.data th {
-            background-color: #f2f2f2;
+        .side-col {
+            display: table-cell;
+            width: 35%;
+            vertical-align: top;
+            padding-left: 8px;
+        }
+
+        table.subjects {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #222;
+            margin-bottom: 6px;
+        }
+        table.subjects th,
+        table.subjects td {
+            border: 1px solid #222;
+            padding: 3px 4px;
+            font-size: 8px;
+            text-align: left;
+        }
+        table.subjects th {
+            background-color: #f0f0f0;
             font-weight: bold;
             text-transform: uppercase;
         }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
- 
-        .row-total { font-weight: bold; background-color: #f9f9f9; }
-        .row-grand { font-weight: bold; background-color: #e8e8e8; font-size: 9px; }
- 
-        /* ── Balance summary box ─────────────────────────────────── */
-        .balance-box {
-            border: 0.5px solid #333;
-            border-radius: 1px;
-            padding: 2px 3px;
-            margin-top: 2px;
+        table.subjects th.code { width: 12%; }
+        table.subjects th.title { width: 40%; }
+        table.subjects th.units { width: 10%; text-align: center; }
+        table.subjects th.time { width: 18%; }
+        table.subjects th.day { width: 20%; }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
         }
-        .balance-row {
+
+        .student-copy {
+            font-size: 7px; 
+            margin: 2px 0;
+            text-align: left;
+        }
+
+        .fees-section {
+            margin-bottom: 6px;
+        }
+        .fees-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9px;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+        }
+        .fee-row {
             display: flex;
             justify-content: space-between;
-            padding: 1px 0;
-            font-size: 7.5px;
-            line-height: 1.1;
+            font-size: 8px;
+            padding: 2px 0;
+            border-bottom: 0.5px dotted #ccc;
         }
-        .balance-row.grand {
-            border-top: 0.5px solid #333;
-            margin-top: 1px;
-            padding-top: 1px;
-            font-size: 9px;
+        .fee-row.total {
             font-weight: bold;
+            border-bottom: 1px solid #222;
+            padding-top: 3px;
         }
- 
-        /* ── Payment terms pills ─────────────────────────────────── */
-        .terms-grid {
+        .fee-label {
+            flex: 1;
+        }
+        .fee-amount {
+            text-align: right;
+            width: 50px;
+        }
+
+        .terms-section {
+            margin-bottom: 6px;
+        }
+        .terms-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9px;
+            margin-bottom: 2px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+        }
+        .term-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            padding: 2px 0;
+        }
+        .term-label {
+            flex: 1;
+        }
+        .term-amount {
+            text-align: right;
+            width: 50px;
+        }
+
+        .signature-section {
             display: table;
             width: 100%;
             border-collapse: collapse;
+            margin-top: 10px;
         }
-        .term-cell {
-            display: table-cell;
-            border: 1px solid #ccc;
-            padding: 6px;
-            text-align: center;
-            width: 20%;
-            vertical-align: top;
-        }
-        .term-name { font-weight: bold; font-size: 10px; }
-        .term-amount { font-size: 11px; margin: 2px 0; }
-        .term-balance { font-size: 10px; color: #d00; }
-        .term-status {
-            display: inline-block;
-            margin-top: 3px;
-            padding: 1px 6px;
-            border-radius: 20px;
-            font-size: 9px;
-            font-weight: bold;
-        }
-        .status-paid    { background: #d1fae5; color: #065f46; }
-        .status-partial { background: #fed7aa; color: #92400e; }
-        .status-pending { background: #fef9c3; color: #713f12; }
-        .status-overdue { background: #fee2e2; color: #991b1b; }
- 
-        /* ── Signatures ──────────────────────────────────────────── */
-        .signature-section {
-            margin-top: 6px;
-            display: table;
-            width: 100%;
-        }
-        .sig-box {
+        .sig-block {
             display: table-cell;
             width: 33%;
             text-align: center;
-            padding: 0 3px;
+            padding: 0 5px;
         }
         .sig-line {
-            border-top: 0.5px solid #555;
-            margin: 8px 3px 1px;
-            height: 12px;
+            border-top: 1px solid #222;
+            margin: 20px 0 2px;
+            height: 20px;
         }
-        .sig-label { font-size: 6px; color: #555; }
- 
-        /* ── Footer ──────────────────────────────────────────────── */
-        .footer {
-            margin-top: 4px;
-            text-align: center;
-            font-size: 7px;
-            color: #999;
-            border-top: 0.5px solid #eee;
-            padding-top: 2px;
+        .sig-label {
+            font-size: 8px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
- 
+
 {{-- ══ Header ══ --}}
 <div class="header">
-    <h1>{{ strtoupper(config('school.name', 'Computer Communication Development Institute')) }}</h1>
-    <p class="address">
-        {{ config('school.main_address') }}
-        @if(config('school.annex_address'))
-            &nbsp;|&nbsp; {{ config('school.annex_address') }}
-        @endif
-    </p>
-    <p class="address">
-        Website: {{ config('school.website') }}
-        &nbsp;|&nbsp; Hotline: {{ config('school.hotline') }}
-        &nbsp;|&nbsp; CP: {{ config('school.mobile') }}
-    </p>
-    <p class="doc-title">Certificate of Matriculation / Assessment Form</p>
-    <p class="assessment-no">Assessment No: {{ $assessment->assessment_number }}</p>
-    <p class="assessment-no" style="font-size:8px; font-weight:bold; margin-top:2px;">
-        {{ $assessment->year_level }} &mdash; {{ $assessment->semester }} &middot; S.Y. {{ $assessment->school_year }}
-    </p>
+    <h1>{{ strtoupper(config('school.name', 'COMPUTER COMMUNICATION DEVELOPMENT INSTITUTE')) }}</h1>
+    <p class="school-branch">{{ config('school.annex_address', 'Main Campus') }}</p>
+    <p class="doc-title">Certificate of Matriculation Form</p>
 </div>
- 
+
 {{-- ══ Student Information ══ --}}
-{{-- NOTE: $student is already the User model from exportPdf() --}}
-<div class="section">
-    <div class="section-title">Student Information</div>
-    <table class="info-table">
-        <tr>
-            <td class="lbl">Account ID:</td>
-            <td class="val">{{ $student->account->id ?? 'N/A' }}</td>
-            <td class="lbl">Student ID:</td>
-            <td class="val">{{ $student->account_id }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">Full Name:</td>
-            <td class="val">{{ $student->name }}</td>
-            <td class="lbl">Course:</td>
-            <td class="val">{{ $student->course }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">Year Level:</td>
-            {{-- Use assessment year_level (accurate) not student.year_level (may be stale) --}}
-            <td class="val">{{ $assessment->year_level }}</td>
-            <td class="lbl">Semester:</td>
-            <td class="val">{{ $assessment->semester }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">School Year:</td>
-            <td class="val">{{ $assessment->school_year }}</td>
-            <td class="lbl">Status:</td>
-            <td class="val">{{ ucfirst($student->status) }}</td>
-        </tr>
-    </table>
+<div class="student-info">
+    <div class="info-col">
+        <div class="info-row">
+            <div class="info-label">Name:</div>
+            <div class="info-value">{{ $student->name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Course & Yr.:</div>
+            <div class="info-value">{{ strtoupper($student->course) }} {{ $assessment->year_level }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Major:</div>
+            <div class="info-value"></div>
+        </div>
+    </div>
+    <div class="info-col">
+        <div class="info-row">
+            <div class="info-label">Semester/Summer:</div>
+            <div class="info-value">{{ $assessment->semester }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">School Year:</div>
+            <div class="info-value">{{ $assessment->school_year }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Registration Date:</div>
+            <div class="info-value"></div>
+        </div>
+    </div>
 </div>
- 
-{{-- ══ Fee Assessment ══ --}}
-<div class="section">
-    <div class="section-title">Fee Assessment</div>
-    <table class="data">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Description</th>
-                <th class="text-right">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
- 
-            {{-- ── Subjects / Tuition items ── --}}
+
+{{-- ══ Main Content (Subjects Table + Fees) ══ --}}
+<div class="content-wrapper">
+
+    {{-- ══ Subjects Table (Left) ══ --}}
+    <div class="main-col">
+        <table class="subjects">
+            <thead>
+                <tr>
+                    <th class="code">Subj. Code</th>
+                    <th class="title">Subject Title</th>
+                    <th class="units">Units</th>
+                    <th class="time">Time</th>
+                    <th class="day">Day</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $subjects = $assessment->subjects ?? [];
+                @endphp
+
+                {{-- Display all subjects --}}
+                @foreach($subjects as $subject)
+                <tr>
+                    <td class="code">{{ $subject['code'] ?? '—' }}</td>
+                    <td class="title">{{ $subject['name'] ?? 'Subject' }}</td>
+                    <td class="units" style="text-align:center;">{{ $subject['units'] ?? '—' }}</td>
+                    <td class="time" style="text-align:center;">{{ $subject['time'] ?? '—' }}</td>
+                    <td class="day" style="text-align:center;">{{ $subject['day'] ?? '—' }}</td>
+                </tr>
+                @endforeach
+
+                {{-- Total Row --}}
+                <tr class="total-row">
+                    <td colspan="5" style="text-align:right; padding-right:6px;">Total:</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="student-copy">Student's Copy</p>
+    </div>
+
+    {{-- ══ Fees Section (Right) ══ --}}
+    <div class="side-col">
+
+        {{-- Fees Breakdown --}}
+        <div class="fees-section">
+            <div class="fees-title">Fees</div>
+
             @php
-                $subjects   = $assessment->subjects   ?? [];
-                $feeBreak   = $assessment->fee_breakdown ?? [];
-                $chargeRows = $transactions->where('kind', 'charge');
- 
-                // Prefer assessment data (fee_breakdown + subjects) over raw transactions.
-                // Fall back to charge transactions when the assessment JSON fields are empty.
-                $hasAssessmentData = !empty($subjects) || !empty($feeBreak);
+                $feeBreak = $assessment->fee_breakdown ?? [];
+                $tuitionFee = $assessment->tuition_fee ?? 0;
+                $totalAssessment = $assessment->total_assessment ?? 0;
             @endphp
- 
-            @if($hasAssessmentData)
- 
-                {{-- ── Tuition rows from stored subjects JSON (LIMIT TO 6) ── --}}
-                @foreach(array_slice($subjects, 0, 6) as $subject)
-                <tr>
-                    <td>Tuition</td>
-                    <td style="font-size:7px;">
-                        {{ $subject['name'] ?? ($subject['code'] ?? 'Subject') }}
-                        @if(!empty($subject['units']))
-                            ({{ $subject['units'] }} units)
-                        @endif
-                    </td>
-                    <td class="text-right">₱{{ number_format($subject['amount'] ?? 0, 2) }}</td>
-                </tr>
-                @endforeach
 
-                {{-- ── Show "...and more" if subjects exceed 6 ── --}}
-                @if(count($subjects) > 6)
-                <tr style="font-style:italic;">
-                    <td colspan="3" style="text-align:center; color:#999; font-size:7px;">
-                        ...and {{ count($subjects) - 6 }} more subject(s)
-                    </td>
-                </tr>
-                @endif
-
-                {{-- ── Other fee rows from stored fee_breakdown JSON (LIMIT TO 1) ── --}}
-                @foreach(array_slice($feeBreak, 0, 1) as $fee)
-                <tr>
-                    <td>{{ $fee['category'] ?? 'Miscellaneous' }}</td>
-                    <td style="font-size:7px;">{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
-                    <td class="text-right">₱{{ number_format($fee['amount'] ?? 0, 2) }}</td>
-                </tr>
-                @endforeach
-
-                {{-- ── Show "...and more" if fees exceed 1 ── --}}
-                @if(count($feeBreak) > 1)
-                <tr style="font-style:italic;">
-                    <td colspan="3" style="text-align:center; color:#999; font-size:7px;">
-                        ...and {{ count($feeBreak) - 1 }} more fee(s)
-                @endif
- 
-                {{-- ── Fallback: derive from charge transactions ── --}}
-                @foreach($chargeRows->groupBy('type') as $category => $items)
-                    @foreach($items as $item)
-                    <tr>
-                        <td>{{ $category }}</td>
-                        <td>{{ $item->meta['description'] ?? $item->type }}</td>
-                        <td class="text-right">₱{{ number_format($item->amount, 2) }}</td>
-                    </tr>
-                    @endforeach
-                @endforeach
- 
-                @if($chargeRows->isEmpty())
-                <tr>
-                    <td colspan="3" style="text-align:center; color:#999;">
-                        No detailed fee breakdown on record
-                    </td>
-                </tr>
-                @endif
- 
-            @endif
- 
-            {{-- ── Subtotals ── --}}
-            <tr class="row-total">
-                <td colspan="2" class="text-right">Tuition Fee Total:</td>
-                <td class="text-right">₱{{ number_format($assessment->tuition_fee, 2) }}</td>
-            </tr>
-            <tr class="row-total">
-                <td colspan="2" class="text-right">Other Fees Total:</td>
-                <td class="text-right">₱{{ number_format($assessment->other_fees, 2) }}</td>
-            </tr>
-            <tr class="row-grand">
-                <td colspan="2" class="text-right">TOTAL ASSESSMENT:</td>
-                <td class="text-right">₱{{ number_format($assessment->total_assessment, 2) }}</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
- 
-{{-- ══ Payment Schedule ══ --}}
-@if($paymentTerms->count() > 0)
-<div class="section">
-    <div class="section-title">Payment Schedule</div>
-    <div class="terms-grid">
-        @foreach($paymentTerms as $term)
-        <div class="term-cell">
-            <div class="term-name">{{ $term->term_name }}</div>
-            <div class="term-amount">₱{{ number_format($term->amount, 2) }}</div>
-            @if($term->due_date)
-                <div style="font-size:9px; color:#666;">Due: {{ \Carbon\Carbon::parse($term->due_date)->format('M d, Y') }}</div>
-            @endif
-            <div class="term-balance">
-                Balance: ₱{{ number_format($term->balance, 2) }}
+            {{-- Registration Fee --}}
+            @php $regFee = null; foreach($feeBreak as $f) { if(stripos($f['name'] ?? '', 'registration') !== false) { $regFee = $f; break; } } @endphp
+            @if($regFee)
+            <div class="fee-row">
+                <div class="fee-label">Registration Fee:</div>
+                <div class="fee-amount">{{ number_format($regFee['amount'] ?? 0, 2) }}</div>
             </div>
-            @php
-                $statusClass = match($term->status) {
-                    'paid'    => 'status-paid',
-                    'partial' => 'status-partial',
-                    'overdue' => 'status-overdue',
-                    default   => 'status-pending',
-                };
-                $statusLabel = match($term->status) {
-                    'paid'    => 'Paid',
-                    'partial' => 'Partial',
-                    'overdue' => 'Overdue',
-                    default   => 'Unpaid',
-                };
-            @endphp
-            <span class="term-status {{ $statusClass }}">{{ $statusLabel }}</span>
+            @endif
+
+            {{-- Tuition Fee --}}
+            <div class="fee-row">
+                <div class="fee-label">Tuition Fee:</div>
+                <div class="fee-amount">{{ number_format($tuitionFee, 2) }}</div>
+            </div>
+
+            {{-- Lab Fee --}}
+            @php $labFee = null; foreach($feeBreak as $f) { if(stripos($f['name'] ?? '', 'lab') !== false) { $labFee = $f; break; } } @endphp
+            @if($labFee)
+            <div class="fee-row">
+                <div class="fee-label">Lab. Fee:</div>
+                <div class="fee-amount">{{ number_format($labFee['amount'] ?? 0, 2) }}</div>
+            </div>
+            @endif
+
+            {{-- Misc Fee --}}
+            @php $miscFee = null; foreach($feeBreak as $f) { if(stripos($f['name'] ?? '', 'misc') !== false) { $miscFee = $f; break; } } @endphp
+            @if($miscFee)
+            <div class="fee-row">
+                <div class="fee-label">Misc. Fee:</div>
+                <div class="fee-amount">{{ number_format($miscFee['amount'] ?? 0, 2) }}</div>
+            </div>
+            @endif
+
+            {{-- Total Assessment Fee --}}
+            <div class="fee-row total">
+                <div class="fee-label">Total Assessment Fee:</div>
+                <div class="fee-amount">{{ number_format($totalAssessment, 2) }}</div>
+            </div>
         </div>
-        @endforeach
-    </div>
-</div>
-@endif
- 
-{{-- ══ Payment History ══ --}}
-@if($payments->count() > 0)
-<div class="section">
-    <div class="section-title">Payment History</div>
-    <table class="data">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Reference</th>
-                <th>Method</th>
-                <th>Description</th>
-                <th class="text-right">Amount</th>
-                <th class="text-center">Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($payments as $payment)
-            <tr>
-                <td>{{ $payment->paid_at ? \Carbon\Carbon::parse($payment->paid_at)->format('M d, Y') : 'N/A' }}</td>
-                <td style="font-family:monospace; font-size:10px;">{{ $payment->reference_number ?? '—' }}</td>
-                <td>{{ strtoupper(str_replace('_', ' ', $payment->payment_method)) }}</td>
-                <td>{{ $payment->description }}</td>
-                <td class="text-right">₱{{ number_format($payment->amount, 2) }}</td>
-                <td class="text-center">{{ ucfirst($payment->status) }}</td>
-            </tr>
+
+        {{-- Terms of Payment --}}
+        <div class="terms-section">
+            <div class="terms-title">Terms of Payment</div>
+
+            @php
+                $paymentTerms = $paymentTerms ?? collect([]);
+            @endphp
+
+            @foreach($paymentTerms as $term)
+            <div class="term-row">
+                <div class="term-label">{{ $term->term_name }}:</div>
+                <div class="term-amount">{{ number_format($term->amount, 2) }}</div>
+            </div>
             @endforeach
-            <tr class="row-total">
-                <td colspan="4" class="text-right">Total Paid:</td>
-                <td class="text-right">₱{{ number_format($payments->sum('amount'), 2) }}</td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-@endif
- 
-{{-- ══ Balance Summary ══ --}}
-<div class="section">
-    <div class="section-title">Balance Summary</div>
-    <div class="balance-box">
-        <div class="balance-row">
-            <span>Total Assessment:</span>
-            <span>₱{{ number_format($assessment->total_assessment, 2) }}</span>
         </div>
-        <div class="balance-row">
-            <span>Total Paid:</span>
-            <span>₱{{ number_format($payments->sum('amount'), 2) }}</span>
-        </div>
-        <div class="balance-row grand">
-            <span>Current Balance:</span>
-            {{-- Use payment terms balance sum as source of truth when available, fall back to account balance --}}
-            @php
-                $termBalance = $paymentTerms->sum('balance');
-                $displayBalance = $termBalance > 0
-                    ? $termBalance
-                    : abs($student->account->balance ?? 0);
-            @endphp
-            <span>₱{{ number_format($displayBalance, 2) }}</span>
-        </div>
+
     </div>
+
 </div>
- 
-{{-- ══ Signatures ══ --}}
+
+{{-- ══ Signature Section ══ --}}
 <div class="signature-section">
-    <div class="sig-box">
+    <div class="sig-block">
         <div class="sig-line"></div>
-        <div class="sig-label">Cashier / Accounting Staff</div>
+        <div class="sig-label">Student Signature</div>
     </div>
-    <div class="sig-box">
+    <div class="sig-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Approved by:</div>
+    </div>
+    <div class="sig-block">
         <div class="sig-line"></div>
         <div class="sig-label">Registrar</div>
     </div>
-    <div class="sig-box">
-        <div class="sig-line"></div>
-        <div class="sig-label">Student's Signature</div>
-    </div>
 </div>
- 
-{{-- ══ Footer ══ --}}
-<div class="footer">
-    <p>Generated on {{ now()->format('F d, Y h:i A') }}</p>
-    <p>This is a computer-generated document. Please keep this for your records.</p>
-</div>
- 
+
 </body>
 </html>
