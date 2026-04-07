@@ -7,60 +7,59 @@
         * { box-sizing: border-box; }
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 9px;
+            font-size: 10px;
             color: #222;
             margin: 0;
-            padding: 8px 10px;
-            page-break-after: avoid;
+            padding: 12px 16px;
         }
  
         /* ── Header ─────────────────────────────────────────────── */
         .header {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             border-bottom: 2px solid #222;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
         }
         .header h1 {
-            margin: 0 0 2px;
-            font-size: 14px;
+            margin: 0 0 4px;
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .header .address {
-            font-size: 8px;
+            font-size: 9px;
             color: #555;
-            margin: 1px 0;
+            margin: 2px 0;
         }
         .header .doc-title {
-            margin-top: 6px;
-            font-size: 11px;
+            margin-top: 10px;
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .header .assessment-no {
-            font-size: 10px;
+            font-size: 11px;
             color: #555;
-            margin-top: 2px;
+            margin-top: 4px;
         }
  
         /* ── Section wrappers ────────────────────────────────────── */
-        .section { margin-bottom: 6px; }
+        .section { margin-bottom: 10px; }
         .section-title {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 4px;
-            padding-bottom: 2px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
             border-bottom: 1px solid #ccc;
             color: #333;
         }
  
         /* ── Info grid (student details) ────────────────────────── */
         .info-table { width: 100%; border-collapse: collapse; }
-        .info-table td { padding: 2px 4px; vertical-align: top; font-size: 9px; }
+        .info-table td { padding: 3px 6px; vertical-align: top; }
         .info-table .lbl { font-weight: bold; width: 28%; color: #444; }
         .info-table .val { color: #222; }
  
@@ -68,57 +67,43 @@
         table.data {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         table.data th,
         table.data td {
             border: 1px solid #ccc;
-            padding: 3px 4px;
-            font-size: 9px;
+            padding: 4px 6px;
         }
         table.data th {
             background-color: #f2f2f2;
             font-weight: bold;
+            font-size: 10px;
             text-transform: uppercase;
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
  
         .row-total { font-weight: bold; background-color: #f9f9f9; }
-        .row-grand { font-weight: bold; background-color: #e8e8e8; font-size: 11px; }
-
-        /* ── Two-column layout ───────────────────────────────────── */
-        .content-wrapper {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .col-left, .col-right {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-            padding-right: 8px;
-        }
-        .col-right { padding-right: 0; padding-left: 8px; }
+        .row-grand { font-weight: bold; background-color: #e8e8e8; font-size: 12px; }
  
         /* ── Balance summary box ─────────────────────────────────── */
         .balance-box {
-            border: 1px solid #333;
-            border-radius: 2px;
-            padding: 6px 8px;
-            margin-top: 4px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            padding: 10px 14px;
+            margin-top: 6px;
         }
         .balance-row {
             display: flex;
             justify-content: space-between;
-            padding: 2px 0;
-            font-size: 10px;
+            padding: 3px 0;
+            font-size: 11px;
         }
         .balance-row.grand {
-            border-top: 1px solid #333;
-            margin-top: 3px;
-            padding-top: 4px;
-            font-size: 12px;
+            border-top: 2px solid #333;
+            margin-top: 4px;
+            padding-top: 6px;
+            font-size: 14px;
             font-weight: bold;
         }
  
@@ -131,21 +116,20 @@
         .term-cell {
             display: table-cell;
             border: 1px solid #ccc;
-            padding: 4px;
+            padding: 6px;
             text-align: center;
             width: 20%;
             vertical-align: top;
-            font-size: 9px;
         }
-        .term-name { font-weight: bold; font-size: 9px; }
-        .term-amount { font-size: 10px; margin: 1px 0; }
-        .term-balance { font-size: 9px; color: #d00; }
+        .term-name { font-weight: bold; font-size: 10px; }
+        .term-amount { font-size: 11px; margin: 2px 0; }
+        .term-balance { font-size: 10px; color: #d00; }
         .term-status {
             display: inline-block;
-            margin-top: 2px;
-            padding: 1px 4px;
-            border-radius: 12px;
-            font-size: 8px;
+            margin-top: 3px;
+            padding: 1px 6px;
+            border-radius: 20px;
+            font-size: 9px;
             font-weight: bold;
         }
         .status-paid    { background: #d1fae5; color: #065f46; }
@@ -155,7 +139,7 @@
  
         /* ── Signatures ──────────────────────────────────────────── */
         .signature-section {
-            margin-top: 12px;
+            margin-top: 20px;
             display: table;
             width: 100%;
         }
@@ -163,22 +147,22 @@
             display: table-cell;
             width: 33%;
             text-align: center;
-            padding: 0 6px;
+            padding: 0 10px;
         }
         .sig-line {
             border-top: 1px solid #555;
-            margin: 16px 6px 2px;
+            margin: 24px 10px 4px;
         }
-        .sig-label { font-size: 8px; color: #555; }
-
+        .sig-label { font-size: 9px; color: #555; }
+ 
         /* ── Footer ──────────────────────────────────────────────── */
         .footer {
-            margin-top: 8px;
+            margin-top: 16px;
             text-align: center;
-            font-size: 8px;
-            color: #999;
+            font-size: 9px;
+            color: #888;
             border-top: 1px solid #eee;
-            padding-top: 4px;
+            padding-top: 6px;
         }
     </style>
 </head>
@@ -207,35 +191,33 @@
  
 {{-- ══ Student Information ══ --}}
 {{-- NOTE: $student is already the User model from exportPdf() --}}
-<div class="content-wrapper">
-<div class="col-left">
-
 <div class="section">
     <div class="section-title">Student Information</div>
     <table class="info-table">
         <tr>
             <td class="lbl">Account ID:</td>
+            <td class="val">{{ $student->account->id ?? 'N/A' }}</td>
+            <td class="lbl">Student ID:</td>
             <td class="val">{{ $student->account_id }}</td>
         </tr>
         <tr>
             <td class="lbl">Full Name:</td>
             <td class="val">{{ $student->name }}</td>
-        </tr>
-        <tr>
             <td class="lbl">Course:</td>
             <td class="val">{{ $student->course }}</td>
         </tr>
         <tr>
             <td class="lbl">Year Level:</td>
+            {{-- Use assessment year_level (accurate) not student.year_level (may be stale) --}}
             <td class="val">{{ $assessment->year_level }}</td>
-        </tr>
-        <tr>
             <td class="lbl">Semester:</td>
             <td class="val">{{ $assessment->semester }}</td>
         </tr>
         <tr>
             <td class="lbl">School Year:</td>
             <td class="val">{{ $assessment->school_year }}</td>
+            <td class="lbl">Status:</td>
+            <td class="val">{{ ucfirst($student->status) }}</td>
         </tr>
     </table>
 </div>
@@ -266,11 +248,11 @@
  
             @if($hasAssessmentData)
  
-                {{-- ── Tuition rows from stored subjects JSON (LIMIT TO 3) ── --}}
-                @foreach($subjects->take(3) as $subject)
+                {{-- ── Tuition rows from stored subjects JSON ── --}}
+                @foreach($subjects as $subject)
                 <tr>
                     <td>Tuition</td>
-                    <td style="font-size:8px;">
+                    <td>
                         {{ $subject['name'] ?? ($subject['code'] ?? 'Subject') }}
                         @if(!empty($subject['units']))
                             ({{ $subject['units'] }} units)
@@ -279,47 +261,29 @@
                     <td class="text-right">₱{{ number_format($subject['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
-
-                {{-- ── Show "...and more" if subjects exceed 3 ── --}}
-                @if($subjects->count() > 3)
-                <tr style="font-style:italic;">
-                    <td colspan="3" style="text-align:center; color:#999; font-size:8px;">
-                        ...and {{ $subjects->count() - 3 }} more subject(s)
-                    </td>
-                </tr>
-                @endif
-
-                {{-- ── Other fee rows from stored fee_breakdown JSON (LIMIT TO 2) ── --}}
-                @foreach($feeBreak->take(2) as $fee)
+ 
+                {{-- ── Other fee rows from stored fee_breakdown JSON ── --}}
+                @foreach($feeBreak as $fee)
                 <tr>
                     <td>{{ $fee['category'] ?? 'Miscellaneous' }}</td>
-                    <td style="font-size:8px;">{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
+                    <td>{{ $fee['name'] ?? ($fee['fee_name'] ?? 'Fee') }}</td>
                     <td class="text-right">₱{{ number_format($fee['amount'] ?? 0, 2) }}</td>
                 </tr>
                 @endforeach
-
-                {{-- ── Show "...and more" if fees exceed 2 ── --}}
-                @if($feeBreak->count() > 2)
-                <tr style="font-style:italic;">
-                    <td colspan="3" style="text-align:center; color:#999; font-size:8px;">
-                        ...and {{ $feeBreak->count() - 2 }} more fee(s)
-                    </td>
-                </tr>
-                @endif
-
+ 
             @else
-
-                {{-- ── Fallback: derive from charge transactions (LIMIT TO 3) ── --}}
-                @foreach($chargeRows->groupBy('type')->slice(0, 3) as $category => $items)
-                    @foreach($items->take(1) as $item)
+ 
+                {{-- ── Fallback: derive from charge transactions ── --}}
+                @foreach($chargeRows->groupBy('type') as $category => $items)
+                    @foreach($items as $item)
                     <tr>
                         <td>{{ $category }}</td>
-                        <td style="font-size:8px;">{{ $item->meta['description'] ?? $item->type }}</td>
+                        <td>{{ $item->meta['description'] ?? $item->type }}</td>
                         <td class="text-right">₱{{ number_format($item->amount, 2) }}</td>
                     </tr>
                     @endforeach
                 @endforeach
-
+ 
                 @if($chargeRows->isEmpty())
                 <tr>
                     <td colspan="3" style="text-align:center; color:#999;">
@@ -327,9 +291,9 @@
                     </td>
                 </tr>
                 @endif
-
+ 
             @endif
-
+ 
             {{-- ── Subtotals ── --}}
             <tr class="row-total">
                 <td colspan="2" class="text-right">Tuition Fee Total:</td>
@@ -346,10 +310,7 @@
         </tbody>
     </table>
 </div>
-
-</div>
-<div class="col-right">
-
+ 
 {{-- ══ Payment Schedule ══ --}}
 @if($paymentTerms->count() > 0)
 <div class="section">
@@ -360,10 +321,10 @@
             <div class="term-name">{{ $term->term_name }}</div>
             <div class="term-amount">₱{{ number_format($term->amount, 2) }}</div>
             @if($term->due_date)
-                <div style="font-size:8px; color:#666;">{{ \Carbon\Carbon::parse($term->due_date)->format('M d') }}</div>
+                <div style="font-size:9px; color:#666;">Due: {{ \Carbon\Carbon::parse($term->due_date)->format('M d, Y') }}</div>
             @endif
             <div class="term-balance">
-                Bal: ₱{{ number_format($term->balance, 2) }}
+                Balance: ₱{{ number_format($term->balance, 2) }}
             </div>
             @php
                 $statusClass = match($term->status) {
@@ -374,9 +335,9 @@
                 };
                 $statusLabel = match($term->status) {
                     'paid'    => 'Paid',
-                    'partial' => 'Prtl',
-                    'overdue' => 'Late',
-                    default   => 'Unpd',
+                    'partial' => 'Partial',
+                    'overdue' => 'Overdue',
+                    default   => 'Unpaid',
                 };
             @endphp
             <span class="term-status {{ $statusClass }}">{{ $statusLabel }}</span>
@@ -385,21 +346,58 @@
     </div>
 </div>
 @endif
-
+ 
+{{-- ══ Payment History ══ --}}
+@if($payments->count() > 0)
+<div class="section">
+    <div class="section-title">Payment History</div>
+    <table class="data">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Reference</th>
+                <th>Method</th>
+                <th>Description</th>
+                <th class="text-right">Amount</th>
+                <th class="text-center">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($payments as $payment)
+            <tr>
+                <td>{{ $payment->paid_at ? \Carbon\Carbon::parse($payment->paid_at)->format('M d, Y') : 'N/A' }}</td>
+                <td style="font-family:monospace; font-size:10px;">{{ $payment->reference_number ?? '—' }}</td>
+                <td>{{ strtoupper(str_replace('_', ' ', $payment->payment_method)) }}</td>
+                <td>{{ $payment->description }}</td>
+                <td class="text-right">₱{{ number_format($payment->amount, 2) }}</td>
+                <td class="text-center">{{ ucfirst($payment->status) }}</td>
+            </tr>
+            @endforeach
+            <tr class="row-total">
+                <td colspan="4" class="text-right">Total Paid:</td>
+                <td class="text-right">₱{{ number_format($payments->sum('amount'), 2) }}</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+@endif
+ 
 {{-- ══ Balance Summary ══ --}}
 <div class="section">
     <div class="section-title">Balance Summary</div>
     <div class="balance-box">
         <div class="balance-row">
-            <span>Total:</span>
+            <span>Total Assessment:</span>
             <span>₱{{ number_format($assessment->total_assessment, 2) }}</span>
         </div>
         <div class="balance-row">
-            <span>Paid:</span>
+            <span>Total Paid:</span>
             <span>₱{{ number_format($payments->sum('amount'), 2) }}</span>
         </div>
         <div class="balance-row grand">
-            <span>Balance:</span>
+            <span>Current Balance:</span>
+            {{-- Use payment terms balance sum as source of truth when available, fall back to account balance --}}
             @php
                 $termBalance = $paymentTerms->sum('balance');
                 $displayBalance = $termBalance > 0
@@ -410,10 +408,7 @@
         </div>
     </div>
 </div>
-
-</div>
-</div>
-
+ 
 {{-- ══ Signatures ══ --}}
 <div class="signature-section">
     <div class="sig-box">
@@ -432,7 +427,8 @@
  
 {{-- ══ Footer ══ --}}
 <div class="footer">
-    <p>Generated on {{ now()->format('M d, Y') }} | Computer-Generated Document</p>
+    <p>Generated on {{ now()->format('F d, Y h:i A') }}</p>
+    <p>This is a computer-generated document. Please keep this for your records.</p>
 </div>
  
 </body>
