@@ -143,15 +143,10 @@ class RegisteredUserController extends Controller
      */
     private function allCourses(): array
     {
+        // Only 2 courses currently implemented (AY 2025-2026)
         return [
-            'BS Information Technology',
-            'BS Computer Science',
-            'BS Electronics and Communications Engineering',
-            'BS Electrical Engineering',
-            'BS Mechanical Engineering',
-            'BS Civil Engineering',
-            'BS Business Administration',
-            'BS Accounting Information Systems',
+            'BS Electrical Engineering Technology',
+            'BS Electronics Engineering Technology',
         ];
     }
 }
