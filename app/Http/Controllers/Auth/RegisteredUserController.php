@@ -143,10 +143,21 @@ class RegisteredUserController extends Controller
      */
     private function allCourses(): array
     {
-        // Only 2 courses currently implemented (AY 2025-2026)
+        // All CCDI courses available per CCDI brochure
         return [
-            'BS Electrical Engineering Technology',
+            // Computer Science & IT Programs
+            'BS Computer Science',
+            'BS Information Technology',
+            'BS Information Systems',
+            
+            // Associate Program
+            'Associate in Computer Technology - Programming',
+            'Associate in Computer Technology - Networking',
+            'Associate in Computer Technology - Animation',
+            
+            // Engineering Technology Programs
             'BS Electronics Engineering Technology',
+            'BS Electrical Engineering Technology',
         ];
     }
 }
