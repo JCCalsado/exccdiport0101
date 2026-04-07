@@ -16,34 +16,41 @@
 
         .header {
             text-align: center;
-            margin-bottom: 6px;
-            border-bottom: 1px solid #222;
-            padding-bottom: 4px;
+            margin-bottom: 8px;
+            border-bottom: 3px solid #1e40af;
+            padding-bottom: 6px;
+            background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
         }
         .header h1 {
-            margin: 0 0 2px;
-            font-size: 13px;
+            margin: 0 0 4px;
+            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             font-weight: bold;
+            color: #1e40af;
         }
         .school-branch {
             font-size: 9px;
-            color: #555;
+            color: #666;
             margin: 0;
         }
         .header .doc-title {
-            margin-top: 2px;
+            margin-top: 3px;
             font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
+            color: #1e3a8a;
+            letter-spacing: 0.5px;
         }
 
         .student-info {
             display: table;
             width: 100%;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             border-collapse: collapse;
+            background-color: #f0f4f8;
+            padding: 6px;
+            border: 1px solid #d1d5db;
         }
         .info-col {
             display: table-cell;
@@ -57,17 +64,18 @@
         }
         .info-row {
             display: flex;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
             font-size: 8px;
         }
         .info-label {
             font-weight: bold;
             width: 100px;
             margin-right: 5px;
+            color: #1e3a8a;
         }
         .info-value {
             flex: 1;
-            border-bottom: 1px solid #222;
+            border-bottom: 1px solid #999;
             padding-bottom: 1px;
         }
 
@@ -75,39 +83,49 @@
             display: table;
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #d1d5db;
+            background-color: white;
         }
         .main-col {
             display: table-cell;
             width: 65%;
             vertical-align: top;
-            border-right: 1px solid #ccc;
-            padding-right: 8px;
+            border-right: 2px solid #d1d5db;
+            padding-right: 10px;
         }
         .side-col {
             display: table-cell;
             width: 35%;
             vertical-align: top;
-            padding-left: 8px;
+            padding-left: 10px;
         }
 
         table.subjects {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #222;
+            border: 1px solid #374151;
             margin-bottom: 6px;
+            background: white;
         }
         table.subjects th,
         table.subjects td {
-            border: 1px solid #222;
-            padding: 3px 4px;
+            border: 1px solid #d1d5db;
+            padding: 4px 5px;
             font-size: 8px;
             text-align: left;
         }
         table.subjects th {
-            background-color: #f0f0f0;
+            background-color: #1e3a8a;
             font-weight: bold;
             text-transform: uppercase;
+            color: white;
+        }
+        table.subjects tbody tr:nth-child(odd) {
+            background-color: #f9fafb;
+        }
+        table.subjects tbody tr:hover {
+            background-color: #eff6ff;
         }
         table.subjects th.code { width: 12%; }
         table.subjects th.title { width: 40%; }
@@ -117,37 +135,47 @@
 
         .total-row {
             font-weight: bold;
-            background-color: #f9f9f9;
+            background-color: #dbeafe !important;
+            border-top: 2px solid #1e40af;
         }
 
         .student-copy {
             font-size: 7px; 
             margin: 2px 0;
             text-align: left;
+            color: #666;
+            font-style: italic;
         }
 
         .fees-section {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            background-color: #fef3c7;
+            padding: 5px 6px;
+            border: 1px solid #fcd34d;
         }
         .fees-title {
             font-weight: bold;
             text-transform: uppercase;
             font-size: 9px;
-            margin-bottom: 3px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 2px;
+            margin-bottom: 4px;
+            border-bottom: 2px solid #d97706;
+            padding-bottom: 3px;
+            color: #b45309;
         }
         .fee-row {
             display: flex;
             justify-content: space-between;
             font-size: 8px;
-            padding: 2px 0;
-            border-bottom: 0.5px dotted #ccc;
+            padding: 3px 0;
+            border-bottom: 1px solid #f0e4bf;
         }
         .fee-row.total {
             font-weight: bold;
-            border-bottom: 1px solid #222;
-            padding-top: 3px;
+            border-bottom: 2px solid #92400e;
+            padding-top: 4px;
+            background-color: #fed7aa;
+            margin: 2px -6px -5px -6px;
+            padding: 4px 6px;
         }
         .fee-label {
             flex: 1;
@@ -155,24 +183,30 @@
         .fee-amount {
             text-align: right;
             width: 50px;
+            font-weight: 500;
         }
 
         .terms-section {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            background-color: #dcfce7;
+            padding: 5px 6px;
+            border: 1px solid #bbf7d0;
         }
         .terms-title {
             font-weight: bold;
             text-transform: uppercase;
             font-size: 9px;
-            margin-bottom: 2px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 2px;
+            margin-bottom: 4px;
+            border-bottom: 2px solid #16a34a;
+            padding-bottom: 3px;
+            color: #166534;
         }
         .term-row {
             display: flex;
             justify-content: space-between;
             font-size: 8px;
-            padding: 2px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid #d4f4d4;
         }
         .term-label {
             flex: 1;
@@ -180,13 +214,16 @@
         .term-amount {
             text-align: right;
             width: 50px;
+            font-weight: 500;
         }
 
         .signature-section {
             display: table;
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 12px;
+            border-top: 2px solid #d1d5db;
+            padding-top: 8px;
         }
         .sig-block {
             display: table-cell;
@@ -195,13 +232,14 @@
             padding: 0 5px;
         }
         .sig-line {
-            border-top: 1px solid #222;
-            margin: 20px 0 2px;
-            height: 20px;
+            border-top: 2px solid #374151;
+            margin: 22px 0 2px;
+            height: 18px;
         }
         .sig-label {
             font-size: 8px;
             font-weight: bold;
+            color: #374151;
         }
     </style>
 </head>
