@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     oniguruma-dev \
     bash \
     nodejs \
-    npm
+    npm \
+    curl
 
 RUN docker-php-ext-install \
     pdo_mysql \
@@ -28,14 +29,14 @@ WORKDIR /app
 # Copy project files
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install PHP dependencies (production optimized)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Install JS dependencies and build assets (Vite/Mix)
-RUN npm install && npm run build
+# Install JS dependencies and build assets (Vite)
+RUN npm ci && npm run build
 
-# Create storage directories and set permissions before linking
-RUN mkdir -p storage/app/public storage/logs bootstrap/cache && \
+# Create storage directories and set permissions
+RUN mkdir -p storage/app/public storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache && \
     chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 775 storage bootstrap/cache
 
@@ -47,6 +48,10 @@ RUN chmod +x /app/docker-entrypoint.sh
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV PORT=8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/up || exit 1
 
 # Expose the port
 EXPOSE 8080

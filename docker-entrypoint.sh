@@ -49,6 +49,31 @@ if [ "$DB_READY" = false ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Production Optimizations
+# ---------------------------------------------------------------------------
+if [ "$APP_ENV" = "production" ]; then
+    echo "⚡ Production mode detected — optimizing caches..."
+    
+    # Config cache (required for production)
+    echo "  → Caching configuration..."
+    php artisan config:cache 2>&1 || {
+        echo "⚠️  WARNING: config:cache failed, continuing anyway" >&2
+    }
+    
+    # Route cache (required for production performance)
+    echo "  → Caching routes..."
+    php artisan route:cache 2>&1 || {
+        echo "⚠️  WARNING: route:cache failed, continuing anyway" >&2
+    }
+    
+    # View cache (optional but improves first page loads)
+    echo "  → Pre-compiling views..."
+    php artisan view:cache 2>&1 || {
+        echo "⚠️  WARNING: view:cache failed, continuing anyway" >&2
+    }
+fi
+
+# ---------------------------------------------------------------------------
 # Migrations — non-fatal: log the error and carry on so the server starts.
 # ---------------------------------------------------------------------------
 echo "📦 Running migrations..."
