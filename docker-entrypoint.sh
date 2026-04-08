@@ -1,38 +1,34 @@
 #!/bin/bash
-set -e
 
-echo "🚀 Starting CCDI Account Portal..."
+echo "[$(date)] 🚀 Starting CCDI Account Portal on port ${PORT:-8080}..."
 
-# Wait for database to be ready (with timeout)
-echo "⏳ Waiting for database connection..."
+# Simple wait for database
+echo "[$(date)] ⏳ Checking database connection..."
 for i in {1..30}; do
-    if php artisan tinker --execute="echo('✓ Database connected');" 2>/dev/null; then
-        echo "✓ Database is ready"
+    if php -r "mysqli_connect(getenv('DB_HOST'), getenv('DB_USERNAME'), getenv('DB_PASSWORD'), getenv('DB_DATABASE'));" 2>/dev/null; then
+        echo "[$(date)] ✓ Database connected"
         break
     fi
-    echo "  Attempt $i/30..."
+    echo "[$(date)] Attempt $i/30..."
     sleep 2
 done
 
 # Run migrations
-echo "📦 Running migrations..."
-php artisan migrate --force || {
-    echo "⚠️  Migrations failed (may already be run)"
-}
+echo "[$(date)] 📦 Running migrations..."
+php artisan migrate --force 2>&1 || echo "[$(date)] ⚠️  Migrations skipped"
 
 # Create storage link
-echo "🔗 Creating storage link..."
-php artisan storage:link || {
-    echo "⚠️  Storage link already exists or failed (harmless)"
-}
+echo "[$(date)] 🔗 Creating storage link..."
+php artisan storage:link 2>&1 || echo "[$(date)] ⚠️  Storage link skipped"
 
-# Ensure permissions
+# Fix permissions
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-echo "✓ Setup complete! Starting Octane server on port $PORT..."
+echo "[$(date)] ✓ Setup complete!"
+echo "[$(date)] 🌐 Starting Octane..."
 echo ""
 
-# Start Octane
+# Start Octane (replace this process)
 exec php artisan octane:start \
     --server=frankenphp \
     --host=0.0.0.0 \
