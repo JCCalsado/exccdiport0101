@@ -2,7 +2,6 @@
 # Intentionally no "set -e" — we handle errors explicitly so a transient
 # database hiccup never prevents the container from starting.
 
-# Ensure all output goes to stdout/stderr so Railway captures it.
 exec 1>&1
 exec 2>&2
 
@@ -10,8 +9,6 @@ echo "🚀 Starting CCDI Account Portal..."
 
 # ---------------------------------------------------------------------------
 # Database connectivity check
-# Uses a raw PHP PDO snippet so we don't depend on artisan tinker, which
-# spawns an interactive REPL and is unreliable in non-TTY Alpine containers.
 # ---------------------------------------------------------------------------
 DB_READY=false
 echo "⏳ Waiting for database connection..."
@@ -53,20 +50,17 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$APP_ENV" = "production" ]; then
     echo "⚡ Production mode detected — optimizing caches..."
-    
-    # Config cache (required for production)
+
     echo "  → Caching configuration..."
     php artisan config:cache 2>&1 || {
         echo "⚠️  WARNING: config:cache failed, continuing anyway" >&2
     }
-    
-    # Route cache (required for production performance)
+
     echo "  → Caching routes..."
     php artisan route:cache 2>&1 || {
         echo "⚠️  WARNING: route:cache failed, continuing anyway" >&2
     }
-    
-    # View cache (optional but improves first page loads)
+
     echo "  → Pre-compiling views..."
     php artisan view:cache 2>&1 || {
         echo "⚠️  WARNING: view:cache failed, continuing anyway" >&2
@@ -74,34 +68,33 @@ if [ "$APP_ENV" = "production" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Migrations — non-fatal: log the error and carry on so the server starts.
+# Migrations
 # ---------------------------------------------------------------------------
 echo "📦 Running migrations..."
 if php artisan migrate --force 2>&1; then
     echo "✓ Migrations complete"
 else
-    echo "⚠️  ERROR: Migrations failed (exit code $?). Check logs above for details." >&2
-    echo "⚠️  Continuing startup — the application may be degraded until migrations succeed." >&2
+    echo "⚠️  ERROR: Migrations failed. Check logs above." >&2
+    echo "⚠️  Continuing startup — application may be degraded." >&2
 fi
 
 # ---------------------------------------------------------------------------
-# Storage link — safe to ignore if it already exists.
+# Storage link
 # ---------------------------------------------------------------------------
 echo "🔗 Creating storage link..."
 php artisan storage:link 2>&1 || {
     echo "⚠️  Storage link already exists or failed (harmless)"
 }
 
-# Ensure permissions
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-echo "✓ Setup complete! Starting Octane server on port ${PORT:-8080}..."
-echo ""
+OCTANE_SERVER="${OCTANE_SERVER:-frankenphp}"
+echo "✓ Setup complete! Starting Octane (${OCTANE_SERVER}) on port ${PORT:-8080}..."
 
 # ---------------------------------------------------------------------------
-# Start Octane — use exec so the process receives signals directly.
+# Start Octane — server driven by OCTANE_SERVER env var
 # ---------------------------------------------------------------------------
 exec php artisan octane:start \
-    --server=frankenphp \
+    --server="${OCTANE_SERVER}" \
     --host=0.0.0.0 \
     --port=${PORT:-8080}
