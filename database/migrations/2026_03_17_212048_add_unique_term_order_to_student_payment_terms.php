@@ -31,7 +31,7 @@ return new class extends Migration
         $duplicates = DB::table('student_payment_terms')
             ->select('student_assessment_id', 'term_order', DB::raw('COUNT(*) as cnt'))
             ->groupBy('student_assessment_id', 'term_order')
-            ->having('cnt', '>', 1)
+            ->havingRaw('COUNT(*) > 1')
             ->get();
 
         if ($duplicates->isNotEmpty()) {
