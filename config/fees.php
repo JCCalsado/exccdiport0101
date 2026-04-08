@@ -47,7 +47,7 @@ return [
     // Total: ₱6,956.00
     // =========================================================================
     'miscellaneous' => [
-        ['name' => 'Registration Fee',      'category' => 'Miscellaneous', 'amount' => 600.00],
+        ['name' => 'Registration Fee',      'category' => 'Miscellaneous', 'amount' => 0.00],
         ['name' => 'LMS Fee',               'category' => 'Miscellaneous', 'amount' => 450.00],
         ['name' => 'Library Fee',           'category' => 'Miscellaneous', 'amount' => 450.00],
         ['name' => 'Athletic Fee',          'category' => 'Miscellaneous', 'amount' => 550.00],

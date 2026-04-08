@@ -143,21 +143,26 @@ class RegisteredUserController extends Controller
      */
     private function allCourses(): array
     {
-        // All CCDI courses available per CCDI brochure
+        // All CCDI courses per EnhancedSubjectSeeder curriculum
+        // This list must stay in sync with database/seeders/EnhancedSubjectSeeder.php::subjects()
         return [
-            // Computer Science & IT Programs
+            // Diploma Programs (1 year)
+            'Diploma in Electronics and Computer Technology',
+            'Diploma in Software Development and Programming',
+            
+            // Associate Programs (2 years)
+            'Associate in Computer Technology - Programming',
+            'Associate in Computer Technology - Networking',
+            'Associate in Computer Technology - Multimedia/Animation',
+            
+            // Bachelor Programs (3-4 years)
             'BS Computer Science',
             'BS Information Technology',
             'BS Information Systems',
             
-            // Associate Program
-            'Associate in Computer Technology - Programming',
-            'Associate in Computer Technology - Networking',
-            'Associate in Computer Technology - Animation',
-            
-            // Engineering Technology Programs
-            'BS Electronics Engineering Technology',
-            'BS Electrical Engineering Technology',
+            // Engineering Technology Bachelor Programs (4 years)
+            'BET Electronics Engineering Technology',
+            'BET Electrical Engineering Technology',
         ];
     }
 }

@@ -108,8 +108,16 @@ class ComprehensiveUserSeeder extends Seeder
         ];
 
         $courses = [
-            'BS Electrical Engineering Technology',
-            'BS Electronics Engineering Technology'
+            'Diploma in Electronics and Computer Technology',
+            'Diploma in Software Development and Programming',
+            'Associate in Computer Technology - Multimedia/Animation',
+            'Associate in Computer Technology - Programming',
+            'Associate in Computer Technology - Networking',
+            'BS Information Technology',
+            'BS Information Systems',
+            'BS Computer Science',
+            'BET Electronics Engineering Technology',
+            'BET Electrical Engineering Technology',
         ];
 
         $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];

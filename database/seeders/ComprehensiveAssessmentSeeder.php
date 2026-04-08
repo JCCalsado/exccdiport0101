@@ -39,28 +39,45 @@ class ComprehensiveAssessmentSeeder extends Seeder
     // Remaining marked TODO — update these with real values.
     // ─────────────────────────────────────────────────────────────────────────
     private array $courseTotals = [
-
-        'BS Electrical Engineering Technology' => [
-            '1st Year' => ['1st Sem' => 18400.00, '2nd Sem' => 16000.00],
-            '2nd Year' => ['1st Sem' => 17600.00, '2nd Sem' => 16800.00],  // TODO: confirm 2Y2S
-            '3rd Year' => ['1st Sem' => 19200.00, '2nd Sem' => 18000.00],  // TODO: confirm 3Y1S, 3Y2S
-            '4th Year' => ['1st Sem' => 20000.00, '2nd Sem' => 19200.00],  // TODO: confirm 4Y1S, 4Y2S
+        'Associate in Computer Technology - Multimedia/Animation' => [
+            '1st Year' => ['2nd Sem' => 17220.00],
+            '2nd Year' => ['2nd Sem' => 14108.00],
         ],
-
-        'BS Electronics Engineering Technology' => [
-            '1st Year' => ['1st Sem' => 18600.00, '2nd Sem' => 16200.00],  // TODO: confirm
-            '2nd Year' => ['1st Sem' => 17800.00, '2nd Sem' => 17000.00],  // TODO: confirm
-            '3rd Year' => ['1st Sem' => 19400.00, '2nd Sem' => 18200.00],  // TODO: confirm
-            '4th Year' => ['1st Sem' => 20200.00, '2nd Sem' => 19400.00],  // TODO: confirm
+        'Associate in Computer Technology - Networking' => [
+            '1st Year' => ['2nd Sem' => 17220.00],
+            '2nd Year' => ['2nd Sem' => 16492.00],
         ],
-
-        // Add more courses here — one entry per course name exactly as stored
-        // in users.course:
-        //
-        // 'BS Information Technology' => [
-        //     '1st Year' => ['1st Sem' => 15000.00, '2nd Sem' => 14000.00],
-        //     ...
-        // ],
+        'Associate in Computer Technology - Programming' => [
+            '1st Year' => ['2nd Sem' => 17220.00],
+            '2nd Year' => ['2nd Sem' => 16492.00],
+        ],
+        'BET Electrical Engineering Technology' => [
+            '1st Year' => ['2nd Sem' => 12088.00],
+        ],
+        'BET Electronics Engineering Technology' => [
+            '1st Year' => ['2nd Sem' => 17584.00],
+        ],
+        'BS Computer Science' => [
+            '1st Year' => ['2nd Sem' => 17220.00],
+            '2nd Year' => ['2nd Sem' => 14836.00],
+            '3rd Year' => ['2nd Sem' => 14836.00],
+        ],
+        'BS Information Systems' => [
+            '1st Year' => ['2nd Sem' => 17220.00],
+            '2nd Year' => ['2nd Sem' => 12452.00],
+            '3rd Year' => ['2nd Sem' => 12452.00],
+        ],
+        'BS Information Technology' => [
+            '1st Year' => ['2nd Sem' => 16856.00],
+            '2nd Year' => ['2nd Sem' => 16856.00],
+            '3rd Year' => ['2nd Sem' => 12452.00],
+        ],
+        'Diploma in Electronics and Computer Technology' => [
+            '1st Year' => ['2nd Sem' => 19240.00],
+        ],
+        'Diploma in Software Development and Programming' => [
+            '1st Year' => ['2nd Sem' => 19240.00],
+        ],
     ];
 
     /**

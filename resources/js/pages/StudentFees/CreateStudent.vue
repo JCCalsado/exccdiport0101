@@ -7,6 +7,11 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft } from 'lucide-vue-next';
 
+defineProps<{
+    courses: string[];
+    yearLevels: string[];
+}>();
+
 const breadcrumbs = [
     { title: 'Dashboard', href: route('dashboard') },
     { title: 'Student Fee Management', href: route('student-fees.index') },
@@ -26,9 +31,6 @@ const form = useForm({
     address: '',
     phone: '',
 });
-
-const yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-const courses = ['BS Electrical Engineering Technology', 'BS Electronics Engineering Technology'];
 
 const submit = () => {
     form.post(route('student-fees.store-student'), {

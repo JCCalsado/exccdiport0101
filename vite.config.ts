@@ -14,15 +14,15 @@ const plugins: any[] = [
     tailwindcss(),
 ];
 
-// Only include wayfinder if PHP is available (skip in CI/CD environments)
-if (process.env.SKIP_WAYFINDER !== 'true') {
-    try {
-        execSync('php -v', { stdio: 'ignore', shell: true });
-        plugins.push(wayfinder({ formVariants: true }));
-    } catch {
-        // PHP not available, skip wayfinder
-    }
-}
+// Wayfinder is temporarily disabled due to missing route directories
+// if (process.env.SKIP_WAYFINDER !== 'true') {
+//     try {
+//         execSync('php -v', { stdio: 'ignore', shell: true });
+//         plugins.push(wayfinder({ formVariants: true }));
+//     } catch {
+//         // PHP not available, skip wayfinder
+//     }
+// }
 
 plugins.push(
     vue({
@@ -41,6 +41,14 @@ export default defineConfig({
         alias: {
             '@': '/resources/js',
             'ziggy-js': 'ziggy-js', // Ensure ziggy is properly resolved
+        },
+    },
+    server: {
+        host: '127.0.0.1',
+        middlewareMode: false,
+        hmr: {
+            host: '127.0.0.1',
+            protocol: 'ws',
         },
     },
 });
