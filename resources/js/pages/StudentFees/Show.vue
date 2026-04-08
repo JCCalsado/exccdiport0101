@@ -738,22 +738,11 @@ const getStudentStatusColor = (status: string) => {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label for="payment_method">Payment Method *</Label>
-                                    <select
-                                        id="payment_method"
-                                        v-model="paymentForm.payment_method"
-                                        required
-                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                    >
-                                        <option value="cash">Cash</option>
-                                        <option value="gcash">GCash</option>
-                                        <option value="bank_transfer">Bank Transfer</option>
-                                        <option value="credit_card">Credit Card</option>
-                                        <option value="debit_card">Debit Card</option>
-                                    </select>
-                                    <p v-if="paymentForm.errors.payment_method" class="text-sm text-red-500">
-                                        {{ paymentForm.errors.payment_method }}
-                                    </p>
+                                    <Label>Payment Method</Label>
+                                    <div class="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 font-medium">
+                                        💵 Cash (In-Person Payment)
+                                    </div>
+                                    <p class="text-xs text-gray-500">All payments are recorded as cash transactions for in-person payments.</p>
                                 </div>
 
                                 <div class="space-y-2">
