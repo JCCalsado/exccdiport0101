@@ -39,8 +39,9 @@ RUN mkdir -p storage/app/public storage/logs bootstrap/cache && \
     chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 775 storage bootstrap/cache
 
-# Pre-generate configs for faster startup
-RUN php artisan config:cache && php artisan route:cache || true
+# Copy and make entrypoint executable
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Set Environment Variables for Production
 ENV APP_ENV=production
@@ -50,4 +51,4 @@ ENV PORT=8080
 # Expose the port
 EXPOSE 8080
 
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8080"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
