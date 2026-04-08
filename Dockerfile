@@ -34,9 +34,13 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Install JS dependencies and build assets (Vite/Mix)
 RUN npm install && npm run build
 
-# Set permissions para hindi mag-error ang Laravel
-RUN chown -R www-data:www-data storage bootstrap/cache && \
+# Create storage directories and set permissions before linking
+RUN mkdir -p storage/app/public storage/logs bootstrap/cache && \
+    chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 775 storage bootstrap/cache
+
+# Pre-generate configs for faster startup
+RUN php artisan config:cache && php artisan route:cache || true
 
 # Set Environment Variables for Production
 ENV APP_ENV=production
