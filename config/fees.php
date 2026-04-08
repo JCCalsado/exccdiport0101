@@ -44,7 +44,7 @@ return [
     // =========================================================================
     // MISCELLANEOUS FEES — FIXED PER SEMESTER
     // Charged every semester regardless of how many subjects are enrolled.
-    // Total: ₱6,956.00
+    // Total: ₱4,700.00
     // =========================================================================
     'miscellaneous' => [
         ['name' => 'Registration Fee',      'category' => 'Miscellaneous', 'amount' => 0.00],
