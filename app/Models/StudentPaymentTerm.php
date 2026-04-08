@@ -15,6 +15,7 @@ class StudentPaymentTerm extends Model
         'percentage',
         'amount',
         'balance',
+        'payment_intent_id',
         'due_date',
         'status',
         'remarks',

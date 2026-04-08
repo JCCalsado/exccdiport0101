@@ -19,7 +19,12 @@ class TelescopeServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Disable Telescope in production unless explicitly enabled
         if (!class_exists(\Laravel\Telescope\Telescope::class)) {
+            return;
+        }
+
+        if (config('app.env') === 'production' && !config('telescope.enabled', false)) {
             return;
         }
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountingDashboardController;
 use App\Http\Controllers\AccountingTransactionController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\PaymongoWebhookController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
@@ -28,6 +29,9 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
+
+// PayMongo Webhook — No authentication required (called by PayMongo servers)
+Route::post('/webhook/paymongo', [PaymongoWebhookController::class, 'handle']);
 
 // ============================================
 // AUTHENTICATED ROUTES

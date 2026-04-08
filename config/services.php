@@ -38,7 +38,7 @@ return [
     'paymongo' => [
         'secret' => env('PAYMONGO_SECRET_KEY'),
         'public' => env('PAYMONGO_PUBLIC_KEY'),
-        'webhook' => env('PAYMONGO_WEBHOOK_SECRET'),
+        'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
         'return_url' => env('PAYMENT_RETURN_URL'),
         'cancel_url' => env('PAYMENT_CANCEL_URL'),
     ],
