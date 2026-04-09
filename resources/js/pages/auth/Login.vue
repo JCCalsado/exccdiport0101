@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppLogo from '@/components/AppLogo.vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -54,9 +55,8 @@ const submit = async () => {
     <div class="flex min-h-screen items-center justify-center px-4 py-12" style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background-image: url('/images/login.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
         <div class="w-full max-w-sm">
             <!-- Logo -->
-            <div class="mb-8 text-center">
-                <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-lg" style="background: linear-gradient(135deg, #0d2a5e 0%, #1d6fe6 100%);">CC</div>
-                <p class="text-sm font-medium text-gray-500">CCDI Account Portal</p>
+            <div class="mb-8 flex justify-center">
+                <AppLogo />
             </div>
 
             <!-- Card -->

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppLogo from '@/components/AppLogo.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -15,9 +16,8 @@ const page = usePage();
 
             <!-- Header -->
             <header class="flex w-full items-center justify-between px-8 py-5">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-blue-700" style="background: rgba(30,58,138,0.15); border: 1px solid rgba(30,58,138,0.2);">CC</div>
-                    <span class="hidden text-sm font-semibold text-blue-800 sm:block">CCDI Account Portal</span>
+                <div>
+                    <AppLogo />
                 </div>
                 <nav class="flex items-center gap-3">
                     <Link v-if="page.props.auth.user" :href="route('dashboard')" class="rounded-lg px-4 py-2 text-sm font-medium text-blue-700 transition-all hover:bg-blue-100" style="border: 1px solid rgba(30,58,138,0.25);">Dashboard</Link>

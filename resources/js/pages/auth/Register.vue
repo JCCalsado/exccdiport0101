@@ -77,7 +77,7 @@ const submit = () => {
                 <!-- Year Level -->
                 <div class="grid gap-2">
                     <Label for="year_level">Year Level</Label>
-                    <select id="year_level" v-model="form.year_level" required class="rounded border px-3 py-2">
+                    <select id="year_level" v-model="form.year_level" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                         <option value="">Select Year Level</option>
                         <option value="1st Year">1st Year</option>
                         <option value="2nd Year">2nd Year</option>
@@ -90,7 +90,7 @@ const submit = () => {
                 <!-- Course -->
                 <div class="grid gap-2">
                     <Label for="course">Course</Label>
-                    <select id="course" v-model="form.course" required class="rounded border px-3 py-2">
+                    <select id="course" v-model="form.course" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                         <option value="">Select a course</option>
                         <option v-for="course in courses" :key="course" :value="course">
                             {{ course }}

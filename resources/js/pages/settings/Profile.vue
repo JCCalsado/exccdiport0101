@@ -4,12 +4,12 @@ import type { Page } from '@inertiajs/core';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 
@@ -19,7 +19,7 @@ interface Props {
 }
 defineProps<Props>();
 
-const breadcrumbs = [
+const breadcrumbItems: BreadcrumbItem[] = [
     {
         title: 'Profile settings',
         href: route('profile.edit'),
@@ -171,19 +171,16 @@ const profileInitial = computed(() => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :breadcrumbs="breadcrumbItems">
         <Head title="Profile settings" />
 
-        <div class="w-full p-6">
-            <Breadcrumbs :items="breadcrumbs" />
-
-            <SettingsLayout>
-                <div class="flex flex-col space-y-6">
-                    <!-- PROFILE PICTURE SECTION -->
-                    <div class="mb-8 flex flex-col space-y-6">
-                        <HeadingSmall title="Profile Picture" description="Update your profile picture" />
-                        <div class="flex items-center space-x-6">
-                            <div class="shrink-0">
+        <SettingsLayout>
+            <div class="space-y-6">
+                <!-- PROFILE PICTURE SECTION -->
+                <div class="mb-8 flex flex-col space-y-6">
+                    <HeadingSmall title="Profile Picture" description="Update your profile picture" />
+                    <div class="flex items-center space-x-6">
+                        <div class="shrink-0">
                                 <img
                                     v-if="profilePicturePreview"
                                     :src="profilePicturePreview"
@@ -227,7 +224,7 @@ const profileInitial = computed(() => {
                     </div>
 
                     <!-- PROFILE INFO FORM -->
-                    <form @submit.prevent="submit" class="space-y-6">
+                    <form @submit.prevent="submit" class="mt-8 space-y-6">
                         <HeadingSmall
                             title="Profile information"
                             :description="isStudent ? 'Update your student account information' : 'Update your account information'"
@@ -382,6 +379,5 @@ const profileInitial = computed(() => {
                     </form>
                 </div>
             </SettingsLayout>
-        </div>
-    </AppLayout>
-</template>
+        </AppLayout>
+    </template>
