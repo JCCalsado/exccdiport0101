@@ -90,6 +90,8 @@ const effectiveBalance = computed(() => {
     return Math.max(0, Math.round((totalBalance - totalPending) * 100) / 100);
 });
 
+const numericOutstanding = computed(() => Number(props.outstandingBalance ?? 0));
+
 const hasPendingPayments = computed(() => props.pendingApprovalPayments.length > 0);
 
 const firstUnpaidTerm = computed(() => availableTerms.value[0] ?? null);
@@ -98,14 +100,14 @@ const gcashAmountError = computed(() => {
     const amt = Number(gcashForm.value.amount) || 0;
     if (amt <= 0) return '';
     if (amt < 100) return 'Minimum amount is ₱100.00 for GCash/Maya.';
-    if (amt > effectiveBalance.value) return `Amount cannot exceed ₱${formatCurrency(effectiveBalance.value)}.`;
+    if (amt > effectiveBalance.value) return `Amount cannot exceed ${formatCurrency(effectiveBalance.value)}.`;
     return '';
 });
 
 const bankAmountError = computed(() => {
     const amt = Number(bankForm.value.amount) || 0;
     if (amt <= 0) return '';
-    if (amt > effectiveBalance.value) return `Amount cannot exceed ₱${formatCurrency(effectiveBalance.value)}.`;
+    if (amt > effectiveBalance.value) return `Amount cannot exceed ${formatCurrency(effectiveBalance.value)}.`;
     return '';
 });
 
@@ -276,21 +278,21 @@ const submitBank = async () => {
             <div class="grid grid-cols-2 gap-4">
                 <div class="rounded-xl border bg-white p-5 shadow-sm">
                     <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Outstanding Balance</p>
-                    <p class="mt-1 text-3xl font-bold" :class="outstandingBalance > 0 ? 'text-red-600' : 'text-green-600'">
-                        ₱{{ formatCurrency(outstandingBalance) }}
+                    <p class="mt-1 text-3xl font-bold" :class="numericOutstanding > 0 ? 'text-red-600' : 'text-green-600'">
+                        ₱{{ formatCurrency(numericOutstanding) }}
                     </p>
                 </div>
                 <div class="rounded-xl border bg-white p-5 shadow-sm">
                     <p class="text-xs font-medium uppercase tracking-wider text-gray-500">Available to Pay</p>
                     <p class="mt-1 text-3xl font-bold text-indigo-600">₱{{ formatCurrency(effectiveBalance) }}</p>
                     <p v-if="hasPendingPayments" class="mt-1 text-xs text-amber-600">
-                        (₱{{ formatCurrency(outstandingBalance - effectiveBalance) }} awaiting approval)
+                        (₱{{ formatCurrency(numericOutstanding - effectiveBalance) }} awaiting approval)
                     </p>
                 </div>
             </div>
 
             <!-- Fully Paid -->
-            <div v-if="outstandingBalance <= 0" class="rounded-lg border border-green-200 bg-green-50 p-4">
+            <div v-if="numericOutstanding <= 0" class="rounded-lg border border-green-200 bg-green-50 p-4">
                 <div class="flex items-center gap-2">
                     <CheckCircle class="h-5 w-5 text-green-600" />
                     <p class="font-semibold text-green-800">Account fully paid! No outstanding balance.</p>
@@ -330,7 +332,7 @@ const submitBank = async () => {
             </div>
 
             <!-- Payment Form (only if there is balance) -->
-            <template v-if="outstandingBalance > 0">
+            <template v-if="numericOutstanding > 0">
 
                 <!-- Tab Switcher -->
                 <div class="flex rounded-xl border bg-gray-100 p-1">
