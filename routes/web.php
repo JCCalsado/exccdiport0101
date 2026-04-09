@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Accounting\FinancialReportsController;
+use App\Http\Controllers\Accounting\FeeSettingsController;
 use App\Http\Controllers\AccountingDashboardController;
 use App\Http\Controllers\AccountingTransactionController;
 use App\Http\Controllers\AdminController;
@@ -165,6 +166,11 @@ Route::middleware(['auth', 'verified', 'role:accounting,admin'])->prefix('accoun
     Route::get('/transactions', [TransactionController::class, 'index'])->name('accounting.transactions.index');
     Route::get('/financial-reports', [FinancialReportsController::class, 'index'])->name('accounting.financial-reports');
     Route::get('/financial-reports/export', [FinancialReportsController::class, 'export'])->name('accounting.financial-reports.export');
+
+    // Fee Settings
+    Route::get('/fee-settings', [FeeSettingsController::class, 'index'])->name('accounting.fee-settings.index');
+    Route::patch('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'update'])->name('accounting.fee-settings.update');
+    Route::post('/fee-settings/bulk', [FeeSettingsController::class, 'bulkUpdate'])->name('accounting.fee-settings.bulk');
 });
 
 // ============================================

@@ -41,10 +41,12 @@ class DatabaseSeeder extends Seeder
         // Step 2: EnhancedSubjectSeeder — DISABLED (Subject Management removed)
         $this->call(EnhancedSubjectSeeder::class);
 
-        // Step 3: FeeSeeder — DISABLED (Fee Management removed)
-        // $this->call(FeeSeeder::class);
+        // Step 3: School Fees — Seed from config to database
+        $this->command->info('💰 Step 2: Seeding School Fees...');
+        $this->call(FeeSettingsSeeder::class);
+        $this->command->newLine();
 
-        $this->command->info('⚙️  Step 2: Seeding Workflow Templates...');
+        $this->command->info('⚙️  Step 3: Seeding Workflow Templates...');
         $this->call(DemoWorkflowSeeder::class);
         $this->call(PaymentApprovalWorkflowSeeder::class);
         $this->command->newLine();
