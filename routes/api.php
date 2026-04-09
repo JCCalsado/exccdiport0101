@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('webhooks/paymongo', [PaymentController::class, 'webhook'])
     ->name('paymongo.webhook');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
 
     // ── Existing Workflow routes ───────────────────────────────────────────
     Route::get('workflows', [WorkflowApiController::class, 'index']);
@@ -24,7 +24,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('payments')->group(function () {
         Route::post('gcash-maya', [PaymentController::class, 'createSource']);
         Route::post('bank-transfer', [PaymentController::class, 'submitBankTransfer']);
-        Route::get('bank-details', [PaymentController::class, 'getBankDetails']);
         Route::get('check-status', [PaymentController::class, 'checkStatus']);
 
         // Accounting only

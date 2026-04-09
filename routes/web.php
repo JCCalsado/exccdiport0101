@@ -40,6 +40,8 @@ Route::post('/webhook/paymongo', [PaymongoWebhookController::class, 'handle']);
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('notifications.dismiss');
+    // Bank details endpoint for payment form
+    Route::get('/api/payments/bank-details', [PaymentController::class, 'getBankDetails']);
 });
 
 // ============================================
