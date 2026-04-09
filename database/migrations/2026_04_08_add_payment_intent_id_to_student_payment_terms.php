@@ -9,11 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('student_payment_terms', function (Blueprint $table) {
-            // Add payment_intent_id to link with PayMongo webhooks
-            $table->string('payment_intent_id')->nullable()->unique()->after('balance');
-            
-            // Index for fast lookup during webhook processing
-            $table->index('payment_intent_id');
+            // Add payment_intent_id to link with PayMongo webhooks (only if not exists)
+            if (! Schema::hasColumn('student_payment_terms', 'payment_intent_id')) {
+                $table->string('payment_intent_id')->nullable()->unique()->after('balance');
+                $table->index('payment_intent_id');
+            }
         });
     }
 
