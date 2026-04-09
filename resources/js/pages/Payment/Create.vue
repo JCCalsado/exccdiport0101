@@ -98,14 +98,14 @@ const gcashAmountError = computed(() => {
     const amt = Number(gcashForm.value.amount) || 0;
     if (amt <= 0) return '';
     if (amt < 100) return 'Minimum amount is ₱100.00 for GCash/Maya.';
-    if (amt > effectiveBalance.value) return Amount cannot exceed ₱${formatCurrency(effectiveBalance.value)}.;
+    if (amt > effectiveBalance.value) return `Amount cannot exceed ₱${formatCurrency(effectiveBalance.value)}.`;
     return '';
 });
 
 const bankAmountError = computed(() => {
     const amt = Number(bankForm.value.amount) || 0;
     if (amt <= 0) return '';
-    if (amt > effectiveBalance.value) return Amount cannot exceed ₱${formatCurrency(effectiveBalance.value)}.;
+    if (amt > effectiveBalance.value) return `Amount cannot exceed ₱${formatCurrency(effectiveBalance.value)}.`;
     return '';
 });
 
@@ -196,7 +196,7 @@ const submitGcash = async () => {
                 method                : gcashForm.value.method,
                 student_id            : props.studentId,
                 student_assessment_id : props.assessmentId,
-                description           : CCDI Tuition – ${props.studentName},
+                description           : `CCDI Tuition – ${props.studentName}`,
             }),
         });
 
