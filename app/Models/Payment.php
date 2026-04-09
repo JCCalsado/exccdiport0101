@@ -40,6 +40,11 @@ class Payment extends Model
         'reference_number',
         'status',
         'paid_at',
+        // ✅ Bagong PayMongo fields
+        'paymongo_source_id',
+        'paymongo_payment_id',
+        'proof_of_payment',
+        'notes',
     ];
 
     protected $casts = [

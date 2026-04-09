@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { router, Head } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Check } from 'lucide-vue-next';
 
-// ── Props ────────────────────────────────────────────────────────────────────
 const props = defineProps<{
     settings: Record<string, Array<{
         id: number;
@@ -19,43 +14,25 @@ const props = defineProps<{
     miscTotal: number;
 }>();
 
-// ── State ────────────────────────────────────────────────────────────────────
 const editing = ref<number | null>(null);
 const editValues = ref<Record<number, string>>({});
 const saving = ref(false);
 const flashSuccess = ref('');
 const flashError = ref('');
 
-// ── Computed ─────────────────────────────────────────────────────────────────
-const rateSettings = computed(() => props.settings['rate'] ?? []);
-const miscSettings = computed(() => props.settings['miscellaneous'] ?? []);
-const otherSettings = computed(() => props.settings['other'] ?? []);
-const termSettings = computed(() => props.settings['term'] ?? []);
+const rateSettings  = computed(() => props.settings['rate']          ?? []);
+const miscSettings  = computed(() => props.settings['miscellaneous'] ?? []);
+const otherSettings = computed(() => props.settings['other']         ?? []);
 
-const termTotal = computed(() =>
-    termSettings.value.reduce((sum, s) => {
-        const val = editing.value !== null && editValues.value[s.id] !== undefined
+const liveMiscTotal = computed(() =>
+    [...miscSettings.value, ...otherSettings.value].reduce((sum, s) => {
+        const val = editValues.value[s.id] !== undefined
             ? parseFloat(editValues.value[s.id] || '0')
             : parseFloat(s.amount);
         return sum + (isNaN(val) ? 0 : val);
     }, 0)
 );
 
-const liveMiscTotal = computed(() => {
-    return [...miscSettings.value, ...otherSettings.value].reduce((sum, s) => {
-        const val = editValues.value[s.id] !== undefined
-            ? parseFloat(editValues.value[s.id] || '0')
-            : parseFloat(s.amount);
-        return sum + (isNaN(val) ? 0 : val);
-    }, 0);
-});
-
-const breadcrumbs = [
-    { title: 'Dashboard', href: route('accounting.dashboard') },
-    { title: 'Fee Settings', href: route('accounting.fee-settings.index') },
-];
-
-// ── Methods ───────────────────────────────────────────────────────────────────
 function startEdit(id: number, current: string) {
     editing.value = id;
     editValues.value[id] = current;
@@ -81,241 +58,186 @@ function saveOne(setting: { id: number; label: string }) {
             flashSuccess.value = `${setting.label} updated.`;
             setTimeout(() => flashSuccess.value = '', 3000);
         },
-        onError: (errors) => {
+        onError: (errors: Record<string, string>) => {
             flashError.value = Object.values(errors).flat().join(' ');
         },
         onFinish: () => { saving.value = false; },
     });
 }
 
-function fmt(val: string | number): string {
+function fmt(val: string | number) {
     return '₱' + parseFloat(String(val)).toLocaleString('en-PH', {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
     });
 }
 </script>
 
 <template>
-    <Head title="Fee Settings" />
-    <AppLayout>
-        <div class="w-full p-6">
-            <Breadcrumbs :items="breadcrumbs" />
+    <AppLayout title="Fee Settings">
+        <div class="max-w-3xl mx-auto px-4 py-8 space-y-8">
 
-            <div class="max-w-4xl mx-auto space-y-8 mt-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Fee Settings</h1>
+                <p class="text-sm text-gray-500 mt-1">
+                    Changes apply to new assessments only. Existing assessments are not affected.
+                </p>
+            </div>
 
-                <!-- Header -->
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Fee Settings</h1>
-                    <p class="text-sm text-gray-500 mt-2">
-                        Manage tuition rates, miscellaneous fees, and payment term percentages.
-                        Changes take effect immediately on the next assessment created.
+            <div v-if="flashSuccess"
+                class="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm">
+                ✓ {{ flashSuccess }}
+            </div>
+            <div v-if="flashError"
+                class="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm">
+                {{ flashError }}
+            </div>
+
+            <!-- Billing Rates -->
+            <section>
+                <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+                    Billing Rates
+                </h2>
+                <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                    <div v-for="s in rateSettings" :key="s.id"
+                        class="flex items-center justify-between px-5 py-4 hover:bg-gray-50">
+                        <span class="text-sm text-gray-700">{{ s.label }}</span>
+                        <div class="flex items-center gap-4">
+                            <span v-if="editing !== s.id"
+                                class="font-mono text-sm font-semibold text-gray-900 w-28 text-right">
+                                {{ fmt(s.amount) }}
+                            </span>
+                            <div v-else class="flex items-center gap-1">
+                                <span class="text-gray-400 text-sm">₱</span>
+                                <input
+                                    type="number" step="0.01" min="0"
+                                    v-model="editValues[s.id]"
+                                    class="w-28 border border-blue-400 rounded px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    @keyup.enter="saveOne(s)"
+                                    @keyup.escape="cancelEdit(s.id)"
+                                />
+                            </div>
+                            <div class="w-20 text-right">
+                                <button v-if="editing !== s.id"
+                                    @click="startEdit(s.id, s.amount)"
+                                    class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                                    Edit
+                                </button>
+                                <div v-else class="flex gap-2 justify-end">
+                                    <button @click="saveOne(s)" :disabled="saving"
+                                        class="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-40">
+                                        Save
+                                    </button>
+                                    <button @click="cancelEdit(s.id)"
+                                        class="text-gray-400 hover:text-gray-600 text-xs">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">
+                    Tuition is charged per enrolled unit. Lab fee is charged once per subject with lab.
+                </p>
+            </section>
+
+            <!-- Miscellaneous Fees -->
+            <section>
+                <div class="flex items-baseline justify-between mb-3">
+                    <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                        Miscellaneous Fees
+                    </h2>
+                    <span class="text-sm text-gray-600">
+                        Total:
+                        <span class="font-semibold text-gray-900 font-mono">{{ fmt(liveMiscTotal) }}</span>
+                        <span class="text-gray-400 text-xs ml-1">(charged per semester)</span>
+                    </span>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wide">
+                            <tr>
+                                <th class="text-left px-5 py-3 font-medium text-gray-500">Fee</th>
+                                <th class="text-left px-5 py-3 font-medium text-gray-500">Type</th>
+                                <th class="text-right px-5 py-3 font-medium text-gray-500">Amount</th>
+                                <th class="w-24 px-5 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="s in [...miscSettings, ...otherSettings]" :key="s.id"
+                                class="hover:bg-gray-50">
+                                <td class="px-5 py-3 text-gray-700">{{ s.label }}</td>
+                                <td class="px-5 py-3">
+                                    <span :class="s.category === 'other'
+                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                        : 'bg-sky-50 text-sky-700 border-sky-200'"
+                                        class="text-xs px-2 py-0.5 rounded-full border font-medium">
+                                        {{ s.category === 'other' ? 'Other' : 'Miscellaneous' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3 text-right">
+                                    <span v-if="editing !== s.id"
+                                        class="font-mono font-semibold text-gray-900">
+                                        {{ fmt(s.amount) }}
+                                    </span>
+                                    <div v-else class="flex items-center justify-end gap-1">
+                                        <span class="text-gray-400">₱</span>
+                                        <input
+                                            type="number" step="0.01" min="0"
+                                            v-model="editValues[s.id]"
+                                            class="w-28 border border-blue-400 rounded px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                            @keyup.enter="saveOne(s)"
+                                            @keyup.escape="cancelEdit(s.id)"
+                                        />
+                                    </div>
+                                </td>
+                                <td class="px-5 py-3 text-right">
+                                    <button v-if="editing !== s.id"
+                                        @click="startEdit(s.id, s.amount)"
+                                        class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                                        Edit
+                                    </button>
+                                    <div v-else class="flex gap-2 justify-end">
+                                        <button @click="saveOne(s)" :disabled="saving"
+                                            class="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-40">
+                                            Save
+                                        </button>
+                                        <button @click="cancelEdit(s.id)"
+                                            class="text-gray-400 hover:text-gray-600 text-xs">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-gray-50 border-t-2 border-gray-200">
+                            <tr>
+                                <td colspan="2" class="px-5 py-3 text-sm font-semibold text-gray-700">
+                                    Total Miscellaneous
+                                </td>
+                                <td class="px-5 py-3 text-right font-mono font-bold text-gray-900">
+                                    {{ fmt(liveMiscTotal) }}
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Info: Payment terms are computed, not configurable -->
+            <section>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 text-sm text-amber-800">
+                    <p class="font-semibold mb-1">About Payment Terms</p>
+                    <p class="text-amber-700">
+                        Payment term amounts are automatically computed from each student's total assessment fee.
+                        They are split across 5 terms — Upon Registration, Prelim, Midterm, Semi-Final, and Final.
+                        The peso amount per term is shown on the student's account, not here.
                     </p>
                 </div>
+            </section>
 
-                <!-- Flash messages -->
-                <div v-if="flashSuccess" class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm">
-                    <Check :size="18" />
-                    {{ flashSuccess }}
-                </div>
-                <div v-if="flashError" class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm">
-                    <AlertCircle :size="18" />
-                    {{ flashError }}
-                </div>
-
-                <!-- ── Billing Rates ──────────────────────────────────────────── -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="text-lg">Billing Rates</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead class="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th class="text-left px-4 py-3 font-medium text-gray-600">Fee</th>
-                                        <th class="text-right px-4 py-3 font-medium text-gray-600">Amount</th>
-                                        <th class="w-24 px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="s in rateSettings" :key="s.id" class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-gray-700">{{ s.label }}</td>
-                                        <td class="px-4 py-3 text-right">
-                                            <span v-if="editing !== s.id" class="font-mono text-gray-900">{{ fmt(s.amount) }}</span>
-                                            <div v-else class="flex items-center justify-end gap-2">
-                                                <span class="text-gray-500">₱</span>
-                                                <input
-                                                    type="number" step="0.01" min="0"
-                                                    v-model="editValues[s.id]"
-                                                    class="w-32 border border-blue-400 rounded px-2 py-1 text-right font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                    @keyup.enter="saveOne(s)"
-                                                    @keyup.escape="cancelEdit(s.id)"
-                                                />
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 text-right">
-                                            <button v-if="editing !== s.id"
-                                                @click="startEdit(s.id, s.amount)"
-                                                class="text-blue-600 hover:text-blue-800 text-xs font-medium">
-                                                Edit
-                                            </button>
-                                            <div v-else class="flex gap-2 justify-end">
-                                                <button @click="saveOne(s)" :disabled="saving"
-                                                    class="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50">
-                                                    Save
-                                                </button>
-                                                <button @click="cancelEdit(s.id)"
-                                                    class="text-gray-400 hover:text-gray-600 text-xs">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <!-- ── Miscellaneous Fees ─────────────────────────────────────── -->
-                <Card>
-                    <CardHeader>
-                        <div class="flex items-center justify-between">
-                            <CardTitle class="text-lg">Miscellaneous Fees</CardTitle>
-                            <span class="text-sm text-gray-600">
-                                Total: <span class="font-semibold text-gray-900">{{ fmt(liveMiscTotal) }}</span>
-                            </span>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead class="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th class="text-left px-4 py-3 font-medium text-gray-600">Fee</th>
-                                        <th class="text-left px-4 py-3 font-medium text-gray-600">Category</th>
-                                        <th class="text-right px-4 py-3 font-medium text-gray-600">Amount</th>
-                                        <th class="w-24 px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <template v-for="group in [miscSettings, otherSettings]">
-                                        <tr v-for="s in group" :key="s.id" class="hover:bg-gray-50">
-                                            <td class="px-4 py-3 text-gray-700">{{ s.label }}</td>
-                                            <td class="px-4 py-3">
-                                                <span :class="s.category === 'other'
-                                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                    : 'bg-blue-50 text-blue-700 border border-blue-200'"
-                                                    class="text-xs px-2 py-0.5 rounded-full font-medium">
-                                                    {{ s.category === 'other' ? 'Other' : 'Miscellaneous' }}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-3 text-right">
-                                                <span v-if="editing !== s.id" class="font-mono text-gray-900">{{ fmt(s.amount) }}</span>
-                                                <div v-else class="flex items-center justify-end gap-2">
-                                                    <span class="text-gray-500">₱</span>
-                                                    <input
-                                                        type="number" step="0.01" min="0"
-                                                        v-model="editValues[s.id]"
-                                                        class="w-28 border border-blue-400 rounded px-2 py-1 text-right font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                        @keyup.enter="saveOne(s)"
-                                                        @keyup.escape="cancelEdit(s.id)"
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td class="px-4 py-3 text-right">
-                                                <button v-if="editing !== s.id"
-                                                    @click="startEdit(s.id, s.amount)"
-                                                    class="text-blue-600 hover:text-blue-800 text-xs font-medium">
-                                                    Edit
-                                                </button>
-                                                <div v-else class="flex gap-2 justify-end">
-                                                    <button @click="saveOne(s)" :disabled="saving"
-                                                        class="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-50">
-                                                        Save
-                                                    </button>
-                                                    <button @click="cancelEdit(s.id)"
-                                                        class="text-gray-400 hover:text-gray-600 text-xs">
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <!-- ── Payment Terms ──────────────────────────────────────────── -->
-                <Card>
-                    <CardHeader>
-                        <div class="flex items-center justify-between">
-                            <CardTitle class="text-lg">Payment Term Percentages</CardTitle>
-                            <span :class="Math.abs(termTotal - 100) > 0.01 ? 'text-red-600 font-semibold' : 'text-gray-600'" class="text-sm">
-                                Total: {{ termTotal.toFixed(2) }}%
-                                <span v-if="Math.abs(termTotal - 100) > 0.01" class="ml-1">⚠ Must equal 100%</span>
-                            </span>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead class="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th class="text-left px-4 py-3 font-medium text-gray-600">Term</th>
-                                        <th class="text-right px-4 py-3 font-medium text-gray-600">Percentage</th>
-                                        <th class="w-24 px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="s in termSettings" :key="s.id" class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-gray-700">{{ s.label }}</td>
-                                        <td class="px-4 py-3 text-right">
-                                            <span v-if="editing !== s.id" class="font-mono text-gray-900">
-                                                {{ parseFloat(s.amount).toFixed(2) }}%
-                                            </span>
-                                            <div v-else class="flex items-center justify-end gap-2">
-                                                <input
-                                                    type="number" step="0.01" min="0" max="100"
-                                                    v-model="editValues[s.id]"
-                                                    class="w-24 border border-blue-400 rounded px-2 py-1 text-right font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                    @keyup.enter="saveOne(s)"
-                                                    @keyup.escape="cancelEdit(s.id)"
-                                                />
-                                                <span class="text-gray-500">%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 text-right">
-                                            <button v-if="editing !== s.id"
-                                                @click="startEdit(s.id, s.amount)"
-                                                class="text-blue-600 hover:text-blue-800 text-xs font-medium">
-                                                Edit
-                                            </button>
-                                            <div v-else class="flex gap-2 justify-end">
-                                                <button @click="saveOne(s)" :disabled="saving || Math.abs(termTotal - 100) > 0.01"
-                                                    class="text-green-600 hover:text-green-800 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed">
-                                                    Save
-                                                </button>
-                                                <button @click="cancelEdit(s.id)"
-                                                    class="text-gray-400 hover:text-gray-600 text-xs">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-4">
-                            Percentages must sum to exactly 100%. Changes only affect new assessments.
-                        </p>
-                    </CardContent>
-                </Card>
-
-            </div>
         </div>
     </AppLayout>
 </template>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PaymentStatus;
 use App\Models\StudentPaymentTerm;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -67,7 +68,7 @@ class PaymongoWebhookController extends Controller
         $amountPaid = data_get($attributes, 'amount', 0) / 100; // PayMongo uses centavos
 
         $paymentTerm->update([
-            'status'  => 'paid',
+            'status'  => PaymentStatus::PAID->value,
             'balance' => max(0, $paymentTerm->balance - $amountPaid),
             'paid_at' => now(),
         ]);
@@ -91,7 +92,7 @@ class PaymongoWebhookController extends Controller
         $paymentTerm = StudentPaymentTerm::where('payment_intent_id', $paymentIntentId)->first();
 
         if ($paymentTerm) {
-            $paymentTerm->update(['status' => 'failed']);
+            $paymentTerm->update(['status' => PaymentStatus::FAILED->value]);
 
             Log::info('PayMongo webhook: payment marked as failed', [
                 'payment_term_id'   => $paymentTerm->id,

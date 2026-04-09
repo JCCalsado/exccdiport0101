@@ -41,6 +41,9 @@ enum PaymentStatus: string
     /** A partial payment has been applied; some balance still remains on the term. */
     case PARTIAL = 'partial';
 
+    /** Payment gateway returned an error and payment was not processed. */
+    case FAILED = 'failed';
+
     // ── Payment model status (maps to Payment::STATUS_COMPLETED) ─────────────
 
     /** Payment record has been created and reconciled (used in payments table). */
@@ -61,6 +64,7 @@ enum PaymentStatus: string
             self::AWAITING_APPROVAL => 'Awaiting Approval',
             self::CANCELLED        => 'Cancelled',
             self::PARTIAL          => 'Partial',
+            self::FAILED           => 'Failed',
             self::COMPLETED        => 'Completed',
         };
     }
@@ -74,7 +78,7 @@ enum PaymentStatus: string
             self::PAID, self::COMPLETED => 'text-green-600 bg-green-50',
             self::PENDING               => 'text-yellow-600 bg-yellow-50',
             self::AWAITING_APPROVAL     => 'text-blue-600 bg-blue-50',
-            self::CANCELLED             => 'text-red-600 bg-red-50',
+            self::CANCELLED, self::FAILED => 'text-red-600 bg-red-50',
             self::PARTIAL               => 'text-orange-600 bg-orange-50',
         };
     }
