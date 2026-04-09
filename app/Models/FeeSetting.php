@@ -47,15 +47,24 @@ class FeeSetting extends Model
     {
         $settings = self::allActive();
 
-        $misc = $settings
-            ->whereIn('category', ['miscellaneous', 'other'])
-            ->map(fn ($s) => [
-                'name' => $s->label,
-                'category' => $s->category === 'other' ? 'Other' : 'Miscellaneous',
-                'amount' => (float) $s->amount,
-            ])
-            ->values()
-            ->toArray();
+        $miscellaneous = [];
+        $other = [];
+
+        foreach ($settings as $s) {
+            if ($s->category === 'miscellaneous') {
+                $miscellaneous[] = [
+                    'name' => $s->label,
+                    'category' => 'Miscellaneous',
+                    'amount' => (float) $s->amount,
+                ];
+            } elseif ($s->category === 'other') {
+                $other[] = [
+                    'name' => $s->label,
+                    'category' => 'Other',
+                    'amount' => (float) $s->amount,
+                ];
+            }
+        }
 
         $terms = [];
         for ($i = 1; $i <= 5; $i++) {
@@ -71,8 +80,8 @@ class FeeSetting extends Model
         return [
             'tuition_per_unit' => (float) ($settings['tuition_per_unit']->amount ?? 364.00),
             'lab_fee_per_subject' => (float) ($settings['lab_fee_per_subject']->amount ?? 1656.00),
-            'miscellaneous' => $misc,
-            'other' => [],
+            'miscellaneous' => $miscellaneous,
+            'other' => $other,
             'terms' => $terms ?: config('fees.terms'),
         ];
     }

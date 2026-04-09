@@ -23,7 +23,6 @@ class FeeSettingsSeeder extends Seeder
 
             // ── Miscellaneous ────────────────────────────────────────────────
             ['key' => 'misc_registration', 'label' => 'Registration Fee', 'amount' => 0.00, 'category' => 'miscellaneous'],
-            ['key' => 'misc_entrep', 'label' => 'Entrepreneurship Fee', 'amount' => 600.00, 'category' => 'miscellaneous'],
             ['key' => 'misc_lms', 'label' => 'LMS Fee', 'amount' => 450.00, 'category' => 'miscellaneous'],
             ['key' => 'misc_library', 'label' => 'Library Fee', 'amount' => 450.00, 'category' => 'miscellaneous'],
             ['key' => 'misc_athletic', 'label' => 'Athletic Fee', 'amount' => 550.00, 'category' => 'miscellaneous'],
@@ -34,6 +33,7 @@ class FeeSettingsSeeder extends Seeder
             ['key' => 'misc_biccs', 'label' => 'BICCS/PCCL/League Fee', 'amount' => 150.00, 'category' => 'miscellaneous'],
             ['key' => 'misc_faculty', 'label' => 'Faculty Development', 'amount' => 250.00, 'category' => 'miscellaneous'],
             ['key' => 'misc_guidance', 'label' => 'Guidance Services', 'amount' => 225.00, 'category' => 'miscellaneous'],
+            ['key' => 'misc_entrep', 'label' => 'Entrepreneurship Fee', 'amount' => 600.00, 'category' => 'miscellaneous'],
 
             // ── Other ────────────────────────────────────────────────────────
             ['key' => 'misc_medical', 'label' => 'Medical Fee', 'amount' => 300.00, 'category' => 'other'],

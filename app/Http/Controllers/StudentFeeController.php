@@ -64,8 +64,9 @@ class StudentFeeController extends Controller
 
     private function buildSubjectMap(): array
     {
-        $rate   = (float) config('fees.tuition_per_unit',    364.00);
-        $labFee = (float) config('fees.lab_fee_per_subject', 1656.00);
+        $fees   = \App\Models\FeeSetting::forController();
+        $rate   = $fees['tuition_per_unit'];
+        $labFee = $fees['lab_fee_per_subject'];
 
         return Subject::where('is_active', true)
             ->orderBy('course')
@@ -244,7 +245,8 @@ class StudentFeeController extends Controller
         });
 
         // Build miscellaneous fee lines for display
-        $miscItems = config('fees.miscellaneous', []);
+        $fees      = \App\Models\FeeSetting::forController();
+        $miscItems = array_merge($fees['miscellaneous'], $fees['other'] ?? []);
         $miscTotal = collect($miscItems)->sum('amount');
 
         // Define year levels, semesters, and school years for the form
@@ -300,8 +302,8 @@ class StudentFeeController extends Controller
             'courses'          => $this->allCourses(),
             'miscItems'        => $miscItems,
             'miscTotal'        => $miscTotal,
-            'tuitionPerUnit'   => (float) config('fees.tuition_per_unit', 364.00),
-            'labFeePerSubject' => (float) config('fees.lab_fee_per_subject', 1656.00),
+            'tuitionPerUnit'   => $fees['tuition_per_unit'],
+            'labFeePerSubject' => $fees['lab_fee_per_subject'],
             'enrollmentsMap'   => $enrollmentsMap,
         ]);
     }   
@@ -343,8 +345,9 @@ class StudentFeeController extends Controller
 
         DB::beginTransaction();
         try {
-            $rate   = (float) config('fees.tuition_per_unit',    364.00);
-            $labFee = (float) config('fees.lab_fee_per_subject', 1656.00);
+            $fees   = \App\Models\FeeSetting::forController();
+            $rate   = $fees['tuition_per_unit'];
+            $labFee = $fees['lab_fee_per_subject'];
 
             // Load selected subjects from DB — trust the database, not the client
             $subjects = Subject::whereIn('id', $base['selected_subjects'])
@@ -397,7 +400,7 @@ class StudentFeeController extends Controller
             $labTotal     = round($subjects->filter(fn ($s) => ($s->lab_units ?? 0) > 0)->count() * $labFee, 2);
 
             // Fixed miscellaneous block — same every semester
-            $miscItems = collect(config('fees.miscellaneous', []));
+            $miscItems = collect(array_merge($fees['miscellaneous'], $fees['other'] ?? []));
             $miscTotal = round($miscItems->sum('amount'), 2);
 
             $grandTotal = round($tuitionTotal + $labTotal + $miscTotal, 2);
@@ -748,8 +751,8 @@ class StudentFeeController extends Controller
             // card header stays in sync with config/fees.php automatically.
             // Previously Show.vue hardcoded 364.00 and 1656.00 — if rates change
             // in config/fees.php the label would silently show the wrong values.
-            'tuitionPerUnit'              => (float) config('fees.tuition_per_unit',    364.00),
-            'labFeePerSubject'            => (float) config('fees.lab_fee_per_subject', 1656.00),
+            'tuitionPerUnit'              => \App\Models\FeeSetting::forController()['tuition_per_unit'],
+            'labFeePerSubject'            => \App\Models\FeeSetting::forController()['lab_fee_per_subject'],
         ]);
     }
 
@@ -972,6 +975,8 @@ class StudentFeeController extends Controller
                 ->with('info', 'Please create an assessment for this student first.');
         }
 
+        $fees = \App\Models\FeeSetting::forController();
+
         return Inertia::render('StudentFees/Edit', [
             'student'          => [
                 'id'             => $student->id,
@@ -992,12 +997,12 @@ class StudentFeeController extends Controller
             ],
             'assessment'       => $assessment,
             'courses'          => $this->allCourses(),
-            'feeCategories'    => config('fees.categories', []),
+            'feeCategories'    => ['Tuition', 'Laboratory', 'Miscellaneous', 'Other'],
             // For edit, still support manual fee items in case subjects change
             'subjectMap'       => $this->buildSubjectMap(),
-            'tuitionPerUnit'   => (float) config('fees.tuition_per_unit',    364.00),
-            'labFeePerSubject' => (float) config('fees.lab_fee_per_subject', 1656.00),
-            'miscItems'        => config('fees.miscellaneous', []),
+            'tuitionPerUnit'   => $fees['tuition_per_unit'],
+            'labFeePerSubject' => $fees['lab_fee_per_subject'],
+            'miscItems'        => array_merge($fees['miscellaneous'], $fees['other'] ?? []),
         ]);
     }
 
@@ -1431,7 +1436,8 @@ class StudentFeeController extends Controller
     private function createPaymentTerms(StudentAssessment $assessment, float $total): void
     {
         /** @var array<int, array{name: string, percentage: float}> $termDefs */
-        $termDefs  = config('fees.terms');
+        $feeConfig = \App\Models\FeeSetting::forController();
+        $termDefs  = $feeConfig['terms'];
         $lastOrder = array_key_last($termDefs);
         $allocated = 0.00;
 

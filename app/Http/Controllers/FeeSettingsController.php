@@ -17,8 +17,7 @@ class FeeSettingsController extends Controller
             ->orderByRaw("FIELD(category, 'rate', 'miscellaneous', 'other', 'term')")
             ->orderBy('id')
             ->get()
-            ->groupBy('category')
-            ->toArray();
+            ->groupBy('category');
 
         $miscTotal = FeeSetting::whereIn('category', ['miscellaneous', 'other'])
             ->where('is_active', true)
