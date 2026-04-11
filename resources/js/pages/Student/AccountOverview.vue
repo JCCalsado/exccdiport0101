@@ -98,6 +98,7 @@ const props = withDefaults(
     defineProps<{
         account: Account;
         transactions: Transaction[];
+        totalPaid: number;
         fees: Fee[];
         currentTerm?: CurrentTerm;
         tab?: string;
@@ -414,11 +415,9 @@ const paymentHistory = computed(() => {
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 });
 
-// Total paid across all terms/periods — sum of all confirmed payments.
+// Total paid for the current assessment — passed directly from backend
 const totalPaid = computed(() => {
-    return props.transactions
-        .filter((t) => t.kind === 'payment' && t.status === 'paid')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+    return props.totalPaid;
 });
 
 const selectedTermInfo = computed(() => {

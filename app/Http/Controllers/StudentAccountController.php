@@ -58,6 +58,20 @@ class StudentAccountController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Calculate totalPaid for the current (latest) assessment only
+        // This is the sum of all successful payment transactions (status='paid') 
+        // for the current assessment, excluding charge transactions.
+        $totalPaid = 0;
+        if ($assessment) {
+            $totalPaid = (float) $transactions
+                ->where('status', 'paid')
+                ->filter(function ($txn) use ($assessment) {
+                    $assessmentId = data_get($txn->meta, 'assessment_id');
+                    return $assessmentId === $assessment->id;
+                })
+                ->sum('amount');
+        }
+
         $notifications = Notification::where(function($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhere('target_role', 'student');
@@ -89,6 +103,7 @@ class StudentAccountController extends Controller
         return Inertia::render('Student/AccountOverview', [
             'account'                      => $account,
             'transactions'                 => $transactions,
+            'totalPaid'                    => $totalPaid,
             'fees'                         => [],
             'latestAssessment'             => $assessment,
             'allAssessments'               => $allAssessments,

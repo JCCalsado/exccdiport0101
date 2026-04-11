@@ -131,6 +131,19 @@ class StudentFeeController extends Controller
 
         $students = $query->paginate(15)->withQueryString();
 
+        // Calculate remaining_balance for each student
+        // Source of truth: StudentPaymentTerm.balance (sum of all unpaid term balances)
+        // Fallback: Account.balance if no active assessment exists
+        $students->getCollection()->transform(function ($student) {
+            if ($student->latestAssessment && $student->latestAssessment->paymentTerms) {
+                $remainingBalance = $student->latestAssessment->paymentTerms->sum('balance');
+            } else {
+                $remainingBalance = (float) ($student->account?->balance ?? 0);
+            }
+            $student->remaining_balance = round($remainingBalance, 2);
+            return $student;
+        });
+
         $courses = $this->allCourses();
 
         $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
@@ -634,6 +647,20 @@ class StudentFeeController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Calculate totalPaid for the current (latest) assessment only
+        // This is the sum of all successful payment transactions (status='paid') 
+        // for the current assessment, excluding charge transactions.
+        $totalPaid = 0;
+        if ($latestAssessment) {
+            $totalPaid = (float) $transactions
+                ->where('status', 'paid')
+                ->filter(function ($txn) use ($latestAssessment) {
+                    $assessmentId = data_get($txn->meta, 'assessment_id');
+                    return $assessmentId === $latestAssessment->id;
+                })
+                ->sum('amount');
+        }
+
         $payments = Payment::where('student_id', $student->student->id ?? null)
             ->with(['assessment:id,semester,school_year,year_level'])
             ->orderBy('paid_at', 'desc')
@@ -742,6 +769,7 @@ class StudentFeeController extends Controller
             'transactions'                 => $transactions,
             'payments'                     => $payments,
             'feeBreakdown'                 => $feeBreakdown->values(),
+            'totalPaid'                    => $totalPaid,
             'backUrl'                      => $backUrl,
             // Powers the Enrolled Subjects accordion on Show.vue.
             // enrolledSubjectsByAssessment[assessmentId] = int[] of subject IDs

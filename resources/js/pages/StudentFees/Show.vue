@@ -238,7 +238,7 @@ const miscellaneousItemsByGroup = computed((): MiscItemGroup[] => {
 
     // Classify miscellaneous items based on name patterns
     const academicPatterns = ['registration', 'lms', 'library'];
-    const studentPatterns = ['athletic', 'prisaa', 'publication', 'id', 'biccs', 'pccl', 'league', 'audio-visual', 'faculty development', 'guidance'];
+    const studentPatterns = ['athletic', 'prisaa', 'publication', 'id', 'biccs', 'pccl', 'league', 'audio-visual', 'faculty development', 'guidance', 'entrep'];
     const supportPatterns = ['medical', 'insurance', 'cultural', 'maintenance'];
 
     for (const item of miscItems) {
