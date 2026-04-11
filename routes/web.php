@@ -112,6 +112,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('student-fees')->g
 // Accounting-only routes for assessment management and payment recording
 Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('student-fees')->group(function () {
     Route::get('/create', [StudentFeeController::class, 'create'])->name('student-fees.create');
+    Route::get('/search', [StudentFeeController::class, 'search'])->name('student-fees.search');
     Route::post('/', [StudentFeeController::class, 'store'])->name('student-fees.store');
     Route::post('/{userId}/payments', [StudentFeeController::class, 'storePayment'])
         ->whereNumber('userId')

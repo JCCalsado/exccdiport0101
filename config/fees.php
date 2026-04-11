@@ -1,100 +1,86 @@
 <?php
 
 /**
- * School Fee Configuration — CCDI (AY 2025-2026)
- * ============================================================================
- * SOURCE OF TRUTH: Rate of Conduct of Consultation, April 2025
+ * CCDI Fee Configuration — AY 2025-2026
  *
- * BILLING MODEL
- * ─────────────
- * Assessment total = (Σ enrolled units × tuition_per_unit)
- *                  + (Σ lab subjects × lab_fee_per_subject)
- *                  + miscellaneous total (fixed per semester)
+ * Source: Rate of Conduct of Consultation, March 4, 2025
+ * Approved increase of 15% from AY 2024-2025 rates.
  *
- * Tuition and lab fees scale with subject load.
- * Dropping a subject reduces the assessment total proportionally.
- * Miscellaneous fees are FIXED per semester regardless of load.
- *
- * CONTROLLER USAGE
- * ─────────────────
- * $rate      = config('fees.tuition_per_unit');       // 364.00
- * $labFee    = config('fees.lab_fee_per_subject');    // 1656.00
- * $miscItems = config('fees.miscellaneous');          // array of {name, category, amount}
- * $miscTotal = collect($miscItems)->sum('amount');    // 6956.00
- *
- * After editing, run: php artisan config:clear
- * ============================================================================
+ * To update rates for a new school year:
+ *   1. Change the values below
+ *   2. Run: php artisan config:clear
+ *   No other code changes required.
  */
 
 return [
 
-    // =========================================================================
-    // RATE SCHEDULE (AY 2025-2026)
-    // Source: CCDI Rate of Conduct of Consultation, March 4, 2025
-    // Previous rate (AY 2024-2025): ₱317.00/unit, lab ₱1,440.00 — increased 15%
-    // =========================================================================
+    /*
+    |--------------------------------------------------------------------------
+    | Tuition Rate
+    |--------------------------------------------------------------------------
+    | Charged per lecture unit enrolled.
+    | AY 2024-2025: ₱317.00  →  AY 2025-2026: ₱364.00 (+15%)
+    */
+    'tuition_per_lec_unit' => env('CCDI_TUITION_PER_UNIT', 364.00),
 
-    // Tuition charged per enrolled unit across all subjects
-    'tuition_per_unit' => 364.00,
+    /*
+    |--------------------------------------------------------------------------
+    | Laboratory Fee
+    |--------------------------------------------------------------------------
+    | Charged ONCE per subject that has a laboratory component.
+    | This is NOT per lab unit — it's per lab subject.
+    | AY 2024-2025: ₱1,440.00  →  AY 2025-2026: ₱1,656.00 (+15%)
+    */
+    'lab_fee_per_subject' => env('CCDI_LAB_FEE_PER_SUBJECT', 1656.00),
 
-    // Laboratory fee charged once per subject where has_lab = true
-    // Regardless of how many lab units the subject carries
-    'lab_fee_per_subject' => 1656.00,
+    /*
+    |--------------------------------------------------------------------------
+    | Miscellaneous Fees (Fixed Per Semester)
+    |--------------------------------------------------------------------------
+    | Charged once per semester regardless of subject load.
+    | This is the sum of all line items in the misc fee schedule.
+    |
+    | Breakdown:
+    |   Entrep Fee          ₱600
+    |   Registration Fee    ₱600
+    |   LMS                 ₱450
+    |   Library Fee         ₱450
+    |   Athletic Fee        ₱550
+    |   PRISAA              ₱300
+    |   Publication Fee     ₱200
+    |   Audio-Visual Fee    ₱250
+    |   ID                  ₱300
+    |   BICCS/PCCL/League   ₱150
+    |   Faculty Development ₱250
+    |   Guidance Services   ₱225
+    |   Medical             ₱300
+    |   Insurance Fee       ₱100
+    |   Cultural Arts Fee   ₱175
+    |   Maintenance Fee     ₱400
+    |   ─────────────────────────
+    |   TOTAL               ₱5,300
+    |
+    | NOTE: Laboratory fee (₱1,656 per lab subject) is billed separately
+    | via lab_fee_per_subject above and is NOT included in this total.
+    */
+    'misc_fee_fixed' => env('CCDI_MISC_FEE', 5300.00),
 
-    // =========================================================================
-    // MISCELLANEOUS FEES — FIXED PER SEMESTER
-    // Charged every semester regardless of how many subjects are enrolled.
-    // Total: ₱4,700.00
-    // =========================================================================
-    'miscellaneous' => [
-        ['name' => 'Registration Fee',      'category' => 'Miscellaneous', 'amount' => 0.00],
-        ['name' => 'LMS Fee',               'category' => 'Miscellaneous', 'amount' => 450.00],
-        ['name' => 'Library Fee',           'category' => 'Miscellaneous', 'amount' => 450.00],
-        ['name' => 'Athletic Fee',          'category' => 'Miscellaneous', 'amount' => 550.00],
-        ['name' => 'PRISAA Fee',            'category' => 'Miscellaneous', 'amount' => 300.00],
-        ['name' => 'Publication Fee',       'category' => 'Miscellaneous', 'amount' => 200.00],
-        ['name' => 'Audio-Visual Fee',      'category' => 'Miscellaneous', 'amount' => 250.00],
-        ['name' => 'ID Fee',                'category' => 'Miscellaneous', 'amount' => 300.00],
-        ['name' => 'BICCS/PCCL/League Fee', 'category' => 'Miscellaneous', 'amount' => 150.00],
-        ['name' => 'Faculty Development',   'category' => 'Miscellaneous', 'amount' => 250.00],
-        ['name' => 'Guidance Services',     'category' => 'Miscellaneous', 'amount' => 225.00],
-        ['name' => 'Medical Fee',           'category' => 'Other',         'amount' => 300.00],
-        ['name' => 'Insurance Fee',         'category' => 'Other',         'amount' => 100.00],
-        ['name' => 'Cultural Arts Fee',     'category' => 'Other',         'amount' => 175.00],
-        ['name' => 'Maintenance Fee',       'category' => 'Other',         'amount' => 400.00],
-        // Total: 6,956.00
-    ],
-
-    // =========================================================================
-    // FEE CATEGORIES
-    // =========================================================================
-    'categories' => [
-        'Tuition',
-        'Laboratory',
-        'Miscellaneous',
-        'Other',
-    ],
-
-    
-    // =========================================================================
-    // PAYMENT TERM DEFINITIONS
-    // Percentages must sum to exactly 100.
-    // Last term absorbs cent-level rounding in StudentFeeController.
-    // =========================================================================
-    // =========================================================================
-    // PAYMENT TERM DEFINITIONS — Updated per CCDI directive
-    // Distribution: Registration 30%, Prelim 21%, Midterm 21%, Semi-Final 18%,
-    // Final 10%. Sum = 100%. Last term absorbs cent-level rounding differences.
-    // IMPORTANT: Changing these values only affects NEW assessments created
-    // after running `php artisan config:clear`. Existing student_payment_terms
-    // rows in the database are NOT retroactively updated.
-    // =========================================================================
-    'terms' => [
-        1 => ['name' => 'Upon Registration', 'percentage' => 30.00],
-        2 => ['name' => 'Prelim',            'percentage' => 21.00],
-        3 => ['name' => 'Midterm',           'percentage' => 21.00],
-        4 => ['name' => 'Semi-Final',        'percentage' => 18.00],
-        5 => ['name' => 'Final',             'percentage' => 10.00],
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Terms
+    |--------------------------------------------------------------------------
+    | How the total assessment is split into payment terms.
+    | Percentages must sum to 100.
+    |
+    | term_name   → label shown to student/accounting
+    | percentage  → portion of total due at that term (0-100)
+    */
+    'payment_terms' => [
+        ['term_name' => 'Upon Registration', 'term_order' => 1, 'percentage' => 25],
+        ['term_name' => 'Prelim',            'term_order' => 2, 'percentage' => 25],
+        ['term_name' => 'Midterm',           'term_order' => 3, 'percentage' => 25],
+        ['term_name' => 'Semi-Final',        'term_order' => 4, 'percentage' => 12.5],
+        ['term_name' => 'Final',             'term_order' => 5, 'percentage' => 12.5],
     ],
 
 ];

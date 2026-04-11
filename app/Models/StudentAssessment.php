@@ -5,145 +5,100 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class StudentAssessment extends Model
 {
     protected $fillable = [
         'user_id',
-        'assessment_number',
-        'course',
-        'year_level',
         'semester',
         'school_year',
-        'tuition_fee',
-        'other_fees',
-        'total_assessment',
-        'subjects',
-        'fee_breakdown',
-        'status',
-        'created_by',
+        'lec_units',        // ← NEW: lecture units (from matriculation form)
+        'lab_units',        // ← NEW: lab units (informational)
+        'lab_subjects',     // ← NEW: number of subjects with lab (for lab fee billing)
+        'status',           // active | archived
     ];
 
     protected $casts = [
-        'tuition_fee'       => 'decimal:2',
-        'other_fees'        => 'decimal:2',
-        'total_assessment'  => 'decimal:2',
-        'subjects'          => 'array',
-        'fee_breakdown'     => 'array',
+        'lec_units'    => 'integer',
+        'lab_units'    => 'integer',
+        'lab_subjects' => 'integer',
     ];
 
-    /**
-     * Boot method: automatically bust the Inertia shared-data cache
-     * whenever an assessment is created or updated so the sidebar/header
-     * always reflects the correct year_level / semester / school_year.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        static::created(fn (self $a) => static::clearUserCache($a->user_id));
-        static::updated(fn (self $a) => static::clearUserCache($a->user_id));
-    }
-
-    /**
-     * Clear the cached latestAssessmentInfo for a given user.
-     * Call this any time you create or update an assessment outside of Eloquent
-     * (e.g., bulk inserts via DB::table()).
-     */
-    public static function clearUserCache(int $userId): void
-    {
-        Cache::forget("student_assessment_info:{$userId}");
-    }
-
-    // =========================================================================
-    // RELATIONSHIPS
-    // =========================================================================
+    // ─── Relationships ────────────────────────────────────────────────────────
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function student(): BelongsTo
-    {
-        return $this->belongsTo(Student::class, 'user_id', 'user_id');
-    }
-
     public function paymentTerms(): HasMany
     {
-        return $this->hasMany(StudentPaymentTerm::class, 'student_assessment_id');
+        return $this->hasMany(StudentPaymentTerm::class, 'student_assessment_id')
+            ->orderBy('term_order');
     }
 
-    // =========================================================================
-    // HELPERS
-    // =========================================================================
+    // ─── Computed Attributes ──────────────────────────────────────────────────
 
     /**
-     * Generate a unique assessment number in the format ASS-YYYY-NNNN.
-     *
-     * CONTRACT: This method MUST be called inside an active DB transaction
-     * (i.e. after DB::beginTransaction() has been called by the caller).
-     * The SELECT ... FOR UPDATE lock prevents two concurrent requests from
-     * reading the same "last number" and producing a duplicate assessment
-     * number before either transaction commits.
-     *
-     * Correct usage (in StudentFeeController::store()):
-     *
-     *   DB::beginTransaction();
-     *   try {
-     *       $assessment = StudentAssessment::create([
-     *           'assessment_number' => StudentAssessment::generateAssessmentNumber(),
-     *           ...
-     *       ]);
-     *       DB::commit();
-     *   } catch (\Exception $e) {
-     *       DB::rollBack();
-     *       ...
-     *   }
-     *
-     * @throws \RuntimeException if called outside a transaction.
+     * Total units displayed on the UI (LEC + LAB).
+     * This matches the "Total Units" column on the matriculation form.
      */
-    public static function generateAssessmentNumber(): string
+    public function getTotalUnitsAttribute(): int
     {
-        // Guard: enforce the transaction contract so callers cannot accidentally
-        // use this outside a transaction and produce duplicate numbers.
-        if (DB::transactionLevel() === 0) {
-            throw new \RuntimeException(
-                'StudentAssessment::generateAssessmentNumber() must be called inside an active DB transaction.'
-            );
-        }
-
-        $year = now()->year;
-
-        // SELECT ... FOR UPDATE acquires a row-level lock on the latest record
-        // for the current year. Any concurrent transaction attempting the same
-        // query will block here until the first one commits or rolls back,
-        // guaranteeing sequential number assignment.
-        $last = self::where('assessment_number', 'like', "ASS-{$year}-%")
-            ->orderBy('id', 'desc')
-            ->lockForUpdate()
-            ->first();
-
-        $lastNumber = $last
-            ? (int) substr($last->assessment_number, -4)
-            : 0;
-
-        return sprintf('ASS-%d-%04d', $year, $lastNumber + 1);
+        return $this->lec_units + $this->lab_units;
     }
 
     /**
-     * Recalculate and persist the total_assessment from its components.
+     * Compute the tuition fee for this assessment.
+     * Uses the live config value so rate changes take effect immediately.
      */
-    public function calculateTotal(): void
+    public function getTuitionFeeAttribute(): float
     {
-        $this->total_assessment = $this->tuition_fee + $this->other_fees;
-        $this->save();
+        return $this->lec_units * (float) config('fees.tuition_per_lec_unit', 364.00);
+    }
+
+    /**
+     * Compute the lab fee for this assessment.
+     */
+    public function getLabFeeAttribute(): float
+    {
+        return $this->lab_subjects * (float) config('fees.lab_fee_per_subject', 1656.00);
+    }
+
+    /**
+     * Fixed miscellaneous fees.
+     */
+    public function getMiscFeeAttribute(): float
+    {
+        return (float) config('fees.misc_fee_fixed', 5300.00);
+    }
+
+    /**
+     * Total assessment amount (tuition + lab + misc).
+     */
+    public function getTotalAssessmentAttribute(): float
+    {
+        return $this->tuition_fee + $this->lab_fee + $this->misc_fee;
+    }
+
+    /**
+     * Outstanding balance — sum of unpaid payment term balances.
+     * This is the source of truth. Never compute from raw transactions.
+     */
+    public function getOutstandingBalanceAttribute(): float
+    {
+        return (float) $this->paymentTerms->sum('balance');
+    }
+
+    // ─── Scopes ───────────────────────────────────────────────────────────────
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->where('status', 'archived');
     }
 }
