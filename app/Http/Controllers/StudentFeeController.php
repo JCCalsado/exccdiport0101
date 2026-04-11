@@ -78,7 +78,6 @@ class StudentFeeController extends Controller
 
     public function index(): Response
     {
-        $this->authorize('viewAny', StudentAssessment::class);
 
         $assessments = StudentAssessment::with(['user'])
             ->where('status', 'active')
@@ -111,8 +110,6 @@ class StudentFeeController extends Controller
 
     public function create(Request $request): Response
     {
-        $this->authorize('create', StudentAssessment::class);
-
         // Pre-load the selected student if ?student_id= is passed
         $preselectedStudent = null;
         if ($request->filled('student_id')) {
@@ -151,7 +148,6 @@ class StudentFeeController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('create', StudentAssessment::class);
 
         $validated = $request->validate([
             'user_id'      => ['required', 'exists:users,id'],
@@ -239,7 +235,6 @@ class StudentFeeController extends Controller
 
     public function show(int $userId): Response
     {
-        $this->authorize('view', StudentAssessment::class);
 
         $user = User::with([
             'latestAssessment.paymentTerms',
@@ -286,7 +281,6 @@ class StudentFeeController extends Controller
 
     public function edit(int $userId): Response
     {
-        $this->authorize('update', StudentAssessment::class);
 
         $user       = User::findOrFail($userId);
         $assessment = StudentAssessment::where('user_id', $userId)
@@ -327,7 +321,6 @@ class StudentFeeController extends Controller
 
     public function update(Request $request, int $userId)
     {
-        $this->authorize('update', StudentAssessment::class);
 
         $validated = $request->validate([
             'semester'     => ['required', 'in:1st,2nd,Summer'],
