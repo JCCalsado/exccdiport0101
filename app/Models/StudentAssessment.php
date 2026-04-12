@@ -14,17 +14,16 @@ class StudentAssessment extends Model
         'year_level',
         'semester',
         'school_year',
-        'lec_units',        // ← NEW: lecture units (from matriculation form)
-        'lab_units',        // ← NEW: lab units (informational)
-        'lab_subjects',     // ← NEW: number of subjects with lab (for lab fee billing)
-        'status',           // active | archived
-        'courser',
+        'lec_units',        // ← lecture units (from matriculation form)
+        'lab_units',        // ← lab units (informational)
+        'total_assessment', // ← total amount being assessed
+        'status',           // active | completed
     ];
 
     protected $casts = [
-        'lec_units'    => 'integer',
-        'lab_units'    => 'integer',
-        'lab_subjects' => 'integer',
+        'lec_units'      => 'integer',
+        'lab_units'      => 'integer',
+        'total_assessment' => 'decimal:2',
     ];
 
     // ─── Relationships ────────────────────────────────────────────────────────

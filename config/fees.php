@@ -27,11 +27,10 @@ return [
     |--------------------------------------------------------------------------
     | Laboratory Fee
     |--------------------------------------------------------------------------
-    | Charged ONCE per subject that has a laboratory component.
-    | This is NOT per lab unit — it's per lab subject.
+    | Charged per laboratory unit enrolled.
     | AY 2024-2025: ₱1,440.00  →  AY 2025-2026: ₱1,656.00 (+15%)
     */
-    'lab_fee_per_subject' => env('CCDI_LAB_FEE_PER_SUBJECT', 1656.00),
+    'lab_fee_per_unit' => env('CCDI_LAB_FEE_PER_UNIT', 1656.00),
 
     /*
     |--------------------------------------------------------------------------
@@ -41,7 +40,6 @@ return [
     | This is the sum of all line items in the misc fee schedule.
     |
     | Breakdown:
-    |   Entrep Fee          ₱600
     |   Registration Fee    ₱600
     |   LMS                 ₱450
     |   Library Fee         ₱450
@@ -50,7 +48,6 @@ return [
     |   Publication Fee     ₱200
     |   Audio-Visual Fee    ₱250
     |   ID                  ₱300
-    |   BICCS/PCCL/League   ₱150
     |   Faculty Development ₱250
     |   Guidance Services   ₱225
     |   Medical             ₱300
@@ -58,12 +55,12 @@ return [
     |   Cultural Arts Fee   ₱175
     |   Maintenance Fee     ₱400
     |   ─────────────────────────
-    |   TOTAL               ₱5,300
+    |   TOTAL               ₱4,700
     |
-    | NOTE: Laboratory fee (₱1,656 per lab subject) is billed separately
-    | via lab_fee_per_subject above and is NOT included in this total.
+    | NOTE: Laboratory fee (₱1,656 per lab unit) is billed separately
+    | via lab_fee_per_unit above and is NOT included in this total.
     */
-    'misc_fee_fixed' => env('CCDI_MISC_FEE', 5300.00),
+    'misc_fee_fixed' => env('CCDI_MISC_FEE', 4700.00),
 
     /*
     |--------------------------------------------------------------------------

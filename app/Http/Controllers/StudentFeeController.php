@@ -25,18 +25,18 @@ class StudentFeeController extends Controller
      *
      * Formula (AY 2025-2026):
      *   Tuition  = lec_units × ₱364
-     *   Lab Fee  = lab_subjects × ₱1,656  (per-subject, not per-unit)
-     *   Misc Fee = ₱5,300 (fixed)
+     *   Lab Fee  = lab_units × ₱1,656
+     *   Misc Fee = ₱4,700 (fixed)
      *   Total    = tuition + lab_fee + misc_fee
      */
-    private function computeTotal(int $lecUnits, int $labSubjects): array
+    private function computeTotal(int $lecUnits, int $labUnits): array
     {
-        $tuitionPerUnit  = (float) config('fees.tuition_per_lec_unit', 364.00);
-        $labFeePerSubject = (float) config('fees.lab_fee_per_subject', 1656.00);
-        $miscFeeFixed    = (float) config('fees.misc_fee_fixed', 5300.00);
+        $tuitionPerUnit = (float) config('fees.tuition_per_lec_unit', 364.00);
+        $labFeePerUnit  = (float) config('fees.lab_fee_per_unit', 1656.00);
+        $miscFeeFixed   = (float) config('fees.misc_fee_fixed', 4700.00);
 
         $tuitionFee = $lecUnits * $tuitionPerUnit;
-        $labFee     = $labSubjects * $labFeePerSubject;
+        $labFee     = $labUnits * $labFeePerUnit;
         $miscFee    = $miscFeeFixed;
         $total      = $tuitionFee + $labFee + $miscFee;
 
@@ -182,10 +182,10 @@ class StudentFeeController extends Controller
 
         // Pass fee rates to the frontend so it can compute live preview
         $feeRates = [
-            'tuition_per_lec_unit'  => config('fees.tuition_per_lec_unit', 364.00),
-            'lab_fee_per_subject'   => config('fees.lab_fee_per_subject', 1656.00),
-            'misc_fee_fixed'        => config('fees.misc_fee_fixed', 5300.00),
-            'payment_terms'         => config('fees.payment_terms', []),
+            'tuition_per_lec_unit' => config('fees.tuition_per_lec_unit', 364.00),
+            'lab_fee_per_unit'     => config('fees.lab_fee_per_unit', 1656.00),
+            'misc_fee_fixed'       => config('fees.misc_fee_fixed', 4700.00),
+            'payment_terms'        => config('fees.payment_terms', []),
         ];
 
         return Inertia::render('StudentFees/Create', [
@@ -202,12 +202,11 @@ class StudentFeeController extends Controller
     {
 
         $validated = $request->validate([
-            'user_id'      => ['required', 'exists:users,id'],
-            'semester'     => ['required', 'in:1st,2nd,Summer'],
-            'school_year'  => ['required', 'string', 'max:20'],  // e.g. "2025-2026"
-            'lec_units'    => ['required', 'integer', 'min:0', 'max:30'],
-            'lab_units'    => ['required', 'integer', 'min:0', 'max:10'],
-            'lab_subjects' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'user_id'     => ['required', 'exists:users,id'],
+            'semester'    => ['required', 'in:1st,2nd,Summer'],
+            'school_year' => ['required', 'string', 'max:20'],  // e.g. "2025-2026"
+            'lec_units'   => ['required', 'integer', 'min:0', 'max:30'],
+            'lab_units'   => ['required', 'integer', 'min:0', 'max:10'],
         ]);
 
         // Ensure this student doesn't already have an active assessment for the same semester
@@ -230,18 +229,16 @@ class StudentFeeController extends Controller
                 ->where('status', 'active')
                 ->update(['status' => 'completed']);
 
-            $validated['lab_subjects'] = $validated['lab_units'];
-
             // 2. Compute fees
             $fees = $this->computeTotal(
                 (int) $validated['lec_units'],
-                (int) $validated['lab_units']  // lab_subjects is derived from lab_units for simplicity in the form
+                (int) $validated['lab_units']
             );
 
+            // 3. Fetch student to get year_level
             $student = \App\Models\User::findOrFail($validated['user_id']);
-            dd($student->year_level, $student->toArray());
 
-            // 3. Create the assessment record
+            // 4. Create the assessment record
             $assessment = StudentAssessment::create([
                 'assessment_number' => 'ASMT-' . date('Y') . '-' . strtoupper(Str::random(6)),
                 'user_id'      => $validated['user_id'],
@@ -249,18 +246,19 @@ class StudentFeeController extends Controller
                 'school_year'  => $validated['school_year'],
                 'lec_units'    => $validated['lec_units'],
                 'lab_units'    => $validated['lab_units'],
-                'year_level'   => $validated['year_level'] ?? null, // ← idagdag ito
+                'year_level'   => $student->year_level,
+                'total_assessment' => $fees['total'],
                 'status'       => 'active',
             ]);
 
-            // 4. Build and insert payment terms
+            // 5. Build and insert payment terms
             $terms = $this->buildPaymentTerms($fees['total']);
 
             foreach ($terms as $term) {
                 $assessment->paymentTerms()->create($term);
             }
 
-            // 5. Record a charge transaction for the ledger (ASMT- prefix = assessment debit)
+            // 6. Record a charge transaction for the ledger (ASMT- prefix = assessment debit)
             Transaction::create([
                 'user_id'         => $validated['user_id'],
                 'kind'            => 'charge',
@@ -271,13 +269,12 @@ class StudentFeeController extends Controller
                 'year'            => now()->year,
                 'semester'        => $validated['semester'],
                 'meta'            => json_encode([
-                    'lec_units'    => $validated['lec_units'],
-                    'lab_units'    => $validated['lab_units'],
-                    'lab_subjects' => $validated['lab_subjects'],
-                    'tuition_fee'  => $fees['tuitionFee'],
-                    'lab_fee'      => $fees['labFee'],
-                    'misc_fee'     => $fees['miscFee'],
-                    'school_year'  => $validated['school_year'],
+                    'lec_units'   => $validated['lec_units'],
+                    'lab_units'   => $validated['lab_units'],
+                    'tuition_fee' => $fees['tuitionFee'],
+                    'lab_fee'     => $fees['labFee'],
+                    'misc_fee'    => $fees['miscFee'],
+                    'school_year' => $validated['school_year'],
                 ]),
             ]);
         });
