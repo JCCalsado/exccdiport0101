@@ -76,31 +76,83 @@ class StudentFeeController extends Controller
     //  INDEX — list all assessed students
     // ─────────────────────────────────────────────────────────────
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-
-        $assessments = StudentAssessment::with(['user'])
-            ->where('status', 'active')
-            ->latest()
-            ->paginate(20)
-            ->through(fn ($a) => [
-                'id'           => $a->id,
-                'user_id'      => $a->user_id,
-                'student_name' => $a->user->last_name . ', ' . $a->user->first_name,
-                'account_id'   => $a->user->account_id,
-                'course'       => $a->user->course,
-                'year_level'   => $a->user->year_level,
-                'semester'     => $a->semester,
-                'school_year'  => $a->school_year,
-                'lec_units'    => $a->lec_units,
-                'lab_units'    => $a->lab_units,
-                'lab_subjects' => $a->lab_subjects,
-                'total_amount' => $a->paymentTerms->sum('amount'),
-                'total_balance'=> $a->paymentTerms->sum('balance'),
+        $query = User::where('role', UserRoleEnum::STUDENT)
+            ->with([
+                'latestAssessment.paymentTerms',
+                'account',
             ]);
 
+        // Search filter
+        if ($request->filled('search')) {
+            $q = $request->search;
+            $query->where(function ($q2) use ($q) {
+                $q2->where('last_name', 'like', "%{$q}%")
+                ->orWhere('first_name', 'like', "%{$q}%")
+                ->orWhere('account_id', 'like', "%{$q}%");
+            });
+        }
+
+        // Course filter
+        if ($request->filled('course')) {
+            $query->where('course', $request->course);
+        }
+
+        // Year level filter
+        if ($request->filled('year_level')) {
+            $query->where('year_level', $request->year_level);
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            $query->whereHas('student', fn($q) => $q->where('enrollment_status', $request->status));
+        }
+
+        $students = $query->paginate(20)->through(fn($u) => [
+            'id'                => $u->id,
+            'account_id'        => $u->account_id,
+            'name'              => $u->last_name . ', ' . $u->first_name,
+            'course'            => $u->course,
+            'year_level'        => $u->year_level,
+            'status'            => $u->student?->enrollment_status ?? 'pending',
+            'remaining_balance' => $u->account?->balance ?? 0,
+            'account'           => $u->account ? ['balance' => $u->account->balance] : null,
+            'latestAssessment'  => $u->latestAssessment ? [
+                'id'             => $u->latestAssessment->id,
+                'total_assessment' => $u->latestAssessment->total_assessment,
+                'paymentTerms'   => $u->latestAssessment->paymentTerms->map(fn($t) => [
+                    'id'         => $t->id,
+                    'term_name'  => $t->term_name,
+                    'term_order' => $t->term_order,
+                    'amount'     => $t->amount,
+                    'balance'    => $t->balance,
+                    'status'     => $t->status,
+                    'due_date'   => $t->due_date,
+                ])->values()->all(),
+            ] : null,
+        ]);
+
+        // Dropdown options for filters
+        $courses    = User::where('role', UserRoleEnum::STUDENT)
+                        ->whereNotNull('course')
+                        ->distinct()->pluck('course')->sort()->values();
+        $yearLevels = User::where('role', UserRoleEnum::STUDENT)
+                        ->whereNotNull('year_level')
+                        ->distinct()->pluck('year_level')->sort()->values();
+
         return Inertia::render('StudentFees/Index', [
-            'assessments' => $assessments,
+            'students'   => $students,
+            'filters'    => $request->only(['search', 'course', 'year_level', 'status']),
+            'courses'    => $courses,
+            'yearLevels' => $yearLevels,
+            'statuses'   => [
+                'active'    => 'Active',
+                'graduated' => 'Graduated',
+                'suspended' => 'Suspended',
+                'dropped'   => 'Dropped',
+                'pending'   => 'Pending',
+            ],
         ]);
     }
 
@@ -155,7 +207,7 @@ class StudentFeeController extends Controller
             'school_year'  => ['required', 'string', 'max:20'],  // e.g. "2025-2026"
             'lec_units'    => ['required', 'integer', 'min:0', 'max:30'],
             'lab_units'    => ['required', 'integer', 'min:0', 'max:10'],
-            'lab_subjects' => ['required', 'integer', 'min:0', 'max:10'],
+            'lab_subjects' => ['nullable', 'integer', 'min:0', 'max:10'],
         ]);
 
         // Ensure this student doesn't already have an active assessment for the same semester
@@ -176,22 +228,28 @@ class StudentFeeController extends Controller
             // 1. Archive any previous active assessment for this student
             StudentAssessment::where('user_id', $validated['user_id'])
                 ->where('status', 'active')
-                ->update(['status' => 'archived']);
+                ->update(['status' => 'completed']);
+
+            $validated['lab_subjects'] = $validated['lab_units'];
 
             // 2. Compute fees
             $fees = $this->computeTotal(
                 (int) $validated['lec_units'],
-                (int) $validated['lab_subjects']
+                (int) $validated['lab_units']  // lab_subjects is derived from lab_units for simplicity in the form
             );
+
+            $student = \App\Models\User::findOrFail($validated['user_id']);
+            dd($student->year_level, $student->toArray());
 
             // 3. Create the assessment record
             $assessment = StudentAssessment::create([
+                'assessment_number' => 'ASMT-' . date('Y') . '-' . strtoupper(Str::random(6)),
                 'user_id'      => $validated['user_id'],
                 'semester'     => $validated['semester'],
                 'school_year'  => $validated['school_year'],
                 'lec_units'    => $validated['lec_units'],
                 'lab_units'    => $validated['lab_units'],
-                'lab_subjects' => $validated['lab_subjects'],
+                'year_level'   => $validated['year_level'] ?? null, // ← idagdag ito
                 'status'       => 'active',
             ]);
 

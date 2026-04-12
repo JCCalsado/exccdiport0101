@@ -247,68 +247,41 @@ function submit() {
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <CardContent class="grid grid-cols-2 gap-6">
 
-              <!-- LEC Units -->
-              <div class="space-y-1.5">
-                <Label for="lec_units" class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
-                  Lecture Units
-                </Label>
-                <Input
-                  id="lec_units"
-                  type="number"
-                  v-model.number="form.lec_units"
-                  min="0"
-                  max="30"
-                  class="text-center text-lg font-semibold"
-                />
-                <p class="text-xs text-muted-foreground text-center">
-                  × {{ formatCurrency(feeRates.tuition_per_lec_unit) }} / unit
-                </p>
-                <p v-if="form.errors.lec_units" class="text-sm text-destructive">{{ form.errors.lec_units }}</p>
-              </div>
+                <!-- LEC Units -->
+                <div class="space-y-1.5">
+                    <Label for="lec_units" class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+                    Lecture Units
+                    </Label>
+                    <Input id="lec_units" type="number" v-model.number="form.lec_units"
+                    min="0" max="30" class="text-center text-lg font-semibold" />
+                    <p class="text-xs text-muted-foreground text-center">
+                    × {{ formatCurrency(feeRates.tuition_per_lec_unit) }} / unit
+                    </p>
+                    <p v-if="form.errors.lec_units" class="text-sm text-destructive">
+                    {{ form.errors.lec_units }}
+                    </p>
+                </div>
 
-              <!-- LAB Units (informational) -->
-              <div class="space-y-1.5">
-                <Label for="lab_units" class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-                  Lab Units
-                  <span class="text-xs text-muted-foreground">(info only)</span>
-                </Label>
-                <Input
-                  id="lab_units"
-                  type="number"
-                  v-model.number="form.lab_units"
-                  min="0"
-                  max="10"
-                  class="text-center text-lg font-semibold"
-                />
-                <p class="text-xs text-muted-foreground text-center">Not charged per unit</p>
-                <p v-if="form.errors.lab_units" class="text-sm text-destructive">{{ form.errors.lab_units }}</p>
-              </div>
+                <!-- LAB Units -->
+                <div class="space-y-1.5">
+                    <Label for="lab_units" class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
+                    Lab Units
+                    </Label>
+                    <Input id="lab_units" type="number" v-model.number="form.lab_units"
+                    min="0" max="10" class="text-center text-lg font-semibold" />
+                    <p class="text-xs text-muted-foreground text-center">
+                    × {{ formatCurrency(feeRates.lab_fee_per_subject) }} / subject
+                    </p>
+                    <p v-if="form.errors.lab_units" class="text-sm text-destructive">
+                    {{ form.errors.lab_units }}
+                    </p>
+                </div>
 
-              <!-- Lab Subjects (for lab fee billing) -->
-              <div class="space-y-1.5">
-                <Label for="lab_subjects" class="flex items-center gap-1.5">
-                  <FlaskConical class="h-3.5 w-3.5 text-orange-500" />
-                  Lab Subjects
-                </Label>
-                <Input
-                  id="lab_subjects"
-                  type="number"
-                  v-model.number="form.lab_subjects"
-                  min="0"
-                  max="10"
-                  class="text-center text-lg font-semibold"
-                />
-                <p class="text-xs text-muted-foreground text-center">
-                  × {{ formatCurrency(feeRates.lab_fee_per_subject) }} / subject
-                </p>
-                <p v-if="form.errors.lab_subjects" class="text-sm text-destructive">{{ form.errors.lab_subjects }}</p>
-              </div>
-
-            </CardContent>
+                </CardContent>
 
             <!-- Total units badge -->
             <div class="px-6 pb-4">

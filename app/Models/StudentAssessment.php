@@ -9,13 +9,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class StudentAssessment extends Model
 {
     protected $fillable = [
+        'assessment_number',
         'user_id',
+        'year_level',
         'semester',
         'school_year',
         'lec_units',        // ← NEW: lecture units (from matriculation form)
         'lab_units',        // ← NEW: lab units (informational)
         'lab_subjects',     // ← NEW: number of subjects with lab (for lab fee billing)
         'status',           // active | archived
+        'courser',
     ];
 
     protected $casts = [
