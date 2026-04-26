@@ -1,0 +1,80 @@
+<?php
+namespace App\Notifications;
+use App\Models\Transaction;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Notification;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Messages\DatabaseMessage;
+class PaymentConfirmed extends Notification
+{
+    use Queueable;
+    public function __construct(
+        private int $transactionId,
+        private float $amount,
+        private string $reference,
+    ) {}
+    public function via(object $notifiable): array
+    {
+        return ['mail', 'database'];
+    }
+    public function toMail(object $notifiable): MailMessage
+    {
+        $transaction = Transaction::with(['studentAssessment.user', 'studentPaymentTerm'])
+            ->find($this->transactionId);
+        $studentName = $notifiable->name ?? 'Student';
+        $paymentMethod = $transaction ? ucwords(str_replace('_', ' ', $transaction->payment_method ?? '')) : 'N/A';
+        $datePaid = $transaction ? $transaction->created_at->format('F d, Y') : now()->format('F d, Y');
+        $mail = (new MailMessage)
+            ->subject('Payment Receipt - CCDI Portal')
+            ->greeting('Good day,')
+            ->line('Thank you for your payment. Here are your transaction details:')
+            ->line('**Student Name:** ' . $studentName)
+            ->line('**Amount Paid:** ₱' . number_format($this->amount, 2))
+            ->line('**Payment Method:** ' . $paymentMethod)
+            ->line('**Date:** ' . $datePaid)
+            ->line('**Reference No:** ' . $this->reference)
+            ->line('**Status: PAID** ✓')
+            ->line('Thank you for using our payment system!')
+            ->salutation('- CCDI Payment Portal')
+            ->action('View Account', route('student.account', ['tab' => 'history']));
+        if ($transaction) {
+            $student = $transaction->studentAssessment->user ?? $notifiable;
+            $pdf = Pdf::loadView('pdf.receipt', [
+                'transaction' => $transaction,
+                'student' => $student,
+		'balanceBefore'     => (float) ($transaction->meta['balance_before'] ?? 0),
+		'currentBalance'    => (float) ($transaction->meta['balance_after'] ?? 0),
+		'remainingBalance'  => (float) ($transaction->meta['balance_after'] ?? 0),
+            ])->setPaper('A4', 'portrait');
+            $filename = 'receipt-' . $this->reference . '.pdf';
+            $mail->attachData($pdf->output(), $filename, [
+                'mime' => 'application/pdf',
+            ]);
+        }
+        $this->toSms($notifiable);
+        return $mail;
+    }
+    public function toSms(object $notifiable): void
+{
+    $phone = $notifiable->phone ?? null;
+    if (!$phone) return;
+
+    $message = "CCDI Portal: Your payment of P" . number_format($this->amount, 2) . " has been confirmed. Ref: " . $this->reference;
+
+    app(\App\Services\SmsService::class)->send($phone, $message);
+}
+    public function toDatabase(object $notifiable): DatabaseMessage
+    {
+        return new DatabaseMessage([
+            'type' => 'payment_confirmed',
+            'title' => 'Payment Recorded',
+            'message' => "Payment of ₱" . number_format($this->amount, 2) . " has been recorded.",
+            'reference' => $this->reference,
+            'transaction_id' => $this->transactionId,
+            'amount' => $this->amount,
+            'icon' => 'check-circle',
+            'color' => 'green',
+        ]);
+    }
+}
