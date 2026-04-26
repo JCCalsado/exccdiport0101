@@ -261,7 +261,7 @@ class NotificationController extends Controller
             }
 
             // Multi-student: check if this user is in user_ids
-            if ($notification->user_ids !== null && ! in_array($user->id, $notification->user_ids, true)) {
+            if ($notification->user_ids !== null && ! in_array($user->id, array_map('intval', $notification->user_ids), true)) {
                 abort(403, 'You are not authorised to dismiss this notification.');
             }
 
