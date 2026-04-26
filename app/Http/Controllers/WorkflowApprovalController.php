@@ -27,8 +27,8 @@ class WorkflowApprovalController extends Controller
                 'workflowInstance.workflowable.user',
             ]);
 
-        if (in_array($userRole, ['accounting', 'admin'])) {
-            // Accounting and admin can see ALL approvals on payment_approval workflows,
+        if ($userRole === 'accounting') {
+            // Accounting can see ALL approvals on payment_approval workflows,
             // regardless of which specific user ID was assigned as approver.
             $query->whereHas('workflowInstance.workflow', function ($wq) {
                 $wq->where('type', 'payment_approval');

@@ -66,9 +66,6 @@ const props = defineProps<Props>();
 
 const { formatCurrency } = useDataFormatting();
 
-// Breadcrumb uses accounting.dashboard because this page is accessible to
-// both admin and accounting roles. accounting.dashboard covers both — admin
-// is redirected from /accounting/dashboard by RoleMiddleware to their own.
 const breadcrumbs = [
     { title: 'Dashboard', href: route('accounting.dashboard') },
     { title: 'Approvals', href: route('approvals.index') },

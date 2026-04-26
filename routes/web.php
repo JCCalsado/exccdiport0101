@@ -200,10 +200,16 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('accoun
 });
 
 // ============================================
-// WORKFLOW MANAGEMENT ROUTES
+// WORKFLOW MANAGEMENT ROUTES (admin + accounting)
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
     Route::resource('workflows', WorkflowController::class);
+});
+
+// ============================================
+// PAYMENT APPROVAL ROUTES (accounting only)
+// ============================================
+Route::middleware(['auth', 'verified', 'role:accounting'])->group(function () {
     Route::get('/approvals', [WorkflowApprovalController::class, 'index'])->name('approvals.index');
     Route::get('/approvals/{approval}', [WorkflowApprovalController::class, 'show'])->name('approvals.show');
     Route::post('/approvals/{approval}/approve', [WorkflowApprovalController::class, 'approve'])->name('approvals.approve');
