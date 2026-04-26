@@ -1,0 +1,25 @@
+# Don't deploy local .env file to Vercel
+.env
+.env.local
+.env.*.local
+
+# Local development
+/node_modules
+/vendor
+.git
+storage/logs/*
+
+# Database files (local only)
+database.sqlite
+database.sqlite-journal
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development docs
+docs/

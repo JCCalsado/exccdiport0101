@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "framework": null,
+  "outputDirectory": "public",
+  "buildCommand": "curl -sS https://getcomposer.org/installer -o composer-setup.php && php composer-setup.php --install-dir=/tmp && php /tmp/composer.phar install --no-dev --optimize-autoloader && npm run build && php artisan config:cache && php artisan route:cache && php artisan view:cache && echo 'Build complete - run migrations separately'",
+  "installCommand": "npm install",
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.8.29"
+    }
+  },
+  "routes": [
+    {
+      "src": "/build/(.*)",
+      "dest": "/build/$1"
+    },
+    {
+      "src": "/storage/(.*)",
+      "dest": "/storage/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/js/$1"
+    },
+    {
+      "src": "/images/(.*)",
+      "dest": "/images/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
+  ],
+  "env": {
+    "SKIP_WAYFINDER": "true"
+  }
+}
