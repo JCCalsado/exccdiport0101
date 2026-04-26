@@ -20,7 +20,7 @@ class PaymentConfirmed extends Notification
     }
     public function toMail(object $notifiable): MailMessage
     {
-        $transaction = Transaction::with(['studentAssessment.user', 'studentPaymentTerm'])
+        $transaction = Transaction::with(['user', 'account', 'fee'])
             ->find($this->transactionId);
         $studentName = $notifiable->name ?? 'Student';
         $paymentMethod = $transaction ? ucwords(str_replace('_', ' ', $transaction->payment_method ?? '')) : 'N/A';
@@ -39,20 +39,20 @@ class PaymentConfirmed extends Notification
             ->salutation('- CCDI Payment Portal')
             ->action('View Account', route('student.account', ['tab' => 'history']));
         if ($transaction) {
-            $student = $transaction->studentAssessment->user ?? $notifiable;
+            $student = $notifiable;
             $pdf = Pdf::loadView('pdf.receipt', [
                 'transaction' => $transaction,
                 'student' => $student,
-		'balanceBefore'     => (float) ($transaction->meta['balance_before'] ?? 0),
-		'currentBalance'    => (float) ($transaction->meta['balance_after'] ?? 0),
-		'remainingBalance'  => (float) ($transaction->meta['balance_after'] ?? 0),
+		'balanceBefore'     => (float) ($notifiable->account->total_balance ?? 0) + (float) $this->amount,
+		'currentBalance'    => (float) ($notifiable->account->total_balance ?? 0),
+		'remainingBalance'  => (float) ($notifiable->account->total_balance ?? 0),
             ])->setPaper('A4', 'portrait');
             $filename = 'receipt-' . $this->reference . '.pdf';
             $mail->attachData($pdf->output(), $filename, [
                 'mime' => 'application/pdf',
             ]);
         }
-        $this->toSms($notifiable);
+        // $this->toSms($notifiable); // SMS disabled
         return $mail;
     }
     public function toSms(object $notifiable): void
