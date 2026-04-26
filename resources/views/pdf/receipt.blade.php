@@ -12,8 +12,6 @@
             margin: 0;
             padding: 24px;
         }
-
-        /* ── School Header ─────────────────────────────────── */
         .header {
             text-align: center;
             margin-bottom: 20px;
@@ -44,8 +42,6 @@
             margin-top: 3px;
             font-family: monospace;
         }
-
-        /* ── Paid stamp ─────────────────────────────────────── */
         .paid-stamp {
             display: inline-block;
             border: 3px solid #065f46;
@@ -59,8 +55,6 @@
             margin-top: 6px;
             opacity: 0.85;
         }
-
-        /* ── Section ───────────────────────────────────────── */
         .section { margin-bottom: 18px; }
         .section-title {
             font-size: 11px;
@@ -72,13 +66,9 @@
             margin-bottom: 8px;
             color: #333;
         }
-
-        /* ── Info table ────────────────────────────────────── */
         .info-table { width: 100%; border-collapse: collapse; }
         .info-table td { padding: 4px 6px; vertical-align: top; }
         .info-table .lbl { font-weight: bold; width: 30%; color: #444; }
-
-        /* ── Payment highlight box ──────────────────────────── */
         .payment-box {
             border: 2px solid #059669;
             border-radius: 6px;
@@ -86,36 +76,14 @@
             padding: 16px 20px;
             margin-bottom: 18px;
         }
-        .payment-box .pay-for {
-            font-size: 12px;
-            color: #374151;
-            margin-bottom: 4px;
-        }
+        .payment-box .pay-for { font-size: 12px; color: #374151; margin-bottom: 4px; }
         .payment-box .pay-label {
-            font-size: 11px;
-            font-weight: bold;
-            color: #065f46;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            font-size: 11px; font-weight: bold; color: #065f46;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
         }
-        .payment-box .pay-amount {
-            font-size: 28px;
-            font-weight: bold;
-            color: #065f46;
-            margin-bottom: 6px;
-        }
-        .payment-box .pay-meta {
-            font-size: 10px;
-            color: #555;
-            line-height: 1.8;
-        }
-        .payment-box .pay-meta span {
-            font-weight: bold;
-            color: #222;
-        }
-
-        /* ── Balance summary ───────────────────────────────── */
+        .payment-box .pay-amount { font-size: 28px; font-weight: bold; color: #065f46; margin-bottom: 6px; }
+        .payment-box .pay-meta { font-size: 10px; color: #555; line-height: 1.8; }
+        .payment-box .pay-meta span { font-weight: bold; color: #222; }
         .balance-box {
             border: 1px solid #d1d5db;
             border-radius: 4px;
@@ -136,8 +104,6 @@
             font-weight: bold;
         }
         .balance-row.credit { color: #065f46; }
-
-        /* ── Status badges ─────────────────────────────────── */
         .badge {
             display: inline-block;
             padding: 2px 8px;
@@ -148,8 +114,6 @@
         .badge-paid     { background: #d1fae5; color: #065f46; }
         .badge-pending  { background: #fef9c3; color: #713f12; }
         .badge-awaiting { background: #dbeafe; color: #1e40af; }
-
-        /* ── Footer ────────────────────────────────────────── */
         .footer {
             margin-top: 30px;
             text-align: center;
@@ -158,28 +122,36 @@
             border-top: 1px solid #eee;
             padding-top: 8px;
         }
-        .footer .note {
-            font-style: italic;
-            margin-top: 4px;
-        }
+        .footer .note { font-style: italic; margin-top: 4px; }
     </style>
 </head>
 <body>
 
 {{-- ══ School Header ══ --}}
 <div class="header">
-    <h1>{{ strtoupper(config('school.name', 'Computer Communication Development Institute')) }}</h1>
-    <p class="address">
-        {{ config('school.main_address') }}
-        @if(config('school.annex_address'))
-            &nbsp;|&nbsp; {{ config('school.annex_address') }}
-        @endif
-    </p>
-    <p class="address">
-        Website: {{ config('school.website') }}
-        &nbsp;|&nbsp; Hotline: {{ config('school.hotline') }}
-        &nbsp;|&nbsp; CP: {{ config('school.mobile') }}
-    </p>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:10px;">
+        <tr>
+            <td style="width:70px; vertical-align:middle; padding-right:10px;">
+                <img src="file://{{ str_replace('\\', '/', public_path('images/logo.png')) }}"
+                     width="60" height="60" style="display:block;">
+            </td>
+            <td style="vertical-align:middle; text-align:center;">
+                <h1>{{ strtoupper(config('school.name', 'Computer Communication Development Institute')) }}</h1>
+                <p class="address">
+                    {{ config('school.main_address') }}
+                    @if(config('school.annex_address'))
+                        &nbsp;|&nbsp; {{ config('school.annex_address') }}
+                    @endif
+                </p>
+                <p class="address">
+                    Website: {{ config('school.website') }}
+                    &nbsp;|&nbsp; Hotline: {{ config('school.hotline') }}
+                    &nbsp;|&nbsp; CP: {{ config('school.mobile') }}
+                </p>
+            </td>
+            <td style="width:70px;"></td>
+        </tr>
+    </table>
     <p class="doc-title">Official Payment Receipt</p>
     <p class="ref-label">Reference No.: {{ $transaction->reference }}</p>
     @if($transaction->status === 'paid')
@@ -214,23 +186,15 @@
 
 {{-- ══ Payment Detail ══ --}}
 @php
-    // What this payment is for — pulled from meta->term_name first (set by StudentPaymentService),
-    // then meta->description, then transaction type, then a generic fallback.
-    $paymentFor  = $transaction->meta['term_name']    // e.g. "Prelim"
-        ?? $transaction->meta['description']           // fallback description
-        ?? $transaction->type                          // category string
+    $paymentFor  = $transaction->meta['term_name']
+        ?? $transaction->meta['description']
+        ?? $transaction->type
         ?? 'General Payment';
-
-    $paymentDesc = $transaction->meta['description']
-        ?? null;
-
+    $paymentDesc = $transaction->meta['description'] ?? null;
     $method = $transaction->payment_channel
         ? strtoupper(str_replace('_', ' ', $transaction->payment_channel))
         : 'N/A';
-
-    $academicTerm = trim(($transaction->year ?? '') . ' ' . ($transaction->semester ?? ''))
-        ?: 'N/A';
-
+    $academicTerm = trim(($transaction->year ?? '') . ' ' . ($transaction->semester ?? '')) ?: 'N/A';
     $paidDate = $transaction->paid_at
         ? $transaction->paid_at->format('F d, Y')
         : $transaction->created_at->format('F d, Y');
@@ -275,7 +239,7 @@
         @if($remainingBalance < 0)
             <div class="balance-row total credit">
                 <span>Remaining Balance (Credit):</span>
-                <span>−&#8369;{{ number_format(abs($remainingBalance), 2) }}</span>
+                <span>&#8369;{{ number_format(abs($remainingBalance), 2) }}</span>
             </div>
             <p style="font-size:9px; color:#065f46; margin-top:4px; font-style:italic;">
                 ✔ You have a credit of &#8369;{{ number_format(abs($remainingBalance), 2) }} that will be applied to your next assessment.
