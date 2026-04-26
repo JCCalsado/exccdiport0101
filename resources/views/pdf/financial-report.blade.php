@@ -8,26 +8,21 @@
             margin: 14mm 16mm 14mm 16mm;
             size: A4 landscape;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'DejaVu Sans', sans-serif;
             font-size: 10px;
             color: #1a1a1a;
             width: 100%;
         }
-
         .header {
-            text-align: center;
             margin-bottom: 16px;
             border-bottom: 2px solid #4f46e5;
             padding-bottom: 12px;
         }
-        .header .school-name  { font-size: 16px; font-weight: bold; color: #111827; }
+        .header .school-name  { font-size: 15px; font-weight: bold; color: #111827; }
         .header .report-title { font-size: 11px; color: #4f46e5; margin-top: 3px; font-weight: 600; }
         .header .meta         { font-size: 9px;  color: #9ca3af; margin-top: 3px; }
-
         .summary-table { width: 100%; border-collapse: separate; border-spacing: 6px; margin-bottom: 18px; }
         .summary-cell {
             width: 25%;
@@ -41,7 +36,6 @@
         .summary-cell .value.green { color: #059669; }
         .summary-cell .value.red   { color: #dc2626; }
         .summary-cell .sub { font-size: 8px; color: #9ca3af; margin-top: 2px; }
-
         .section-title {
             font-size: 10px;
             font-weight: bold;
@@ -51,7 +45,6 @@
             border-left: 3px solid #4f46e5;
             padding-left: 8px;
         }
-
         table.data-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
         table.data-table thead tr { background: #f3f4f6; }
         table.data-table th {
@@ -73,10 +66,8 @@
         }
         table.data-table tr:last-child td { border-bottom: none; }
         table.data-table tr:nth-child(even) td { background: #fafafa; }
-
         .text-right  { text-align: right; }
         .text-center { text-align: center; }
-
         .col-acct   { width: 10%; white-space: nowrap; }
         .col-ref    { width: 13%; white-space: nowrap; font-family: monospace; font-size: 9px; color: #4f46e5; }
         .col-name   { width: 16%; }
@@ -84,13 +75,10 @@
         .col-amt    { width: 12%; }
         .col-bal    { width: 12%; }
         .col-status { width: 11%; }
-
         .badge { display: inline-block; padding: 2px 8px; font-size: 8.5px; font-weight: 600; border-radius: 3px; }
         .badge-amber { background: #fef3c7; color: #92400e; }
         .badge-green { background: #d1fae5; color: #065f46; }
-
         .empty { text-align: center; padding: 20px; color: #9ca3af; font-size: 11px; }
-
         .footer {
             margin-top: 24px;
             border-top: 1px solid #e5e7eb;
@@ -106,10 +94,22 @@
 </head>
 <body>
 
+    {{-- ══ School Header ══ --}}
     <div class="header">
-        <div class="school-name">CCDI Account Portal</div>
-        <div class="report-title">Financial Report &mdash; {{ $schoolYear }} &bullet; {{ $semester }}</div>
-        <div class="meta">Generated {{ now()->format('F j, Y \a\t g:i A') }}</div>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:10px;">
+            <tr>
+                <td style="width:70px; vertical-align:middle; padding-right:10px;">
+                    <img src="file://{{ str_replace('\\', '/', public_path('images/logo.png')) }}"
+                         width="60" height="60" style="display:block;">
+                </td>
+                <td style="vertical-align:middle; text-align:center;">
+                    <div class="school-name">{{ strtoupper(config('school.name', 'Computer Communication Development Institute')) }}</div>
+                    <div class="report-title">Financial Report &mdash; {{ $schoolYear }} &bullet; {{ $semester }}</div>
+                    <div class="meta">Generated {{ now()->format('F j, Y \a\t g:i A') }}</div>
+                </td>
+                <td style="width:70px;"></td>
+            </tr>
+        </table>
     </div>
 
     <table class="summary-table">
@@ -191,7 +191,7 @@
 
     <div class="footer clearfix">
         <div class="footer-left">
-            CCDI Account Portal &bullet; Financial Report &bullet; {{ $schoolYear }} {{ $semester }}
+            {{ config('school.name', 'CCDI') }} &bullet; Financial Report &bullet; {{ $schoolYear }} {{ $semester }}
         </div>
         <div class="footer-right">
             Printed: {{ now()->format('Y-m-d H:i') }}
