@@ -116,12 +116,17 @@ class StudentAccountController extends Controller
             ])
             ->values();
 
-        $notifications = Notification::where(function ($q) use ($user) {
-            $q->where('user_id', $user->id)
-                ->orWhere('target_role', 'student');
-        })
-            ->where('is_active', true)
+        $notifications = Notification::where('is_active', true)
             ->whereNull('dismissed_at')
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('user_id')
+                         ->whereNull('user_ids')
+                         ->where('target_role', 'student');
+                  })
+                  ->orWhereRaw('JSON_CONTAINS(user_ids, ?)', [$user->id]);
+            })
             ->get();
 
         // Enrolled subjects by assessment

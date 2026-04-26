@@ -12,7 +12,6 @@ interface Props {
         total_admins: number;
         active_admins: number;
         inactive_admins: number;
-        pending_approvals: number;
         total_users: number;
         total_students: number;
         recent_notifications: Array<{
@@ -34,7 +33,6 @@ const props = withDefaults(defineProps<Props>(), {
         total_admins: 0,
         active_admins: 0,
         inactive_admins: 0,
-        pending_approvals: 0,
         total_users: 0,
         total_students: 0,
         recent_notifications: [],
@@ -61,12 +59,6 @@ const adminStats = computed(() => [
         value: props.stats?.total_users || 0,
         description: `${props.stats?.total_students || 0} students`,
         color: 'purple',
-    },
-    {
-        title: 'Pending Approvals',
-        value: props.stats?.pending_approvals || 0,
-        description: 'Awaiting action',
-        color: 'orange',
     },
     {
         title: 'System Status',
@@ -120,13 +112,6 @@ const getColorClass = (color: string) => {
                 </div>
                 <div class="ccdi-stat-card">
                     <div class="min-w-0">
-                        <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending Approvals</p>
-                        <p class="text-xl font-bold" :class="(props.stats?.pending_approvals || 0) > 0 ? 'text-amber-600' : 'text-foreground'">{{ props.stats?.pending_approvals || 0 }}</p>
-                        <p class="text-xs text-muted-foreground">Awaiting action</p>
-                    </div>
-                </div>
-                <div class="ccdi-stat-card">
-                    <div class="min-w-0">
                         <p class="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">System Status</p>
                         <p class="text-xl font-bold text-emerald-600">Operational</p>
                         <p class="text-xs text-muted-foreground">All systems healthy</p>
@@ -152,9 +137,6 @@ const getColorClass = (color: string) => {
                         </Link>
                         <Link :href="route('admin.notifications.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
                             Manage Notifications
-                        </Link>
-                        <Link :href="route('approvals.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700">
-                            Payment Approvals
                         </Link>
                         <Link :href="route('students.archive')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700">
                             Student Archive

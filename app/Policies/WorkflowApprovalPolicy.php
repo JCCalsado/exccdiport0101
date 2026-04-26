@@ -14,8 +14,9 @@ class WorkflowApprovalPolicy
             return true;
         }
 
-        // Accounting users can view any accounting-step approval
-        if ($user->role->value === 'accounting' || $user->role->value === 'admin') {
+        // Any accounting user can view accounting-step approvals.
+        // Admin is excluded by design — only accounting processes approvals.
+        if ($user->role->value === 'accounting') {
             $stepDef = $this->getStepDefinition($approval);
             if ($stepDef && ($stepDef['approver_role'] ?? null) === 'accounting') {
                 return true;
@@ -36,10 +37,11 @@ class WorkflowApprovalPolicy
             return true;
         }
 
-        // BUG FIX: Allow any accounting (or admin) user to approve steps
-        // where approver_role = 'accounting', in case their user ID was not
-        // present when the WorkflowApproval records were originally created.
-        if ($user->role->value === 'accounting' || $user->role->value === 'admin') {
+        // Any accounting user may approve steps where approver_role = 'accounting'.
+        // This covers cases where the specific user ID was not yet assigned when
+        // the WorkflowApproval record was originally created.
+        // Admin is excluded by design.
+        if ($user->role->value === 'accounting') {
             $stepDef = $this->getStepDefinition($approval);
             if ($stepDef && ($stepDef['approver_role'] ?? null) === 'accounting') {
                 return true;

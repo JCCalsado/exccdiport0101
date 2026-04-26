@@ -43,7 +43,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         { title: 'Student Fee Management', href: safeRoute('student-fees.index'),  icon: Receipt,      roles: ['accounting'] },
         { title: 'Financial Reports',      href: safeRoute('accounting.financial-reports'), icon: BarChart3, roles: ['accounting'] },
         { title: 'Fee Settings',           href: safeRoute('accounting.fee-settings.index'), icon: Settings, roles: ['accounting'] },
-        { title: 'Payment Approvals',      href: safeRoute('approvals.index'),     icon: CheckCircle2, roles: ['accounting', 'admin'] },
+        { title: 'Payment Approvals',      href: safeRoute('approvals.index'),     icon: CheckCircle2, roles: ['accounting'] },
     ];
     return items.filter((item) => !item.roles || item.roles.includes(role));
 });
