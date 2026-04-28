@@ -16,6 +16,13 @@ defineProps<{
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
 
+const addressParts = ref({
+    house_lot_unit: '',
+    street_name: '',
+    barangay: '',
+    municipality_city: '',
+});
+
 const form = useForm({
     last_name: '',
     first_name: '',
@@ -31,6 +38,12 @@ const form = useForm({
 });
 
 const submit = () => {
+    const { house_lot_unit, street_name, barangay, municipality_city } = addressParts.value;
+    const parts = [house_lot_unit, street_name, barangay, municipality_city, 'Sorsogon']
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+    form.address = parts.join(', ');
+
     form.post(route('register.store'), {
         onFinish: () => {
             if (!Object.keys(form.errors).length) {
@@ -109,8 +122,29 @@ const submit = () => {
 
                 <!-- Address -->
                 <div class="grid gap-2">
-                    <Label for="address">Address</Label>
-                    <Input id="address" type="text" required v-model="form.address" placeholder="Sorsogon City" />
+                    <Label>Address</Label>
+                    <div class="grid gap-3 rounded-md border border-input p-3">
+                        <div class="grid gap-1">
+                            <Label for="house_lot_unit" class="text-xs text-muted-foreground">House/Lot/Unit No.</Label>
+                            <Input id="house_lot_unit" type="text" required v-model="addressParts.house_lot_unit" placeholder="e.g. Unit 4, Lot 12" />
+                        </div>
+                        <div class="grid gap-1">
+                            <Label for="street_name" class="text-xs text-muted-foreground">Street Name</Label>
+                            <Input id="street_name" type="text" required v-model="addressParts.street_name" placeholder="e.g. Rizal Street" />
+                        </div>
+                        <div class="grid gap-1">
+                            <Label for="barangay" class="text-xs text-muted-foreground">Barangay</Label>
+                            <Input id="barangay" type="text" required v-model="addressParts.barangay" placeholder="e.g. Barangay Cabid-an" />
+                        </div>
+                        <div class="grid gap-1">
+                            <Label for="municipality_city" class="text-xs text-muted-foreground">Municipality/City</Label>
+                            <Input id="municipality_city" type="text" required v-model="addressParts.municipality_city" placeholder="e.g. Sorsogon City" />
+                        </div>
+                        <div class="grid gap-1">
+                            <Label class="text-xs text-muted-foreground">Province</Label>
+                            <Input type="text" value="Sorsogon" disabled class="bg-muted text-muted-foreground cursor-not-allowed" />
+                        </div>
+                    </div>
                     <InputError :message="form.errors.address" />
                 </div>
 
