@@ -142,7 +142,7 @@ const submit = () => {
                         </div>
                         <div class="grid gap-1">
                             <Label class="text-xs text-muted-foreground">Province</Label>
-                            <Input type="text" value="Sorsogon" disabled class="bg-muted text-muted-foreground cursor-not-allowed" />
+                            <Input type="text" model-value="Sorsogon" disabled class="bg-muted text-muted-foreground cursor-not-allowed" />
                         </div>
                     </div>
                     <InputError :message="form.errors.address" />
