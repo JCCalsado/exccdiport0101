@@ -52,7 +52,7 @@ class NotificationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAccounting();
     }
 
     /**
@@ -60,7 +60,7 @@ class NotificationPolicy
      */
     public function update(User $user, Notification $notification): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAccounting();
     }
 
     /**
@@ -68,7 +68,7 @@ class NotificationPolicy
      */
     public function delete(User $user, Notification $notification): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAccounting();
     }
 
     /**
@@ -76,7 +76,7 @@ class NotificationPolicy
      */
     public function restore(User $user, Notification $notification): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAccounting();
     }
 
     /**
@@ -84,6 +84,6 @@ class NotificationPolicy
      */
     public function forceDelete(User $user, Notification $notification): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAccounting();
     }
 }

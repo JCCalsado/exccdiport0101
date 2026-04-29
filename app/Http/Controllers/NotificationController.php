@@ -19,7 +19,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isAccounting()) {
             $notifications = Notification::orderByDesc('created_at')
                 ->get()
                 ->map(fn ($n) => [
@@ -177,7 +177,7 @@ class NotificationController extends Controller
         $this->syncDueDateToPaymentTerms($validated);
         $this->dispatchNotificationEmails($validated);
 
-        return redirect('/admin/notifications')
+        return redirect('/accounting/notifications')
             ->with('success', 'Notification created and emails queued for delivery.');
     }
 
@@ -238,7 +238,7 @@ class NotificationController extends Controller
         $this->syncDueDateToPaymentTerms($validated);
         $this->dispatchNotificationEmails($validated);
 
-        return redirect('/admin/notifications')
+        return redirect('/accounting/notifications')
             ->with('success', 'Notification updated and emails re-queued for delivery.');
     }
 
@@ -247,7 +247,7 @@ class NotificationController extends Controller
         $this->authorize('delete', $notification);
         $notification->delete();
 
-        return redirect('/admin/notifications')
+        return redirect('/accounting/notifications')
             ->with('success', 'Notification deleted successfully.');
     }
 

@@ -176,6 +176,10 @@ class User extends Authenticatable
     {
         return $this->role === UserRoleEnum::ADMIN;
     }
+     public function isAccounting(): bool
+    {
+        return $this->role === UserRoleEnum::ACCOUNTING;
+    }
 
     /**
      * Check if user has accepted terms & conditions

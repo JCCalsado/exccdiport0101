@@ -151,7 +151,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->group(fu
     ]);
     Route::post('users/{user}/deactivate', [AdminController::class, 'deactivate'])->name('admin.users.deactivate');
     Route::post('users/{user}/reactivate', [AdminController::class, 'reactivate'])->name('admin.users.reactivate');
-
+    Route::resource('notifications', NotificationController::class)->names([
+        'index'   => 'admin.notifications.index',
+        'create'  => 'admin.notifications.create',
+        'store'   => 'admin.notifications.store',
+        'show'    => 'admin.notifications.show',
+        'edit'    => 'admin.notifications.edit',
+        'update'  => 'admin.notifications.update',
+        'destroy' => 'admin.notifications.destroy',
+    ]);
+    // ✅ FIX: Admin can also dismiss notifications (for their own banner management)
+    Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('admin.notifications.dismiss');
 
     Route::get('/payment-terms', [PaymentTermsController::class, 'index'])->name('admin.payment-terms.index');
     Route::post('/payment-terms/{paymentTerm}/due-date', [PaymentTermsController::class, 'updateDueDate'])->name('admin.payment-terms.update-due-date');
@@ -174,16 +184,6 @@ Route::middleware(['auth', 'verified', 'role:accounting,admin'])->prefix('accoun
     Route::post('/fee-settings/bulk', [FeeSettingsController::class, 'bulkUpdate'])->name('accounting.fee-settings.bulk');
     Route::post('/fee-settings', [FeeSettingsController::class, 'store'])->name('accounting.fee-settings.store');
     Route::delete('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'destroy'])->name('accounting.fee-settings.destroy');
-    Route::resource('notifications', NotificationController::class)->names([
-        'index'   => 'admin.notifications.index',
-        'create'  => 'admin.notifications.create',
-        'store'   => 'admin.notifications.store',
-        'show'    => 'admin.notifications.show',
-        'edit'    => 'admin.notifications.edit',
-        'update'  => 'admin.notifications.update',
-        'destroy' => 'admin.notifications.destroy',
-    ]);
-    Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('admin.notifications.dismiss');
 });
 
 // ============================================
