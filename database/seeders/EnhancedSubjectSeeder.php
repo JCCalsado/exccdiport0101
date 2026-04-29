@@ -265,7 +265,7 @@ class EnhancedSubjectSeeder extends Seeder
 
     private function act(): array
     {
-        $c = 'Associate in Computer Technology';
+        $c = 'Associate in Computer Technology - Networking';
         return [
             // ── 1st Year — 1st Semester ──────────────────────────────────────
             ['code'=>'ACT-ENG1',     'name'=>'Purposive Communication',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],

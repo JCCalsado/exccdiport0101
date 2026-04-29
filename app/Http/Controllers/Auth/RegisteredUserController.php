@@ -19,6 +19,34 @@ use Inertia\Response;
 class RegisteredUserController extends Controller
 {
     /**
+     * Courses that have full subject/assessment data in EnhancedSubjectSeeder.
+     *
+     * These strings MUST match exactly what EnhancedSubjectSeeder stores in
+     * the `course` column — one character difference = zero subjects found
+     * during assessment generation.
+     *
+     * Removed permanently (no seeder data exists):
+     *   - 'Diploma in Electronics and Computer Technology'
+     *   - 'Diploma in Software Development and Programming'
+     *
+     * Removed previously (wrong names — now restored with correct strings):
+     *   - 'BET Electronics Engineering Technology' → correct: 'BS Engineering Technology - Electronics'
+     *   - 'BET Electrical Engineering Technology'  → correct: 'BS Engineering Technology - Electrical'
+     *
+     * ACT note: the seeder defines ONE course string 'Associate in Computer Technology'
+     * whose curriculum is a Networking specialization. The suffixed variants
+     * (- Programming, - Networking, - Multimedia/Animation) never existed in the seeder.
+     */
+    private const COURSES = [
+        'Associate in Computer Technology - Networking',
+        'BS Computer Science',
+        'BS Information Technology',
+        'BS Information Systems',
+        'BS Engineering Technology - Electronics',
+        'BS Engineering Technology - Electrical',
+    ];
+
+    /**
      * Show the registration page.
      */
     public function create(): Response
@@ -43,7 +71,7 @@ class RegisteredUserController extends Controller
             'password'       => ['required', 'confirmed', Rules\Password::defaults()],
             'birthday'       => 'required|date',
             'year_level'     => 'required|string|max:50',
-            'course'         => 'required|string|max:255',
+            'course'         => ['required', 'string', 'in:' . implode(',', self::COURSES)],
             'address'        => 'required|string|max:255',
             'phone'          => 'required|string|max:20',
         ]);
@@ -135,34 +163,8 @@ class RegisteredUserController extends Controller
         return $newAccountId;
     }
 
-    /**
-     * Get all available courses from the system.
-     *
-     * Reads from a hardcoded list. This should be moved to a config or database
-     * table (Courses model) in a future refactor.
-     */
     private function allCourses(): array
     {
-        // All CCDI courses per EnhancedSubjectSeeder curriculum
-        // This list must stay in sync with database/seeders/EnhancedSubjectSeeder.php::subjects()
-        return [
-            // Diploma Programs (1 year)
-            'Diploma in Electronics and Computer Technology',
-            'Diploma in Software Development and Programming',
-            
-            // Associate Programs (2 years)
-            'Associate in Computer Technology - Programming',
-            'Associate in Computer Technology - Networking',
-            'Associate in Computer Technology - Multimedia/Animation',
-            
-            // Bachelor Programs (3-4 years)
-            'BS Computer Science',
-            'BS Information Technology',
-            'BS Information Systems',
-            
-            // Engineering Technology Bachelor Programs (4 years)
-            'BET Electronics Engineering Technology',
-            'BET Electrical Engineering Technology',
-        ];
+        return self::COURSES;
     }
 }
