@@ -330,6 +330,9 @@ class NotificationController extends Controller
                         notificationType:    $emailType,
                         actionUrl:           $actionUrl,
                         actionLabel:         $actionLabel,
+                        dueDate:             $data['due_date'] ?? null,
+                        startDate:           $data['start_date'] ?? null,
+                        endDate:             $data['end_date'] ?? null,
                     )
                 );
 

@@ -46,7 +46,6 @@ const mainNavItems = computed<NavItem[]>(() => {
         { title: 'Payment Approvals',      href: safeRoute('approvals.index'),     icon: CheckCircle2, roles: ['accounting'] },
 	{ title: 'Notifications',          href: safeRoute('admin.notifications.index'), icon: Bell,        roles: ['accounting'] },
     ];
-    ];
     return items.filter((item) => !item.roles || item.roles.includes(role));
 });
 

@@ -19,6 +19,9 @@ class AccountNotification extends Mailable
         public string  $notificationType = 'info',
         public ?string $actionUrl        = null,
         public ?string $actionLabel      = null,
+        public ?string $dueDate          = null,
+        public ?string $startDate        = null,
+        public ?string $endDate          = null,
     ) {}
 
     public function envelope(): Envelope
@@ -39,6 +42,9 @@ class AccountNotification extends Mailable
                 'notifType'    => $this->notificationType,
                 'actionUrl'    => $this->actionUrl,
                 'actionLabel'  => $this->actionLabel,
+                'dueDate'      => $this->dueDate,
+                'startDate'    => $this->startDate,
+                'endDate'      => $this->endDate,
                 'dashboardUrl' => route('student.dashboard'),
             ],
         );
