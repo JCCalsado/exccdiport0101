@@ -332,13 +332,13 @@ class EnhancedSubjectSeeder extends Seeder
 
             // ── 1st Year — 2nd Semester ──────────────────────────────────────
             ['code'=>'CS-GEELEC2',   'name'=>'Peace Studies and Education',               'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-LIT1',      'name'=>'The Contemporary World',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-PHILO',     'name'=>'Understanding the Self',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-CSC105',    'name'=>'Computer Programming 2',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-CSP107',    'name'=>'Application Development and Emerging Technologies','lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-MATH2',     'name'=>'Mathematics in the Modern World 2',        'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-PATHFIT2',  'name'=>'Exercise-based Fitness Activities',        'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-NSTP2',     'name'=>'National Service Training Program 2',      'lec_units'=>1.5,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-LIT1',      'name'=>'The Contemporary World',                    'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-CSC104',    'name'=>'IT Software Solutions for Business 2',      'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-CSC105',    'name'=>'Intermediate Programming',                  'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-CSC106',    'name'=>'Information Management',                    'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-CSC107',    'name'=>'Introduction to Human Computer Interaction','lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-PATHFIT2',  'name'=>'Exercise-based Fitness Activities',         'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-NSTP2',     'name'=>'National Service Training Program 2',       'lec_units'=>1.5,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
 
             // ── 2nd Year — 1st Semester ──────────────────────────────────────
             ['code'=>'CS-ETHICS',    'name'=>'Ethics',                                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
@@ -352,7 +352,7 @@ class EnhancedSubjectSeeder extends Seeder
 
             // ── 2nd Year — 2nd Semester ──────────────────────────────────────
             ['code'=>'CS-CSP204',    'name'=>'Discrete Structures 2',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-CSC205',    'name'=>'Object Oriented Programming - Algorithms and Complexity','lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-CSC205',    'name'=>'Object Oriented Programming',             'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'CS-CSC206',    'name'=>'Algorithms and Complexity',               'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'CS-SELEC1',    'name'=>'Intro to Android Development',            'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'CS-CCTNG',     'name'=>'Fundamentals of Accounting',              'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
@@ -362,13 +362,12 @@ class EnhancedSubjectSeeder extends Seeder
 
             // ── 3rd Year — 1st Semester ──────────────────────────────────────
             ['code'=>'CS-SCIE1',     'name'=>'Science, Technology & Society',           'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-CIE1',      'name'=>'Art Appreciation',                        'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-HUM',       'name'=>'Art Appreciation',                        'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'CS-HUMANITIES','name'=>'Art Appreciation',                        'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'CS-CSP301',    'name'=>'Operating Systems',                       'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-CSP302',    'name'=>'Architecture and Organization',           'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-CSP303',    'name'=>'Information Assurance and Security',     'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'CS-CSP302',    'name'=>'Architecture and Organization',           'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'CS-CSP303',    'name'=>'Information Assurance and Security',     'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'CS-CSP304',    'name'=>'Software Engineering 1',                  'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-SELEC2',    'name'=>'Intelligent Systems',                    'lec_units'=>2,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'CS-SELEC2',    'name'=>'Intelligent Systems',                    'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
 
             // ── 3rd Year — 2nd Semester ──────────────────────────────────────
             ['code'=>'CS-CSP305',    'name'=>'Networks and Communications',             'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
@@ -384,12 +383,12 @@ class EnhancedSubjectSeeder extends Seeder
             ['code'=>'CS-CSP401',    'name'=>'Introduction to Games: Theory & Design', 'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'CS-SELEC4',    'name'=>'Systems Fundamentals',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'CS-SELEC5',    'name'=>'Special Topics in CS Trends',            'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-SELEC6',    'name'=>'Parallel and Distributed Computing',    'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'CS-THESIS1',   'name'=>'CS Thesis 1',                           'lec_units'=>2,'lab_units'=>0,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'CS-SELEC6',    'name'=>'Parallel and Distributed Computing',     'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'CS-THESIS1',   'name'=>'CS Thesis 1',                            'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
 
             // ── 4th Year — 2nd Semester ──────────────────────────────────────
-            ['code'=>'CS-THESIS2',   'name'=>'CS Thesis 2',                           'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'CS-SENIOROJT', 'name'=>'Practicum (162 Hours)',                 'lec_units'=>4,'lab_units'=>2,'year_level'=>'4th Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-THESIS2',   'name'=>'CS Thesis 2',                            'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'CS-SENIOROJT', 'name'=>'Practicum (162 Hours)',                  'lec_units'=>4,'lab_units'=>2,'year_level'=>'4th Year','semester'=>'2nd Sem','course'=>$c],
         ];
     }
 
@@ -418,13 +417,13 @@ class EnhancedSubjectSeeder extends Seeder
             ['code'=>'IT-ITC104',    'name'=>'IT Software Solutions for Business 2',     'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IT-ITC105',    'name'=>'Computer Programming 2',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IT-ITC106',    'name'=>'Information Management',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITP107',    'name'=>'Introduction to Human Computer Interaction','lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITP107',    'name'=>'Introduction to Human Computer Interaction','lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IT-PATHFIT2',  'name'=>'Exercise-based Fitness Activities',        'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IT-NSTP2',     'name'=>'National Service Training Program 2',      'lec_units'=>1.5,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
 
             // ── 2nd Year — 1st Semester ──────────────────────────────────────
+            ['code'=>'IT-ETHICS',    'name'=>'Ethics',                                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-HIST1',     'name'=>'Readings in the Philippine History',       'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IT-PHILO1',    'name'=>'Understanding the Self',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-GEELEC3',   'name'=>'Philippine Indigenous Communities',        'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-ITC201',    'name'=>'Data Structures and Algorithms',           'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-ITP202',    'name'=>'Application Development and Emerging Technologies','lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
@@ -432,35 +431,37 @@ class EnhancedSubjectSeeder extends Seeder
             ['code'=>'IT-PATHFIT3',  'name'=>'Outdoor and Adventure Activities',        'lec_units'=>2,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'1st Sem','course'=>$c],
 
             // ── 2nd Year — 2nd Semester ──────────────────────────────────────
-            ['code'=>'IT-ETHICS',    'name'=>'Ethics',                                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-HUM',       'name'=>'Art Appreciation',                        'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITP301',    'name'=>'Networking 1',                             'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITP302',    'name'=>'Systems Integration & Architecture 1',   'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITELEC1',   'name'=>'Web Systems and Technologies 1',          'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITELEC2',   'name'=>'Platform Technologies',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-PATHFIT4',  'name'=>'Dance',                                   'lec_units'=>2,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITP204',     'name'=>'Integrative Programming and Technologies 1','lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITP205',     'name'=>'Quantitative Methods(Modelling and Simulation)','lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITELECTIVE1','name'=>'Object Oriented Programming',             'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITELECTIVE2','name'=>'Platform Technologies',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-PHILO',      'name'=>'Understanding the Self',                  'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-SOCSCI1',    'name'=>'Life and Works of Rizal',                 'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-PATHFIT4',   'name'=>'Dance',                                   'lec_units'=>2,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
 
             // ── 3rd Year — 1st Semester ──────────────────────────────────────
-            ['code'=>'IT-ENG3',      'name'=>'Research Production',                     'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-SCIE1',      'name'=>'Science, Technology and Society',        'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-ACCTNG',    'name'=>'Fundamentals of Accounting',              'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IT-ITP306',    'name'=>'Networking 2',                            'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IT-ITP302B',   'name'=>'Systems Integration & Architecture 2',  'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IT-ITELEC3',   'name'=>'Web Systems and Technologies 2',         'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IT-ITP304',    'name'=>'Information Assurance and Security 1',   'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-HUMANITIES','name'=>'Art Appreciation',                        'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-ITP301',    'name'=>'Networking 1',                            'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-ITP302',    'name'=>'Systems Integration and Architecture 1',  'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-ITP303',    'name'=>'Information Assurance and Security 1',    'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-ELECTIVE3', 'name'=>'Integrative Programming and Technologies 2','lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
 
             // ── 3rd Year — 2nd Semester ──────────────────────────────────────
-            ['code'=>'IT-ITP304B',   'name'=>'Information Assurance and Security 2',   'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITC305',    'name'=>'Discrete Mathematics',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITP307',    'name'=>'Systems Administration and Maintenance', 'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITELEC4',   'name'=>'Web Systems and Technologies 3',         'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-ITELEC5',   'name'=>'Systems Integration & Architecture 3',  'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IT-MNGT',      'name'=>'Business Management and Organization',  'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITP304',     'name'=>'Networking 2',                           'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITP305',     'name'=>'Information Assurance and Security 2',   'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITC306',     'name'=>'Discrete Mathematics',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITP307',     'name'=>'Systems Administration and Maintenance', 'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITELECTIVE4','name'=>'Web Systems and Technologies 1',         'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-ITELECTIVE5','name'=>'Systems Integration & Architecture 2',  'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IT-MNGT',       'name'=>'Business Management and Organization',  'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'2nd Sem','course'=>$c],
 
             // ── 4th Year — 1st Semester ──────────────────────────────────────
             ['code'=>'IT-ENTREP',    'name'=>'Fundamentals of Entrepreneurship',       'lec_units'=>3,'lab_units'=>0,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-ITELEC6',   'name'=>'Special Topics in IT Trends',            'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-ITP401',    'name'=>'Social and Professional Issues',         'lec_units'=>3,'lab_units'=>0,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IT-ITP402',    'name'=>'Web Systems and Technologies 4',         'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IT-ITP402',    'name'=>'Web Systems and Technologies 2',         'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-ITP403',    'name'=>'Computer Graphics',                     'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IT-PROJECT1',  'name'=>'Capstone Project 1',                    'lec_units'=>2,'lab_units'=>1,'year_level'=>'4th Year','semester'=>'1st Sem','course'=>$c],
 
@@ -485,7 +486,7 @@ class EnhancedSubjectSeeder extends Seeder
             ['code'=>'IS-MATH1',     'name'=>'Mathematics in the Modern World',           'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-ISC101',    'name'=>'Introduction to Computing',                 'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-ISC102',    'name'=>'Computer Programming 1',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IS-ISC103',    'name'=>'IT Software Solutions for Business',       'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IS-ISC103',    'name'=>'IT Software Solutions for Business',       'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-PE1',       'name'=>'Physical Fitness and Gymnastics',          'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-NSTP1',     'name'=>'National Service Training Program 1',      'lec_units'=>1.5,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'1st Sem','course'=>$c],
 
@@ -493,9 +494,9 @@ class EnhancedSubjectSeeder extends Seeder
             ['code'=>'IS-GEELEC2',   'name'=>'Peace Studies and Education',               'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-LIT1',      'name'=>'The Contemporary World',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-GEELEC3',   'name'=>'Philippine Indigenous Communities',        'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IS-PHILO',     'name'=>'Understanding the Self',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IS-PHILO',     'name'=>'Understanding the Self',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-ISC104',    'name'=>'Computer Programming 2',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IS-ISP105',    'name'=>'Fundamentals of Information Systems',     'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IS-ISP105',    'name'=>'Fundamentals of Information Systems',     'lec_units'=>2,'lab_units'=>1,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-PE2',       'name'=>'Individual and Team Sports',              'lec_units'=>2,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-NSTP2',     'name'=>'National Service Training Program 2',     'lec_units'=>1.5,'lab_units'=>0,'year_level'=>'1st Year','semester'=>'2nd Sem','course'=>$c],
 
@@ -513,17 +514,17 @@ class EnhancedSubjectSeeder extends Seeder
             ['code'=>'IS-HUM',       'name'=>'Art Appreciation',                        'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-SOCSCI1',   'name'=>'Life and Works of Rizal',                'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-ACCTNG',    'name'=>'Fundamentals of Accounting',             'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IS-SCIE1',     'name'=>'Science, Technology and Society',        'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IS-ISP206',    'name'=>'System Analysis and Design',             'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
-            ['code'=>'IS-ISP207',    'name'=>'Financial Management',                   'lec_units'=>2,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IS-SCIE1',     'name'=>'Science, Technology and Society',        'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IS-ISP206',    'name'=>'System Analysis and Design',             'lec_units'=>2,'lab_units'=>1,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
+            ['code'=>'IS-ISP207',    'name'=>'Financial Management',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
             ['code'=>'IS-PE4',       'name'=>'Recreational Sports',                   'lec_units'=>2,'lab_units'=>0,'year_level'=>'2nd Year','semester'=>'2nd Sem','course'=>$c],
 
             // ── 3rd Year — 1st Semester ──────────────────────────────────────
             ['code'=>'IS-ENG4',      'name'=>'Research Production',                    'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-ISP301',    'name'=>'Enterprise Architecture',                'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-ISP302',    'name'=>'Business Process Management',            'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IS-ISP303',    'name'=>'Quantitative Methods',                   'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
-            ['code'=>'IS-ELEC1IS',   'name'=>'IT Security and Management',             'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IS-ISP303',    'name'=>'Quantitative Methods',                   'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
+            ['code'=>'IS-ELEC1IS',   'name'=>'IT Security and Management',             'lec_units'=>2,'lab_units'=>1,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
             ['code'=>'IS-ENTREP',    'name'=>'Fundamentals of Entrepreneurship',       'lec_units'=>3,'lab_units'=>0,'year_level'=>'3rd Year','semester'=>'1st Sem','course'=>$c],
         ];
     }
