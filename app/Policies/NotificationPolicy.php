@@ -16,25 +16,21 @@ class NotificationPolicy
     }
 
     /**
-     * Determine if the user can view a specific notification.
+     * Any authenticated user may view a notification they are entitled to see.
      *
-     * Bug 9 fix — user_id ownership check missing:
-     *   Previously the policy only checked target_role, so any student could
-     *   load /notifications/{id} for a notification that was privately addressed
-     *   to a different student (user_id = other student's ID). The policy
-     *   passed because target_role was 'student' and the requesting user was
-     *   also a student.
-     *
-     *   Fixed: when user_id is set on the notification, ONLY that specific
-     *   user (or an admin) may view it.
+     * Admin is view-only — they can read notifications but cannot manage them.
+     * Ownership/role scoping still applies (a student cannot view another student's
+     * private notification simply because they are authenticated).
      */
     public function view(User $user, Notification $notification): bool
     {
+        // Admin: view-only, but only notifications targeted at 'admin' or 'all'
         if ($user->isAdmin()) {
-            return true;
+            return in_array($notification->target_role, ['admin', 'all'], true)
+                || $notification->user_id === $user->id;
         }
 
-        // Notification is privately addressed to a specific user — only that user may see it
+        // Notification privately addressed to a specific user — only that user may see it
         if ($notification->user_id !== null) {
             return $notification->user_id === $user->id;
         }
@@ -48,42 +44,45 @@ class NotificationPolicy
     }
 
     /**
-     * Only admins can create notifications.
+     * Only accounting staff can create notifications.
+     * Admin is view-only.
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isAccounting();
+        return $user->role->value === 'accounting';
     }
 
     /**
-     * Only admins can update notifications.
+     * Only accounting staff can update notifications.
+     * Admin is view-only.
      */
     public function update(User $user, Notification $notification): bool
     {
-        return $user->isAdmin() || $user->isAccounting();
+        return $user->role->value === 'accounting';
     }
 
     /**
-     * Only admins can delete notifications.
+     * Only accounting staff can delete notifications.
+     * Admin is view-only.
      */
     public function delete(User $user, Notification $notification): bool
     {
-        return $user->isAdmin() || $user->isAccounting();
+        return $user->role->value === 'accounting';
     }
 
     /**
-     * Only admins can restore notifications.
+     * Only accounting staff can restore notifications.
      */
     public function restore(User $user, Notification $notification): bool
     {
-        return $user->isAdmin() || $user->isAccounting();
+        return $user->role->value === 'accounting';
     }
 
     /**
-     * Only admins can force-delete notifications.
+     * Only accounting staff can force-delete notifications.
      */
     public function forceDelete(User $user, Notification $notification): bool
     {
-        return $user->isAdmin() || $user->isAccounting();
+        return $user->role->value === 'accounting';
     }
 }

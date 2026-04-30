@@ -34,7 +34,6 @@ Route::post('/webhook/paymongo', [PaymongoWebhookController::class, 'handle']);
 Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
 Route::get('/payment/cancel',  [PaymentController::class, 'cancel'])->name('payment.cancel');
 
-
 // ============================================
 // AUTHENTICATED ROUTES
 // ============================================
@@ -59,61 +58,55 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->grou
     Route::post('/payment/{transaction}/proof', [PaymentController::class, 'uploadProof'])->name('payment.proof.upload');
     Route::get('/notifications', [NotificationController::class, 'studentIndex'])->name('student.notifications');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('student.notifications.mark-all-read');
-
-    // ✅ FIX: Named dismiss route for student notifications
     Route::post('/notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('notifications.dismiss');
 });
 
 // ============================================
-// STUDENT ARCHIVE ROUTES (Admin Only)
+// STUDENT ARCHIVE ROUTES (Admin view-only)
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
-    Route::resource('students', StudentController::class);
-    Route::post('students/{student}/payments', [StudentController::class, 'storePayment'])->name('students.payments.store');
-    Route::post('students/{student}/advance-workflow', [StudentController::class, 'advanceWorkflow'])->name('students.advance-workflow');
-    Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])->name('students.workflow-history');
+    Route::get('students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
     Route::get('students-archive', [StudentController::class, 'archive'])->name('students.archive');
-    Route::post('students/{student}/reinstate', [StudentController::class, 'reinstate'])->name('students.reinstate');
+    Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])->name('students.workflow-history');
 });
 
 // ============================================
 // STUDENT FEE MANAGEMENT ROUTES
 // ============================================
 
-// ── Shared: Admin + Accounting ───────────────────────────────────────────────
+// ── Shared read: Admin + Accounting ──────────────────────────────────────────
+// Both roles can view the index, search, and individual student fee detail.
+// Registered once here to avoid named-route collision.
 Route::middleware(['auth', 'verified', 'role:admin,accounting'])
     ->prefix('student-fees')
     ->name('student-fees.')
     ->group(function () {
         Route::get('/', [StudentFeeController::class, 'index'])->name('index');
         Route::get('/search', [StudentFeeController::class, 'search'])->name('search');
-
-        // IMPORTANT: Static-segment routes MUST come before wildcard /{userId}
         Route::get('/latest-assessment', [StudentFeeController::class, 'getLatestAssessmentData'])->name('latest-assessment');
-
-        // Auto-populate curriculum units for the Create form
-        Route::get('/curriculum-units', [StudentFeeController::class, 'getCurriculumUnits'])->name('curriculum-units');
-
-        // ── Create and store assessments (was accounting-only — now shared) ──
-        Route::get('/create', [StudentFeeController::class, 'create'])->name('create');
-        Route::post('/', [StudentFeeController::class, 'store'])->name('store');
-
         Route::get('/{userId}/export-pdf', [StudentFeeController::class, 'exportPdf'])->whereNumber('userId')->name('export-pdf');
-        Route::post('/{userId}/payments', [StudentFeeController::class, 'storePayment'])->whereNumber('userId')->name('payments.store');
-        Route::post('/{user}/drop', [StudentFeeController::class, 'drop'])->whereNumber('user')->name('drop');
-        Route::get('/{userId}/edit', [StudentFeeController::class, 'edit'])->whereNumber('userId')->name('edit');
 
-        // Catch-all last
+        // Show must be registered BEFORE accounting-only routes take over the wildcard
         Route::get('/{userId}', [StudentFeeController::class, 'show'])->whereNumber('userId')->name('show');
     });
 
-// ── Admin-only: Edit assessment, manage students ──────────────────────────────
-Route::middleware(['auth', 'verified', 'role:admin'])
+// ── Write access: Accounting only ────────────────────────────────────────────
+Route::middleware(['auth', 'verified', 'role:accounting'])
     ->prefix('student-fees')
     ->name('student-fees.')
     ->group(function () {
+        Route::get('/curriculum-units', [StudentFeeController::class, 'getCurriculumUnits'])->name('curriculum-units');
+
+        Route::get('/create', [StudentFeeController::class, 'create'])->name('create');
+        Route::post('/', [StudentFeeController::class, 'store'])->name('store');
+
         Route::get('/create-student', [StudentFeeController::class, 'createStudent'])->name('create-student');
         Route::post('/store-student', [StudentFeeController::class, 'storeStudent'])->name('store-student');
+
+        Route::post('/{userId}/payments', [StudentFeeController::class, 'storePayment'])->whereNumber('userId')->name('payments.store');
+        Route::post('/{user}/drop', [StudentFeeController::class, 'drop'])->whereNumber('user')->name('drop');
+        Route::get('/{userId}/edit', [StudentFeeController::class, 'edit'])->whereNumber('userId')->name('edit');
         Route::put('/{userId}', [StudentFeeController::class, 'update'])->whereNumber('userId')->name('update');
         Route::get('/{student}/edit-student', [StudentFeeController::class, 'editStudent'])->name('edit-student');
         Route::put('/{student}/update-student', [StudentFeeController::class, 'updateStudent'])->name('update-student');
@@ -128,7 +121,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/transactions/{transaction}/receipt', [TransactionController::class, 'receipt'])->name('transactions.receipt');
 });
 
-Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:accounting'])->group(function () {
     Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
     Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
@@ -140,56 +133,54 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function
 // ============================================
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-    Route::resource('users', AdminController::class)->names([
-        'index'   => 'users.index',
-        'create'  => 'users.create',
-        'store'   => 'users.store',
-        'show'    => 'users.show',
-        'edit'    => 'users.edit',
-        'update'  => 'users.update',
-        'destroy' => 'users.destroy',
-    ]);
-    Route::post('users/{user}/deactivate', [AdminController::class, 'deactivate'])->name('admin.users.deactivate');
-    Route::post('users/{user}/reactivate', [AdminController::class, 'reactivate'])->name('admin.users.reactivate');
 
+    // Users — view only
+    Route::get('users', [AdminController::class, 'index'])->name('users.index');
+    Route::get('users/{user}', [AdminController::class, 'show'])->name('users.show');
 
+    // Notifications — view only (dismiss is banner management, not record mutation)
+    Route::get('notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('admin.notifications.show');
+    Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('admin.notifications.dismiss');
+
+    // Payment terms — view only
     Route::get('/payment-terms', [PaymentTermsController::class, 'index'])->name('admin.payment-terms.index');
-    Route::post('/payment-terms/{paymentTerm}/due-date', [PaymentTermsController::class, 'updateDueDate'])->name('admin.payment-terms.update-due-date');
-    Route::post('/payment-terms/bulk-due-date', [PaymentTermsController::class, 'bulkUpdateDueDate'])->name('admin.payment-terms.bulk-due-date');
 });
 
 // ============================================
 // ACCOUNTING ROUTES
 // ============================================
-Route::middleware(['auth', 'verified', 'role:accounting,admin'])->prefix('accounting')->group(function () {
+Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->group(function () {
     Route::get('/dashboard', [AccountingDashboardController::class, 'index'])->name('accounting.dashboard');
     Route::get('/transactions', [TransactionController::class, 'index'])->name('accounting.transactions.index');
     Route::get('/financial-reports', [FinancialReportsController::class, 'index'])->name('accounting.financial-reports');
     Route::get('/financial-reports/export', [FinancialReportsController::class, 'export'])->name('accounting.financial-reports.export');
 
-    // Fee Settings — store and destroy included
     Route::get('/fee-settings', [FeeSettingsController::class, 'index'])->name('accounting.fee-settings.index');
     Route::patch('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'update'])->name('accounting.fee-settings.update');
-    // NOTE: bulk must be registered BEFORE the {feeSetting} wildcard to avoid collision
     Route::post('/fee-settings/bulk', [FeeSettingsController::class, 'bulkUpdate'])->name('accounting.fee-settings.bulk');
     Route::post('/fee-settings', [FeeSettingsController::class, 'store'])->name('accounting.fee-settings.store');
     Route::delete('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'destroy'])->name('accounting.fee-settings.destroy');
-    Route::resource('notifications', NotificationController::class)->names([
-        'index'   => 'admin.notifications.index',
-        'create'  => 'admin.notifications.create',
-        'store'   => 'admin.notifications.store',
-        'show'    => 'admin.notifications.show',
-        'edit'    => 'admin.notifications.edit',
-        'update'  => 'admin.notifications.update',
-        'destroy' => 'admin.notifications.destroy',
-    ]);
-    Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('admin.notifications.dismiss');
+
+    // Notification management — accounting owns all write operations
+    Route::resource('notifications', NotificationController::class)
+        ->except(['index', 'show'])
+        ->names([
+            'create'  => 'accounting.notifications.create',
+            'store'   => 'accounting.notifications.store',
+            'edit'    => 'accounting.notifications.edit',
+            'update'  => 'accounting.notifications.update',
+            'destroy' => 'accounting.notifications.destroy',
+        ]);
+
+    Route::post('/payment-terms/{paymentTerm}/due-date', [PaymentTermsController::class, 'updateDueDate'])->name('admin.payment-terms.update-due-date');
+    Route::post('/payment-terms/bulk-due-date', [PaymentTermsController::class, 'bulkUpdateDueDate'])->name('admin.payment-terms.bulk-due-date');
 });
 
 // ============================================
 // ACCOUNTING TRANSACTION WORKFLOW ROUTES
 // ============================================
-Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('accounting-workflows')->group(function () {
+Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting-workflows')->group(function () {
     Route::get('/', [AccountingTransactionController::class, 'index'])->name('accounting-workflows.index');
     Route::get('/create', [AccountingTransactionController::class, 'create'])->name('accounting-workflows.create');
     Route::post('/', [AccountingTransactionController::class, 'store'])->name('accounting-workflows.store');
@@ -200,9 +191,9 @@ Route::middleware(['auth', 'verified', 'role:admin,accounting'])->prefix('accoun
 });
 
 // ============================================
-// WORKFLOW MANAGEMENT ROUTES (admin + accounting)
+// WORKFLOW MANAGEMENT ROUTES (accounting only)
 // ============================================
-Route::middleware(['auth', 'verified', 'role:admin,accounting'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:accounting'])->group(function () {
     Route::resource('workflows', WorkflowController::class);
 });
 

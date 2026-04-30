@@ -20,7 +20,6 @@ class AdminController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        // Include both admin and accounting users
         $admins = User::whereIn('department', ['Administrator', 'Accounting'])
             ->with(['createdByUser', 'updatedByUser'])
             ->orderBy('created_at', 'desc')
@@ -29,7 +28,25 @@ class AdminController extends Controller
         return Inertia::render('Admin/Users/Index', [
             'admins'    => $admins,
             'stats'     => $this->adminService->getAdminStats(),
-            'canManage' => auth()->user()->isAdmin() && auth()->user()->is_active,
+            'canManage' => false, // Admin is view-only
+        ]);
+    }
+
+    /**
+     * Show a single user profile.
+     * Admin is view-only — canManage is always false.
+     */
+    public function show(User $user): Response
+    {
+        $this->authorize('view', $user);
+
+        if (! in_array($user->department, ['Administrator', 'Accounting'])) {
+            abort(404);
+        }
+
+        return Inertia::render('Admin/Users/Show', [
+            'admin'     => $user->load(['createdByUser', 'updatedByUser']),
+            'canManage' => false, // Admin is view-only
         ]);
     }
 
@@ -53,21 +70,6 @@ class AdminController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()->withErrors($e->errors());
         }
-    }
-
-    public function show(User $user): Response
-    {
-        $this->authorize('view', $user);
-
-        // Allow viewing both admin and accounting users
-        if (! in_array($user->department, ['Administrator', 'Accounting'])) {
-            abort(404);
-        }
-
-        return Inertia::render('Admin/Users/Show', [
-            'admin'     => $user->load(['createdByUser', 'updatedByUser']),
-            'canManage' => auth()->user()->isAdmin() && auth()->user()->is_active,
-        ]);
     }
 
     public function edit(User $user): Response

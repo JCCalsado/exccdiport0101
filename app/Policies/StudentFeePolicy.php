@@ -10,73 +10,67 @@ class StudentFeePolicy
     use HandlesAuthorization;
 
     /**
-     * Determine if the user can view any student fees
+     * Determine if the user can view any student fees.
+     * Admin: view-only. Accounting: full access.
      */
     public function viewAny(User $user): bool
     {
-        // Get the role value properly (handles both string and enum)
-        $roleValue = $this->getRoleValue($user);
-        return in_array($roleValue, ['admin', 'accounting']);
+        return in_array($this->getRoleValue($user), ['admin', 'accounting'], true);
     }
 
     /**
-     * Determine if the user can view student fee details
+     * Determine if the user can view student fee details.
+     * Admin: view-only. Accounting: full access. Students: own record only.
      */
     public function view(User $user, User $student): bool
     {
-        // Get the role value properly
-        $roleValue = $this->getRoleValue($user);
-        
-        // Admin and accounting can view any student
-        if (in_array($roleValue, ['admin', 'accounting'])) {
+        $role = $this->getRoleValue($user);
+
+        if (in_array($role, ['admin', 'accounting'], true)) {
             return true;
         }
 
-        // Students can only view their own fees
         return $user->id === $student->id;
     }
 
     /**
-     * Determine if the user can create student fees
+     * Only accounting can create student fee assessments.
+     * Admin is view-only.
      */
     public function create(User $user): bool
     {
-        $roleValue = $this->getRoleValue($user);
-        return in_array($roleValue, ['admin', 'accounting']);
+        return $this->getRoleValue($user) === 'accounting';
     }
 
     /**
-     * Determine if the user can update student fees
+     * Only accounting can update student fee assessments.
+     * Admin is view-only.
      */
     public function update(User $user, User $student): bool
     {
-        $roleValue = $this->getRoleValue($user);
-        return in_array($roleValue, ['admin', 'accounting']);
+        return $this->getRoleValue($user) === 'accounting';
     }
 
     /**
-     * Determine if the user can record payments
+     * Only accounting can record payments.
+     * Admin is view-only.
      */
     public function recordPayment(User $user): bool
     {
-        $roleValue = $this->getRoleValue($user);
-        return in_array($roleValue, ['admin', 'accounting']);
+        return $this->getRoleValue($user) === 'accounting';
     }
 
     /**
-     * Helper method to get role value from User model
-     * Handles both string and enum types
+     * Helper: normalize role to string regardless of enum or string storage.
      */
     private function getRoleValue(User $user): string
     {
         $role = $user->role;
-        
-        // If it's an object (enum), get the value
+
         if (is_object($role)) {
             return $role->value ?? (string) $role;
         }
-        
-        // If it's already a string, return it
+
         return (string) $role;
     }
 }
