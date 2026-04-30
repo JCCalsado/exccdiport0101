@@ -32,19 +32,17 @@ const form = useForm({
     email: '',
     year_level: '',
     course: '',
-    address: '',
+    address_house_lot_unit: '',
+    address_street_name: '',
+    address_barangay: '',
+    address_municipality_city: '',
+    address_province: 'Sorsogon',
     phone: '',
     password: '',
     password_confirmation: '',
 });
 
 const submit = () => {
-    const { house_lot_unit, street_name, barangay, municipality_city, province } = addressParts.value;
-    const parts = [house_lot_unit, street_name, barangay, municipality_city, province]
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0);
-    form.address = parts.join(', ');
-
     form.post(route('register.store'), {
         onFinish: () => {
             if (!Object.keys(form.errors).length) {
@@ -135,31 +133,30 @@ const submit = () => {
                 <div class="grid gap-2">
                     <Label>Address</Label>
                     <div class="grid gap-3 rounded-md border border-input p-3">
-                        <div class="grid gap-1">
-                            <Label for="house_lot_unit" class="text-xs text-muted-foreground">House/Lot/Unit No.</Label>
-                            <Input id="house_lot_unit" type="text" required v-model="addressParts.house_lot_unit" placeholder="e.g. Unit 4, Lot 12" />
-                        </div>
-                        <div class="grid gap-1">
-                            <Label for="street_name" class="text-xs text-muted-foreground">Street Name</Label>
-                            <Input id="street_name" type="text" required v-model="addressParts.street_name" placeholder="e.g. Rizal Street" />
-                        </div>
-                        <div class="grid gap-1">
-                            <Label for="barangay" class="text-xs text-muted-foreground">Barangay</Label>
-                            <Input id="barangay" type="text" required v-model="addressParts.barangay" placeholder="e.g. Barangay Cabid-an" />
-                        </div>
-                        <div class="grid gap-1">
-                            <Label for="municipality_city" class="text-xs text-muted-foreground">Municipality/City</Label>
-                            <Input id="municipality_city" type="text" required v-model="addressParts.municipality_city" placeholder="e.g. Sorsogon City" />
-                        </div>
-                        <div class="grid gap-1">
-                            <Label for="province" class="text-xs text-muted-foreground">Province</Label>
-                            <Input
-                                id="province"
-                                type="text"
-                                v-model="addressParts.province"
-                                placeholder="e.g. Sorsogon"
-                            />
-                        </div>
+                        <Input id="house_lot_unit" type="text" required
+                            v-model="form.address_house_lot_unit"
+                            placeholder="e.g. Unit 4, Lot 12" />
+                        <InputError :message="form.errors.address_house_lot_unit" />
+
+                        <Input id="street_name" type="text"
+                            v-model="form.address_street_name"
+                            placeholder="e.g. Rizal Street" />
+                        <InputError :message="form.errors.address_street_name" />
+
+                        <Input id="barangay" type="text" required
+                            v-model="form.address_barangay"
+                            placeholder="e.g. Barangay Cabid-an" />
+                        <InputError :message="form.errors.address_barangay" />
+
+                        <Input id="municipality_city" type="text" required
+                            v-model="form.address_municipality_city"
+                            placeholder="e.g. Sorsogon City" />
+                        <InputError :message="form.errors.address_municipality_city" />
+
+                        <Input id="province" type="text" required
+                            v-model="form.address_province"
+                            placeholder="e.g. Sorsogon" />
+                        <InputError :message="form.errors.address_province" />
                     </div>
                     <InputError :message="form.errors.address" />
                 </div>

@@ -170,10 +170,10 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 
     // Notification Management — accounting owns all operations
     Route::get('notifications', [NotificationController::class, 'index'])->name('accounting.notifications.index');
-    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('accounting.notifications.show');
     Route::get('notifications/create', [NotificationController::class, 'create'])->name('accounting.notifications.create');
-    Route::post('notifications', [NotificationController::class, 'store'])->name('accounting.notifications.store');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('accounting.notifications.show');
     Route::get('notifications/{notification}/edit', [NotificationController::class, 'edit'])->name('accounting.notifications.edit');
+    Route::post('notifications', [NotificationController::class, 'store'])->name('accounting.notifications.store');
     Route::put('notifications/{notification}', [NotificationController::class, 'update'])->name('accounting.notifications.update');
     Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])->name('accounting.notifications.destroy');
 

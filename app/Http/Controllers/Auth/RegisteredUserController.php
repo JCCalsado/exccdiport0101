@@ -64,17 +64,30 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'last_name'      => 'required|string|max:255',
-            'first_name'     => 'required|string|max:255',
-            'middle_initial' => 'nullable|string|max:10',
-            'email'          => 'required|string|lowercase|email|max:255|unique:' . User::class,
-            'password'       => ['required', 'confirmed', Rules\Password::defaults()],
-            'birthday'       => 'required|date',
-            'year_level'     => 'required|string|max:50',
-            'course'         => ['required', 'string', 'in:' . implode(',', self::COURSES)],
-            'address'        => 'required|string|max:255',
-            'phone'          => 'required|string|max:20',
+            'last_name'                => 'required|string|max:255',
+            'first_name'               => 'required|string|max:255',
+            'middle_initial'           => 'nullable|string|max:10',
+            'email'                    => 'required|string|lowercase|email|max:255|unique:' . User::class,
+            'password'                 => ['required', 'confirmed', Rules\Password::defaults()],
+            'birthday'                 => 'required|date',
+            'year_level'               => 'required|string|max:50',
+            'course'                   => ['required', 'string', 'in:' . implode(',', self::COURSES)],
+            'address_house_lot_unit'   => 'required|string|max:255',
+            'address_street_name'      => 'nullable|string|max:255',
+            'address_barangay'         => 'required|string|max:255',
+            'address_municipality_city'=> 'required|string|max:255',
+            'address_province'         => 'required|string|max:255',
+            'phone'                    => 'required|string|max:20',
         ]);
+
+        // Assemble address server-side
+        $address = collect([
+            $request->address_house_lot_unit,
+            $request->address_street_name,
+            $request->address_barangay,
+            $request->address_municipality_city,
+            $request->address_province,
+        ])->filter()->implode(', ');
 
         DB::beginTransaction();
         try {
@@ -89,22 +102,19 @@ class RegisteredUserController extends Controller
                 'birthday'       => $request->birthday,
                 'year_level'     => $request->year_level,
                 'course'         => $request->course,
-                'address'        => $request->address,
+                'address'        => $address,
                 'phone'          => $request->phone,
                 'account_id'     => $accountId,
                 'status'         => User::STATUS_ACTIVE,
                 'role'           => 'student',
             ]);
 
-            // FIX: total_balance removed from students table (migration 2026_03_17_000001).
-            // Balance is owned exclusively by accounts.balance via AccountService.
             Student::create([
                 'user_id'           => $user->id,
                 'student_id'        => $accountId,
                 'enrollment_status' => 'active',
             ]);
 
-            // Create Account record — authoritative balance starts at 0.
             Account::create([
                 'user_id' => $user->id,
                 'balance' => 0,
@@ -113,7 +123,6 @@ class RegisteredUserController extends Controller
             DB::commit();
 
             event(new Registered($user));
-
             Auth::login($user);
 
             return to_route('dashboard');
