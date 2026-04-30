@@ -3,7 +3,7 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Bell, Calendar, CalendarClock, Edit2, Plus, Trash2, Users } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -37,31 +37,38 @@ const props = withDefaults(defineProps<Props>(), {
     notifications: () => [],
 });
 
-const breadcrumbs = [
-    { title: 'Admin', href: route('admin.dashboard') },
-    { title: 'Notifications', href: route('admin.notifications.index') },
-];
+// ── Role detection ─────────────────────────────────────────────────────────
+const page = usePage();
+const isAccounting = computed(() => (page.props.auth as any)?.user?.role === 'accounting');
 
-// ── Filters ───────────────────────────────────────────────────────────────
-const searchQuery  = ref('');
+// ── Breadcrumbs adapt to role so back-link always works ────────────────────
+const breadcrumbs = computed(() => {
+    if (isAccounting.value) {
+        return [
+            { title: 'Accounting', href: route('accounting.dashboard') },
+            { title: 'Notifications', href: route('accounting.notifications.index') },
+        ];
+    }
+    return [
+        { title: 'Admin', href: route('admin.dashboard') },
+        { title: 'Notifications', href: route('admin.notifications.index') },
+    ];
+});
+
+// ── Filters ────────────────────────────────────────────────────────────────
+const searchQuery = ref('');
 type FilterTab = 'all' | 'active' | 'inactive' | 'payment_due';
-const activeTab    = ref<FilterTab>('all');
+const activeTab   = ref<FilterTab>('all');
 
-// ── Delete confirmation state ─────────────────────────────────────────────
-// Instead of browser confirm(), we track which card is in "confirm mode"
+// ── Delete (Accounting only) ───────────────────────────────────────────────
 const pendingDeleteId = ref<number | null>(null);
 
-const requestDelete = (id: number) => {
-    pendingDeleteId.value = id;
-};
-
-const cancelDelete = () => {
-    pendingDeleteId.value = null;
-};
+const requestDelete = (id: number) => { pendingDeleteId.value = id; };
+const cancelDelete  = ()          => { pendingDeleteId.value = null; };
 
 const confirmDelete = (id: number) => {
     pendingDeleteId.value = null;
-    router.delete(route('admin.notifications.destroy', id));
+    router.delete(route('accounting.notifications.destroy', id));
 };
 
 // ── System-generated heuristic ────────────────────────────────────────────
@@ -71,7 +78,7 @@ const isSystemGenerated = (n: Notification): boolean =>
     SYSTEM_TYPES.has(n.type ?? '') &&
     (n.message?.startsWith('Your payment') || n.message?.startsWith('Payment of') || !n.message);
 
-// ── Date helpers ──────────────────────────────────────────────────────────
+// ── Date helpers ───────────────────────────────────────────────────────────
 const todayStr = new Date().toLocaleDateString('en-CA');
 
 const isActive = (n: Notification) => {
@@ -81,16 +88,12 @@ const isActive = (n: Notification) => {
     return start <= todayStr && (end === null || end >= todayStr);
 };
 
-// ── Tab-filtered + searched notifications ─────────────────────────────────
+// ── Filtered list ──────────────────────────────────────────────────────────
 const filtered = computed(() => {
     let list = props.notifications;
-
-    // Tab filter
-    if (activeTab.value === 'active')      list = list.filter((n) => isActive(n) && !isSystemGenerated(n));
+    if (activeTab.value === 'active')       list = list.filter((n) => isActive(n) && !isSystemGenerated(n));
     else if (activeTab.value === 'inactive') list = list.filter((n) => !isActive(n) && !isSystemGenerated(n));
     else if (activeTab.value === 'payment_due') list = list.filter((n) => n.type === 'payment_due');
-
-    // Search
     if (searchQuery.value) {
         const q = searchQuery.value.toLowerCase();
         list = list.filter(
@@ -100,14 +103,12 @@ const filtered = computed(() => {
                 (n.target_term_name ?? '').toLowerCase().includes(q),
         );
     }
-
     return list;
 });
 
 const adminCreated    = computed(() => filtered.value.filter((n) => !isSystemGenerated(n)));
 const systemGenerated = computed(() => filtered.value.filter((n) => isSystemGenerated(n)));
 
-// ── Tab counts (based on all notifications, not filtered) ─────────────────
 const tabCounts = computed(() => ({
     all:         props.notifications.filter((n) => !isSystemGenerated(n)).length,
     active:      props.notifications.filter((n) => isActive(n) && !isSystemGenerated(n)).length,
@@ -115,7 +116,7 @@ const tabCounts = computed(() => ({
     payment_due: props.notifications.filter((n) => n.type === 'payment_due').length,
 }));
 
-// ── Display helpers ───────────────────────────────────────────────────────
+// ── Display helpers ────────────────────────────────────────────────────────
 const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
         student:    'bg-blue-100 text-blue-800',
@@ -187,20 +188,33 @@ const recipientLabel = (n: Notification): string => {
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="mb-2 text-3xl font-bold text-gray-900">Payment Notifications</h1>
-                    <p class="text-gray-600">Create and manage notifications for students</p>
+                    <p class="text-gray-600">
+                        {{ isAccounting ? 'Create and manage notifications for students' : 'View all system notifications (read-only)' }}
+                    </p>
                 </div>
-                <Link :href="route('admin.notifications.create')">
-                    <Button>
-                        <Plus class="mr-2 h-4 w-4" />
-                        Create Notification
-                    </Button>
-                </Link>
+
+                <!--
+                    Create button: Accounting only.
+                    Admin sees a read-only badge instead.
+                -->
+                <template v-if="isAccounting">
+                    <Link :href="route('accounting.notifications.create')">
+                        <Button>
+                            <Plus class="mr-2 h-4 w-4" />
+                            Create Notification
+                        </Button>
+                    </Link>
+                </template>
+                <template v-else>
+                    <span class="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700">
+                        Read-only
+                    </span>
+                </template>
             </div>
 
             <!-- Filter tabs + search -->
             <div class="mb-6 space-y-3">
-                <!-- Tab strip -->
-                <div class="flex gap-1 rounded-xl bg-gray-100 p-1 w-fit">
+                <div class="flex w-fit gap-1 rounded-xl bg-gray-100 p-1">
                     <button
                         v-for="tab in ([
                             { key: 'all',         label: 'All' },
@@ -225,7 +239,6 @@ const recipientLabel = (n: Notification): string => {
                     </button>
                 </div>
 
-                <!-- Search -->
                 <input
                     v-model="searchQuery"
                     type="text"
@@ -242,10 +255,12 @@ const recipientLabel = (n: Notification): string => {
                     {{
                         searchQuery || activeTab !== 'all'
                             ? 'Try adjusting your search or filter'
-                            : 'Create your first notification to get started'
+                            : isAccounting
+                              ? 'Create your first notification to get started'
+                              : 'No notifications have been created yet'
                     }}
                 </p>
-                <Link v-if="!searchQuery && activeTab === 'all'" :href="route('admin.notifications.create')">
+                <Link v-if="isAccounting && !searchQuery && activeTab === 'all'" :href="route('accounting.notifications.create')">
                     <Button variant="outline">
                         <Plus class="mr-2 h-4 w-4" />
                         Create First Notification
@@ -255,7 +270,7 @@ const recipientLabel = (n: Notification): string => {
 
             <div v-else class="space-y-10">
 
-                <!-- ── Section 1: Admin-Created ────────────────────────────── -->
+                <!-- ── Section 1: Admin-Created Notifications ──────────────── -->
                 <section>
                     <div class="mb-4 flex items-center gap-3">
                         <div class="h-px flex-1 bg-gray-200" />
@@ -359,9 +374,7 @@ const recipientLabel = (n: Notification): string => {
                                         Due: {{ formatDueDate(notification.due_date) }}
                                     </span>
 
-                                    <span
-                                        class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600"
-                                    >
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600">
                                         <Calendar class="h-3 w-3" />
                                         {{ formatAdminDate(notification.start_date) }}
                                         <span v-if="notification.end_date">
@@ -382,18 +395,17 @@ const recipientLabel = (n: Notification): string => {
                                     </span>
                                 </div>
 
-                                <!-- Actions row -->
-                                <div class="mt-4 flex justify-end gap-2 border-t pt-4">
-                                    <!-- Delete confirmation inline -->
+                                <!--
+                                    Actions row:
+                                    - Accounting: full Edit + Delete
+                                    - Admin: no actions (view-only)
+                                -->
+                                <div v-if="isAccounting" class="mt-4 flex justify-end gap-2 border-t pt-4">
                                     <template v-if="pendingDeleteId === notification.id">
-                                        <span class="flex items-center text-xs text-gray-600 mr-auto">
+                                        <span class="mr-auto flex items-center text-xs text-gray-600">
                                             Delete this notification?
                                         </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            @click="cancelDelete"
-                                        >
+                                        <Button variant="outline" size="sm" @click="cancelDelete">
                                             Cancel
                                         </Button>
                                         <Button
@@ -407,10 +419,7 @@ const recipientLabel = (n: Notification): string => {
                                     </template>
 
                                     <template v-else>
-                                        <Link
-                                            :href="route('admin.notifications.edit', notification.id)"
-                                            as="button"
-                                        >
+                                        <Link :href="route('accounting.notifications.edit', notification.id)" as="button">
                                             <Button variant="outline" size="sm">
                                                 <Edit2 class="mr-2 h-4 w-4" />
                                                 Edit
@@ -454,8 +463,8 @@ const recipientLabel = (n: Notification): string => {
                         >
                             <CardContent class="pt-5">
                                 <div class="flex items-start justify-between gap-4">
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="mb-1 flex flex-wrap items-center gap-2">
                                             <span
                                                 v-if="isActive(notification)"
                                                 class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
@@ -481,7 +490,7 @@ const recipientLabel = (n: Notification): string => {
                                         </p>
                                         <p
                                             v-if="notification.message"
-                                            class="mt-1 text-xs leading-relaxed text-gray-600 line-clamp-2"
+                                            class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600"
                                         >
                                             {{ notification.message }}
                                         </p>
@@ -492,26 +501,32 @@ const recipientLabel = (n: Notification): string => {
                                             {{ formatAdminDate(notification.created_at) }}
                                         </span>
 
-                                        <!-- Inline confirm for system notifications too -->
-                                        <template v-if="pendingDeleteId === notification.id">
-                                            <div class="flex gap-1">
-                                                <Button variant="outline" size="sm" class="h-7 text-xs" @click="cancelDelete">
-                                                    Cancel
+                                        <!-- Delete for system notifications: Accounting only -->
+                                        <template v-if="isAccounting">
+                                            <template v-if="pendingDeleteId === notification.id">
+                                                <div class="flex gap-1">
+                                                    <Button variant="outline" size="sm" class="h-7 text-xs" @click="cancelDelete">
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        class="h-7 bg-red-600 text-xs text-white hover:bg-red-700"
+                                                        @click="confirmDelete(notification.id)"
+                                                    >
+                                                        Confirm
+                                                    </Button>
+                                                </div>
+                                            </template>
+                                            <template v-else>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    class="h-7 text-red-500 hover:text-red-600"
+                                                    @click="requestDelete(notification.id)"
+                                                >
+                                                    <Trash2 class="h-3.5 w-3.5" />
                                                 </Button>
-                                                <Button size="sm" class="h-7 bg-red-600 text-white text-xs hover:bg-red-700" @click="confirmDelete(notification.id)">
-                                                    Confirm
-                                                </Button>
-                                            </div>
-                                        </template>
-                                        <template v-else>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                class="h-7 text-red-500 hover:text-red-600"
-                                                @click="requestDelete(notification.id)"
-                                            >
-                                                <Trash2 class="h-3.5 w-3.5" />
-                                            </Button>
+                                            </template>
                                         </template>
                                     </div>
                                 </div>

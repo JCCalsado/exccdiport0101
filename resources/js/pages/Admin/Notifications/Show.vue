@@ -3,8 +3,9 @@ import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, Calendar, Edit2 } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 interface Notification {
     id: number;
@@ -36,168 +37,130 @@ const props = withDefaults(defineProps<Props>(), {
     }),
 });
 
-const breadcrumbs = [
-    { title: 'Admin', href: route('admin.dashboard') },
-    { title: 'Notifications', href: route('admin.notifications.index') },
-    { title: props.notification.title, href: route('admin.notifications.show', props.notification.id) },
-];
+const page = usePage();
+const isAccounting = computed(() => (page.props.auth as any)?.user?.role === 'accounting');
 
-const getRoleColor = (role: string) => {
-    const colors: Record<string, string> = {
-        student: 'bg-blue-100 text-blue-800',
-        accounting: 'bg-purple-100 text-purple-800',
-        admin: 'bg-orange-100 text-orange-800',
-        all: 'bg-green-100 text-green-800',
-    };
-    return colors[role] || 'bg-gray-100 text-gray-800';
-};
+const breadcrumbs = computed(() => {
+    if (isAccounting.value) {
+        return [
+            { title: 'Accounting', href: route('accounting.dashboard') },
+            { title: 'Notifications', href: route('accounting.notifications.index') },
+            { title: props.notification.title, href: route('accounting.notifications.show', props.notification.id) },
+        ];
+    }
+    return [
+        { title: 'Admin', href: route('admin.dashboard') },
+        { title: 'Notifications', href: route('admin.notifications.index') },
+        { title: props.notification.title, href: route('admin.notifications.show', props.notification.id) },
+    ];
+});
 
-const isActive = () => {
-    if (!props.notification.is_active) return false;
+const backHref = computed(() =>
+    isAccounting.value
+        ? route('accounting.notifications.index')
+        : route('admin.notifications.index'),
+);
 
-    const today = new Date();
-    const startDate = new Date(props.notification.start_date);
-    const endDate = props.notification.end_date ? new Date(props.notification.end_date) : null;
-
-    const isStarted = startDate <= today;
-    const isEnded = endDate ? endDate < today : false;
-
-    return isStarted && !isEnded;
+const formatDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+    });
 };
 </script>
 
 <template>
-    <Head title="Notification Details" />
-
+    <Head :title="`Notification: ${notification.title}`" />
     <AppLayout>
         <div class="w-full p-6">
             <Breadcrumbs :items="breadcrumbs" />
 
-            <div class="max-w-4xl">
-                <!-- Header -->
-                <div class="mb-8 flex items-center gap-4">
-                    <Link :href="route('admin.notifications.index')">
-                        <Button variant="ghost" size="icon">
-                            <ArrowLeft class="h-4 w-4" />
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ notification.title }}</h1>
+                    <p class="mt-1 text-sm text-gray-500">Notification detail</p>
+                </div>
+                <div class="flex gap-2">
+                    <Link :href="backHref">
+                        <Button variant="outline">
+                            <ArrowLeft class="mr-2 h-4 w-4" />
+                            Back
                         </Button>
                     </Link>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">{{ notification.title }}</h1>
-                        <div class="mt-2 flex items-center gap-2">
-                            <span
-                                :class="[
-                                    'rounded-full px-3 py-1 text-xs font-medium',
-                                    isActive() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800',
-                                ]"
-                            >
-                                {{ isActive() ? 'Active' : 'Inactive' }}
-                            </span>
-                        </div>
-                    </div>
+                    <!-- Edit: Accounting only -->
+                    <Link
+                        v-if="isAccounting"
+                        :href="route('accounting.notifications.edit', notification.id)"
+                    >
+                        <Button>
+                            <Edit2 class="mr-2 h-4 w-4" />
+                            Edit
+                        </Button>
+                    </Link>
+                    <!-- Admin: read-only badge -->
+                    <span
+                        v-else
+                        class="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700"
+                    >
+                        Read-only
+                    </span>
                 </div>
+            </div>
 
-                <!-- Content Card -->
-                <Card class="mb-6">
+            <div class="max-w-2xl space-y-6">
+                <Card>
                     <CardHeader>
                         <CardTitle>Notification Details</CardTitle>
                     </CardHeader>
-                    <CardContent class="space-y-6">
-                        <!-- Status -->
-                        <div>
-                            <h3 class="mb-2 text-sm font-medium text-gray-700">Status</h3>
-                            <div class="flex items-center gap-3">
-                                <span
-                                    :class="[
-                                        'inline-block rounded-full px-3 py-1 text-sm font-medium',
-                                        props.notification.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800',
-                                    ]"
-                                >
-                                    {{ props.notification.is_active ? '✓ Enabled' : '○ Disabled' }}
-                                </span>
-                                <span
-                                    v-if="props.notification.is_active"
-                                    :class="[
-                                        'rounded-full px-3 py-1 text-xs font-medium',
-                                        isActive() ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800',
-                                    ]"
-                                >
-                                    {{ isActive() ? 'Currently Active' : 'Not Yet Active' }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <hr />
-
-                        <!-- Message -->
-                        <div>
-                            <h3 class="mb-2 text-sm font-medium text-gray-700">Message</h3>
-                            <p class="whitespace-pre-wrap text-gray-900">{{ notification.message || 'No message provided' }}</p>
-                        </div>
-
-                        <hr />
-
-                        <!-- Target Audience -->
-                        <div>
-                            <h3 class="mb-2 text-sm font-medium text-gray-700">Target Audience</h3>
-                            <span :class="['inline-block rounded-full px-3 py-1 text-sm font-medium', getRoleColor(notification.target_role)]">
-                                {{ notification.target_role.charAt(0).toUpperCase() + notification.target_role.slice(1) }}
+                    <CardContent class="space-y-4 text-sm">
+                        <div class="flex justify-between border-b pb-3">
+                            <span class="font-medium text-gray-600">Status</span>
+                            <span
+                                :class="[
+                                    'rounded-full px-2.5 py-1 text-xs font-medium',
+                                    notification.is_active
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-gray-100 text-gray-600',
+                                ]"
+                            >
+                                {{ notification.is_active ? 'Active' : 'Inactive' }}
                             </span>
                         </div>
-
-                        <!-- Dates -->
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div>
-                                <h3 class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    <Calendar class="h-4 w-4" />
-                                    Start Date
-                                </h3>
-                                <p class="text-gray-900">
-                                    {{
-                                        new Date(notification.start_date).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                        })
-                                    }}
-                                </p>
-                            </div>
-
-                            <div v-if="notification.end_date">
-                                <h3 class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    <Calendar class="h-4 w-4" />
-                                    End Date
-                                </h3>
-                                <p class="text-gray-900">
-                                    {{
-                                        new Date(notification.end_date).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                        })
-                                    }}
-                                </p>
-                            </div>
+                        <div class="flex justify-between border-b pb-3">
+                            <span class="font-medium text-gray-600">Target Role</span>
+                            <span class="capitalize text-gray-900">{{ notification.target_role }}</span>
+                        </div>
+                        <div class="flex justify-between border-b pb-3">
+                            <span class="font-medium text-gray-600">Start Date</span>
+                            <span class="text-gray-900">
+                                <Calendar class="mr-1 inline h-3.5 w-3.5" />
+                                {{ formatDate(notification.start_date) }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between border-b pb-3">
+                            <span class="font-medium text-gray-600">End Date</span>
+                            <span class="text-gray-900">{{ formatDate(notification.end_date) }}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-600">Message</span>
+                            <p class="mt-2 rounded-lg bg-gray-50 p-3 text-gray-800 leading-relaxed">
+                                {{ notification.message }}
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
 
-                <!-- Timestamps -->
-                <Card class="mb-6">
-                    <CardHeader>
-                        <CardTitle class="text-base">Timeline</CardTitle>
-                    </CardHeader>
-                    <CardContent class="space-y-2 text-sm text-gray-600">
-                        <p><strong>Created:</strong> {{ new Date(notification.created_at).toLocaleString() }}</p>
-                        <p><strong>Updated:</strong> {{ new Date(notification.updated_at).toLocaleString() }}</p>
-                    </CardContent>
-                </Card>
-
-                <!-- Actions -->
-                <div class="flex justify-end gap-3">
-                    <Link :href="route('admin.notifications.index')">
-                        <Button variant="outline">Back to Notifications</Button>
+                <div class="flex gap-2">
+                    <Link :href="backHref">
+                        <Button variant="outline">
+                            <ArrowLeft class="mr-2 h-4 w-4" />
+                            Back to Notifications
+                        </Button>
                     </Link>
-                    <Link :href="route('admin.notifications.edit', notification.id)">
+                    <Link
+                        v-if="isAccounting"
+                        :href="route('accounting.notifications.edit', notification.id)"
+                    >
                         <Button>
                             <Edit2 class="mr-2 h-4 w-4" />
                             Edit Notification
