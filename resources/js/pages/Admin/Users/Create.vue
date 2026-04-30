@@ -8,7 +8,7 @@ import AdminForm from './Form.vue';
 const breadcrumbs = [
     { title: 'Admin', href: route('admin.dashboard') },
     { title: 'Admin Users', href: route('users.index') },
-    { title: 'Create New Staff', href: route('users.create') },
+    { title: 'Create New Staff', href: '#' },
 ];
 
 const selectedDepartment = ref<'Administrator' | 'Accounting' | null>(null);

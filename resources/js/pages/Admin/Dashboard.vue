@@ -126,12 +126,6 @@ const getColorClass = (color: string) => {
                     <h2 class="mb-4 text-base font-semibold text-foreground">Quick Actions</h2>
                     <p class="mb-4 text-xs text-muted-foreground">Common administrative tasks</p>
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <Link :href="route('users.create')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
-                            Add Staff
-                        </Link>
-                        <Link :href="route('student-fees.create-student')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700">
-                            Add Student
-                        </Link>
                         <Link :href="route('users.index')" class="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
                             View Staffs
                         </Link>

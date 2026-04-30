@@ -68,9 +68,7 @@ const reactivate = (id: number) => {
                     <h1 class="text-3xl font-bold text-gray-900">Admin Users</h1>
                     <p class="mt-1 text-sm text-gray-500">Manage administrator accounts and permissions</p>
                 </div>
-                <Link v-if="canManage" :href="route('users.create')">
-                    <Button>+ Create Staff</Button>
-                </Link>
+                <!-- Create Staff removed — admin is view-only -->
             </div>
 
             <!-- Department Cards with Active Counts -->
