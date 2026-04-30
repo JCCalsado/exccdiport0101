@@ -36,7 +36,6 @@ const mainNavItems = computed<NavItem[]>(() => {
         // CHANGED: renamed from 'Student Management' to 'Student Overview' to reflect read-only access
         { title: 'Student Overview', href: safeRoute('student-fees.index'),            icon: GraduationCap, roles: ['admin'] },
         { title: 'Student Archive',  href: safeRoute('students.archive'),              icon: History,       roles: ['admin'] },
-        { title: 'Notifications',    href: safeRoute('admin.notifications.index'),     icon: Bell,          roles: ['admin'] },
 
         // ── Accounting ──
         { title: 'Accounting Dashboard',    href: safeRoute('accounting.dashboard'),              icon: Banknote,     roles: ['accounting'] },
