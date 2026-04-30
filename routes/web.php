@@ -162,7 +162,7 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
     Route::post('/fee-settings', [FeeSettingsController::class, 'store'])->name('accounting.fee-settings.store');
     Route::delete('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'destroy'])->name('accounting.fee-settings.destroy');
 
-    // Notification management — accounting owns all operations
+    // Notification Management — accounting owns all operations
     Route::get('notifications', [NotificationController::class, 'index'])->name('accounting.notifications.index');
     Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('accounting.notifications.show');
     Route::get('notifications/create', [NotificationController::class, 'create'])->name('accounting.notifications.create');
