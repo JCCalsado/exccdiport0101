@@ -21,6 +21,7 @@ const addressParts = ref({
     street_name: '',
     barangay: '',
     municipality_city: '',
+    province: 'Sorsogon',
 });
 
 const form = useForm({
@@ -38,10 +39,10 @@ const form = useForm({
 });
 
 const submit = () => {
-    const { house_lot_unit, street_name, barangay, municipality_city } = addressParts.value;
-    const parts = [house_lot_unit, street_name, barangay, municipality_city, 'Sorsogon']
-        .map(p => p.trim())
-        .filter(p => p.length > 0);
+    const { house_lot_unit, street_name, barangay, municipality_city, province } = addressParts.value;
+    const parts = [house_lot_unit, street_name, barangay, municipality_city, province]
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
     form.address = parts.join(', ');
 
     form.post(route('register.store'), {
@@ -74,7 +75,7 @@ const submit = () => {
                     <InputError :message="form.errors.first_name" />
                 </div>
 
-                <!-- Middle Initial / Suffix -->
+                <!-- Middle Initial -->
                 <div class="grid gap-2">
                     <Label for="middle_initial">Middle Initial</Label>
                     <Input id="middle_initial" type="text" v-model="form.middle_initial" placeholder="M." autocomplete="additional-name" />
@@ -98,7 +99,12 @@ const submit = () => {
                 <!-- Year Level -->
                 <div class="grid gap-2">
                     <Label for="year_level">Year Level</Label>
-                    <select id="year_level" v-model="form.year_level" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                    <select
+                        id="year_level"
+                        v-model="form.year_level"
+                        required
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
                         <option value="">Select Year Level</option>
                         <option value="1st Year">1st Year</option>
                         <option value="2nd Year">2nd Year</option>
@@ -111,7 +117,12 @@ const submit = () => {
                 <!-- Course -->
                 <div class="grid gap-2">
                     <Label for="course">Course</Label>
-                    <select id="course" v-model="form.course" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                    <select
+                        id="course"
+                        v-model="form.course"
+                        required
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
                         <option value="">Select a course</option>
                         <option v-for="course in courses" :key="course" :value="course">
                             {{ course }}
@@ -141,8 +152,13 @@ const submit = () => {
                             <Input id="municipality_city" type="text" required v-model="addressParts.municipality_city" placeholder="e.g. Sorsogon City" />
                         </div>
                         <div class="grid gap-1">
-                            <Label class="text-xs text-muted-foreground">Province</Label>
-                            <Input type="text" model-value="Sorsogon" disabled class="bg-muted text-muted-foreground cursor-not-allowed" />
+                            <Label for="province" class="text-xs text-muted-foreground">Province</Label>
+                            <Input
+                                id="province"
+                                type="text"
+                                v-model="addressParts.province"
+                                placeholder="e.g. Sorsogon"
+                            />
                         </div>
                     </div>
                     <InputError :message="form.errors.address" />
@@ -159,7 +175,16 @@ const submit = () => {
                 <div class="grid gap-2">
                     <Label for="password">Password</Label>
                     <div class="relative">
-                        <Input id="password" :type="showPassword ? 'text' : 'password'" required minlength="8" autocomplete="new-password" v-model="form.password" placeholder="Password (min 8 characters)" class="pr-10" />
+                        <Input
+                            id="password"
+                            :type="showPassword ? 'text' : 'password'"
+                            required
+                            minlength="8"
+                            autocomplete="new-password"
+                            v-model="form.password"
+                            placeholder="Password (min 8 characters)"
+                            class="pr-10"
+                        />
                         <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                             <EyeOff v-if="!showPassword" :size="16" /><Eye v-else :size="16" />
                         </button>
@@ -180,7 +205,11 @@ const submit = () => {
                             placeholder="Confirm password"
                             class="pr-10"
                         />
-                        <button type="button" @click="showPasswordConfirmation = !showPasswordConfirmation" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <button
+                            type="button"
+                            @click="showPasswordConfirmation = !showPasswordConfirmation"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
                             <EyeOff v-if="!showPasswordConfirmation" :size="16" /><Eye v-else :size="16" />
                         </button>
                     </div>
