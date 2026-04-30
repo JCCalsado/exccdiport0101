@@ -162,16 +162,14 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
     Route::post('/fee-settings', [FeeSettingsController::class, 'store'])->name('accounting.fee-settings.store');
     Route::delete('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'destroy'])->name('accounting.fee-settings.destroy');
 
-    // Notification management — accounting owns all write operations
-    Route::resource('notifications', NotificationController::class)
-        ->except(['index', 'show'])
-        ->names([
-            'create'  => 'accounting.notifications.create',
-            'store'   => 'accounting.notifications.store',
-            'edit'    => 'accounting.notifications.edit',
-            'update'  => 'accounting.notifications.update',
-            'destroy' => 'accounting.notifications.destroy',
-        ]);
+    // Notification management — accounting owns all operations
+    Route::get('notifications', [NotificationController::class, 'index'])->name('accounting.notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('accounting.notifications.show');
+    Route::get('notifications/create', [NotificationController::class, 'create'])->name('accounting.notifications.create');
+    Route::post('notifications', [NotificationController::class, 'store'])->name('accounting.notifications.store');
+    Route::get('notifications/{notification}/edit', [NotificationController::class, 'edit'])->name('accounting.notifications.edit');
+    Route::put('notifications/{notification}', [NotificationController::class, 'update'])->name('accounting.notifications.update');
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])->name('accounting.notifications.destroy');
 
     Route::post('/payment-terms/{paymentTerm}/due-date', [PaymentTermsController::class, 'updateDueDate'])->name('admin.payment-terms.update-due-date');
     Route::post('/payment-terms/bulk-due-date', [PaymentTermsController::class, 'bulkUpdateDueDate'])->name('admin.payment-terms.bulk-due-date');
