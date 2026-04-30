@@ -39,13 +39,13 @@ const breadcrumbs = [
 const departmentBadge = (dept: string) => {
     const map: Record<string, string> = {
         Administrator: 'bg-purple-100 text-purple-800',
-        Accounting: 'bg-blue-100 text-blue-800',
+        Accounting:    'bg-blue-100 text-blue-800',
     };
     return map[dept] ?? 'bg-gray-100 text-gray-700';
 };
 
 const deactivate = (id: number) => {
-    if (confirm('Deactivate this admin?')) {
+    if (confirm('Deactivate this staff member?')) {
         const form = useForm({});
         form.post(route('admin.users.deactivate', id));
     }
@@ -66,45 +66,34 @@ const reactivate = (id: number) => {
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Admin Users</h1>
-                    <p class="mt-1 text-sm text-gray-500">Manage administrator accounts and permissions</p>
+                    <p class="mt-1 text-sm text-gray-500">
+                        View administrators and manage accounting staff accounts
+                    </p>
                 </div>
-                <!-- Create Staff removed — admin is view-only -->
+                <!-- Only show Add button for canManage — links to Accounting staff creation -->
+                <Link v-if="canManage" :href="route('users.create')">
+                    <Button>+ Add Accounting Staff</Button>
+                </Link>
             </div>
 
-            <!-- Department Cards with Active Counts -->
+            <!-- Stats cards -->
             <div v-if="stats" class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div class="rounded-lg border-2 border-purple-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+                <div class="rounded-lg border-2 border-purple-200 bg-white p-6 shadow-sm">
                     <h3 class="mb-2 text-lg font-bold text-gray-900">Administrator</h3>
-                    <p class="mb-4 text-sm text-gray-600">Full system administrator with all permissions</p>
+                    <p class="mb-4 text-sm text-gray-600">Full system administrators — view only</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-4xl font-bold text-purple-600">{{ stats.total_active_admins }}</span>
-                        <span class="text-sm text-gray-500">Active Users</span>
+                        <span class="text-sm text-gray-500">Active</span>
                     </div>
                 </div>
-                <div class="rounded-lg border-2 border-blue-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+                <div class="rounded-lg border-2 border-blue-200 bg-white p-6 shadow-sm">
                     <h3 class="mb-2 text-lg font-bold text-gray-900">Accounting</h3>
-                    <p class="mb-4 text-sm text-gray-600">Accounting department user with financial permissions</p>
+                    <p class="mb-4 text-sm text-gray-600">Accounting staff — can be added and edited</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-4xl font-bold text-blue-600">{{ stats.total_active_accounting }}</span>
-                        <span class="text-sm text-gray-500">Active Users</span>
+                        <span class="text-sm text-gray-500">Active</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Read-only notice -->
-            <div
-                v-if="!canManage"
-                class="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-            >
-                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                </svg>
-                You have view-only access. Only Administrators can create, edit, or deactivate accounts.
             </div>
 
             <!-- Table -->
@@ -121,14 +110,24 @@ const reactivate = (id: number) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="admin in admins.data" :key="admin.id" class="transition-colors hover:bg-gray-50">
+                            <tr
+                                v-for="admin in admins.data"
+                                :key="admin.id"
+                                class="transition-colors hover:bg-gray-50"
+                            >
                                 <td class="px-5 py-4">
-                                    <span class="font-medium text-gray-900">{{ admin.last_name }}, {{ admin.first_name }}</span>
-                                    <span v-if="admin.middle_initial" class="text-gray-400"> {{ admin.middle_initial }}.</span>
+                                    <span class="font-medium text-gray-900">
+                                        {{ admin.last_name }}, {{ admin.first_name }}
+                                    </span>
+                                    <span v-if="admin.middle_initial" class="text-gray-400">
+                                        {{ admin.middle_initial }}.
+                                    </span>
                                 </td>
                                 <td class="px-5 py-4 text-gray-600">{{ admin.email }}</td>
                                 <td class="px-5 py-4">
-                                    <span :class="['rounded-full px-2.5 py-1 text-xs font-medium', departmentBadge(admin.department)]">
+                                    <span
+                                        :class="['rounded-full px-2.5 py-1 text-xs font-medium', departmentBadge(admin.department)]"
+                                    >
                                         {{ admin.department }}
                                     </span>
                                 </td>
@@ -136,7 +135,9 @@ const reactivate = (id: number) => {
                                     <span
                                         :class="[
                                             'rounded-full px-2.5 py-1 text-xs font-medium',
-                                            admin.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700',
+                                            admin.is_active
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-700',
                                         ]"
                                     >
                                         {{ admin.is_active ? 'Active' : 'Inactive' }}
@@ -144,37 +145,71 @@ const reactivate = (id: number) => {
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-2">
+                                        <!-- View is always available -->
                                         <Link :href="route('users.show', admin.id)">
                                             <Button variant="ghost" size="sm">View</Button>
                                         </Link>
-                                        <template v-if="canManage">
+
+                                        <!--
+                                            Edit / Deactivate / Reactivate:
+                                            Only available for Accounting department users.
+                                            Administrator accounts are view-only.
+                                        -->
+                                        <template v-if="canManage && admin.department === 'Accounting'">
                                             <Link :href="route('users.edit', admin.id)">
                                                 <Button variant="outline" size="sm">Edit</Button>
                                             </Link>
-                                            <Button v-if="admin.is_active" variant="destructive" size="sm" @click="deactivate(admin.id)"
-                                                >Deactivate</Button
+                                            <Button
+                                                v-if="admin.is_active"
+                                                variant="destructive"
+                                                size="sm"
+                                                @click="deactivate(admin.id)"
                                             >
-                                            <Button v-else variant="outline" size="sm" @click="reactivate(admin.id)">Reactivate</Button>
+                                                Deactivate
+                                            </Button>
+                                            <Button
+                                                v-else
+                                                variant="outline"
+                                                size="sm"
+                                                @click="reactivate(admin.id)"
+                                            >
+                                                Reactivate
+                                            </Button>
                                         </template>
+
+                                        <!-- Administrator rows: show read-only label -->
+                                        <span
+                                            v-else-if="admin.department === 'Administrator'"
+                                            class="text-xs text-gray-400 italic"
+                                        >
+                                            View only
+                                        </span>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="admins.data.length === 0">
-                                <td colspan="5" class="px-5 py-10 text-center text-gray-400">No admin users found.</td>
+                                <td colspan="5" class="px-5 py-10 text-center text-gray-400">
+                                    No users found.
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="admins.links?.length > 3" class="flex justify-center gap-1 border-t bg-gray-50 px-5 py-3">
+                <div
+                    v-if="admins.links?.length > 3"
+                    class="flex justify-center gap-1 border-t bg-gray-50 px-5 py-3"
+                >
                     <Link
                         v-for="link in admins.links"
                         :key="link.label"
                         :href="link.url || '#'"
                         :class="[
                             'rounded px-3 py-1.5 text-xs font-medium transition-colors',
-                            link.active ? 'bg-blue-600 text-white' : 'border bg-white text-gray-600 hover:bg-gray-100',
+                            link.active
+                                ? 'bg-blue-600 text-white'
+                                : 'border bg-white text-gray-600 hover:bg-gray-100',
                             !link.url ? 'pointer-events-none opacity-40' : '',
                         ]"
                     >

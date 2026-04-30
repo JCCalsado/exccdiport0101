@@ -56,8 +56,6 @@ interface Props {
         year_level?: string;
         status?: string;
     };
-    // Sort state is driven by the server and passed as props.
-    // This ensures the UI always reflects the actual query applied.
     sort: 'name' | 'balance';
     direction: 'asc' | 'desc';
     courses: string[];
@@ -73,8 +71,11 @@ const page = usePage();
 const isAdmin = computed(() => (page.props.auth as any).user?.role === 'admin');
 const isAccounting = computed(() => (page.props.auth as any).user?.role === 'accounting');
 
-const pageTitle = computed(() => isAdmin.value ? 'Student Management' : 'Student Fee Management');
-const pageDescription = computed(() => isAdmin.value ? 'View student information and create new students' : 'Manage student assessments and fee records');
+// ── CHANGED: Admin title is now "Student Overview" (read-only) ──
+const pageTitle = computed(() => isAdmin.value ? 'Student Overview' : 'Student Fee Management');
+const pageDescription = computed(() => isAdmin.value
+    ? 'View student enrollment and fee information (read-only)'
+    : 'Manage student assessments and fee records');
 
 const breadcrumbs = computed(() => [{ title: 'Dashboard', href: route('dashboard') }, { title: pageTitle.value }]);
 
@@ -83,18 +84,12 @@ const yearLevels = computed(() => props.yearLevels);
 const statuses = computed(() => props.statuses);
 
 const searchForm = ref({
-    search: props.filters.search || '',
-    course: props.filters.course || '',
+    search:     props.filters.search || '',
+    course:     props.filters.course || '',
     year_level: props.filters.year_level || '',
-    status: props.filters.status || '',
+    status:     props.filters.status || '',
 });
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Single function that dispatches all filter + sort requests.
- * Always sends the full parameter set so nothing is ever lost across requests.
- */
 const dispatchRequest = (overrides: Record<string, string> = {}) => {
     router.get(
         route('student-fees.index'),
@@ -111,8 +106,6 @@ const dispatchRequest = (overrides: Record<string, string> = {}) => {
     );
 };
 
-// ── Search / Filter ────────────────────────────────────────────────────────
-
 let searchTimeout: ReturnType<typeof setTimeout>;
 const performSearch = () => {
     clearTimeout(searchTimeout);
@@ -123,26 +116,15 @@ watch(searchForm, () => performSearch(), { deep: true });
 
 const search = () => performSearch();
 
-// ── Server-side Column Sorting ─────────────────────────────────────────────
-// sortField and sortDirection are READ from server props — not local state.
-// This guarantees the UI header indicators always match the actual DB order.
-
 const toggleSort = (field: 'name' | 'balance') => {
     let newDirection: 'asc' | 'desc';
-
     if (props.sort === field) {
-        // Same column → flip direction
         newDirection = props.direction === 'asc' ? 'desc' : 'asc';
     } else {
-        // New column → use sensible default: name=asc, balance=desc
         newDirection = field === 'balance' ? 'desc' : 'asc';
     }
-
-    // Sorting resets to page 1 — do not carry over a stale page number.
     dispatchRequest({ sort: field, direction: newDirection });
 };
-
-// ── Status helpers ─────────────────────────────────────────────────────────
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -155,8 +137,8 @@ const getStatusColor = (status: string) => {
 
 const getStatusConfig = (status: string) => {
     const map: Record<string, { badge: string; label: string }> = {
-        active:    { badge: 'bg-green-100 text-green-800 border border-green-200',   label: 'Active' },
-        graduated: { badge: 'bg-blue-100 text-blue-800 border border-blue-200',      label: 'Graduated' },
+        active:    { badge: 'bg-green-100 text-green-800 border border-green-200',    label: 'Active' },
+        graduated: { badge: 'bg-blue-100 text-blue-800 border border-blue-200',       label: 'Graduated' },
         pending:   { badge: 'bg-yellow-100 text-yellow-800 border border-yellow-200', label: 'Pending' },
         suspended: { badge: 'bg-orange-100 text-orange-800 border border-orange-200', label: 'Suspended' },
         dropped:   { badge: 'bg-red-100 text-red-800 border border-red-200',          label: 'Dropped' },
@@ -164,14 +146,6 @@ const getStatusConfig = (status: string) => {
     return map[status] ?? { badge: 'bg-gray-100 text-gray-800 border border-gray-200', label: status };
 };
 
-// ── Balance helpers ────────────────────────────────────────────────────────
-
-/**
- * Accurate remaining balance — resolved in priority order:
- *
- * 1. account.balance  (most authoritative when > 0)
- * 2. SUM(latestAssessment.paymentTerms[].balance)  (fallback)
- */
 const getRemainingBalance = (student: Student): number => {
     const accountBal = parseFloat(String(student.account?.balance ?? 0));
     if (accountBal > 0) return accountBal;
@@ -220,25 +194,19 @@ const getBalanceBadge = (student: Student): { label: string; cls: string } | nul
     return null;
 };
 
-// ── Summary stats ──────────────────────────────────────────────────────────
-// NOTE: These stats are scoped to the CURRENT PAGE intentionally.
-// A global aggregate (all pages) would require a separate backend query.
-// Label them as "This page" in the UI to avoid misleading the user.
-
 const totalStudents    = computed(() => props.students.data.length);
 const totalOutstanding = computed(() => props.students.data.reduce((sum, s) => sum + getRemainingBalance(s), 0));
 const fullyPaidCount   = computed(() => props.students.data.filter(s => getRemainingBalance(s) === 0).length);
 const behindCount      = computed(() => props.students.data.filter(s => getBalanceTimingStatus(s) === 'red').length);
 
 const summary = computed(() => ({
-    shownStudents:  totalStudents.value,
+    shownStudents:    totalStudents.value,
     totalOutstanding: totalOutstanding.value,
-    fullyPaid:      fullyPaidCount.value,
-    behindSchedule: behindCount.value,
+    fullyPaid:        fullyPaidCount.value,
+    behindSchedule:   behindCount.value,
 }));
 
-// ── Drop modal ─────────────────────────────────────────────────────────────
-
+// Drop modal — only used by Accounting
 const dropModal = ref(false);
 const selectedDropStudent = ref<Student | null>(null);
 const dropForm = useForm({ reason: '' });
@@ -260,16 +228,17 @@ const submitDrop = () => {
         <div class="w-full space-y-5 p-6">
             <Breadcrumbs :items="breadcrumbs" />
 
-            <!-- Page Header — Admin -->
+            <!-- ── CHANGED: Admin header — read-only, no Add Student button ── -->
             <div v-if="isAdmin" class="ccdi-page-header border-l-4 border-l-blue-600 bg-gradient-to-r from-blue-50 to-transparent">
                 <div>
-                    <h1 class="ccdi-section-title text-blue-900">Student Management</h1>
-                    <p class="ccdi-section-desc text-blue-700">View and manage student information across the institution</p>
+                    <h1 class="ccdi-section-title text-blue-900">Student Overview</h1>
+                    <p class="ccdi-section-desc text-blue-700">View student enrollment and fee information</p>
                 </div>
+                <!-- No action buttons for Admin — read-only view -->
                 <div class="flex items-center gap-2">
-                    <Link :href="route('student-fees.create-student')" class="ccdi-btn-secondary">
-                        Add Student
-                    </Link>
+                    <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        Read-only
+                    </span>
                 </div>
             </div>
 
@@ -349,8 +318,6 @@ const submitDrop = () => {
                             <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 Account ID
                             </th>
-
-                            <!-- Name — sortable -->
                             <th
                                 @click="toggleSort('name')"
                                 class="cursor-pointer select-none px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
@@ -358,27 +325,14 @@ const submitDrop = () => {
                                 <div class="flex items-center gap-1.5">
                                     <span>Name</span>
                                     <span class="inline-flex w-4 justify-center text-xs font-bold">
-                                        <template v-if="sort === 'name'">
-                                            {{ direction === 'asc' ? '↑' : '↓' }}
-                                        </template>
-                                        <template v-else>
-                                            <span class="text-muted-foreground/40">↕</span>
-                                        </template>
+                                        <template v-if="sort === 'name'">{{ direction === 'asc' ? '↑' : '↓' }}</template>
+                                        <template v-else><span class="text-muted-foreground/40">↕</span></template>
                                     </span>
                                 </div>
                             </th>
-
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Course
-                            </th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Year Level
-                            </th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Status
-                            </th>
-
-                            <!-- Balance — sortable -->
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Course</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Year Level</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                             <th
                                 @click="toggleSort('balance')"
                                 class="cursor-pointer select-none px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
@@ -386,25 +340,17 @@ const submitDrop = () => {
                                 <div class="flex items-center justify-end gap-1.5">
                                     <span>Balance</span>
                                     <span class="inline-flex w-4 justify-center text-xs font-bold">
-                                        <template v-if="sort === 'balance'">
-                                            {{ direction === 'asc' ? '↑' : '↓' }}
-                                        </template>
-                                        <template v-else>
-                                            <span class="text-muted-foreground/40">↕</span>
-                                        </template>
+                                        <template v-if="sort === 'balance'">{{ direction === 'asc' ? '↑' : '↓' }}</template>
+                                        <template v-else><span class="text-muted-foreground/40">↕</span></template>
                                     </span>
                                 </div>
                             </th>
-
-                            <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Actions
-                            </th>
+                            <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border bg-card">
-                        <!-- Use students.data directly — NO client-side sorting -->
                         <tr v-for="student in students.data" :key="student.id" class="transition-colors hover:bg-muted/30">
-                            <td class="px-5 py-3.5 text-xs font-mono text-muted-foreground">{{ student.account_id }}</td>
+                            <td class="px-5 py-3.5 font-mono text-xs text-muted-foreground">{{ student.account_id }}</td>
                             <td class="px-5 py-3.5">
                                 <div class="flex items-center gap-2.5">
                                     <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold" :class="getStatusColor(student.status)">
@@ -425,15 +371,35 @@ const submitDrop = () => {
                             </td>
                             <td class="px-5 py-3.5 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <Link :href="route('student-fees.show', student.id)" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" title="View Fees">
+
+                                    <!-- View — available to both Admin and Accounting -->
+                                    <Link
+                                        :href="route('student-fees.show', student.id)"
+                                        class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                                        title="View Fees"
+                                    >
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                     </Link>
-                                    <Link v-if="isAdmin" :href="route('student-fees.edit-student', student.student_db_id)" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700" title="Edit Student Info">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                    </Link>
-                                    <button v-if="student.status !== 'graduated'" @click="openDrop(student)" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700" title="Archive">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8m-9 4h4" /></svg>
-                                    </button>
+
+                                    <!-- ── CHANGED: Edit and Archive — Accounting only ── -->
+                                    <template v-if="isAccounting">
+                                        <Link
+                                            :href="route('student-fees.edit-student', student.student_db_id)"
+                                            class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                                            title="Edit Student Info"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </Link>
+                                        <button
+                                            v-if="student.status !== 'graduated'"
+                                            @click="openDrop(student)"
+                                            class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                                            title="Archive"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8m-9 4h4" /></svg>
+                                        </button>
+                                    </template>
+
                                 </div>
                             </td>
                         </tr>
@@ -468,7 +434,7 @@ const submitDrop = () => {
         </div>
     </AppLayout>
 
-    <!-- ── Archive / Drop Modal ────────────────────────────────────────── -->
+    <!-- Drop Modal — only ever triggered by Accounting -->
     <Teleport to="body">
         <div v-if="dropModal" class="fixed inset-0 z-50 flex items-center justify-center">
             <div class="absolute inset-0 bg-black/50" @click="closeDrop" />

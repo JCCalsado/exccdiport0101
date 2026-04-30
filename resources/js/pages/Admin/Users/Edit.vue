@@ -21,7 +21,7 @@ const breadcrumbs = [
 </script>
 
 <template>
-    <Head title="Edit Staff Member" />
+    <Head title="Edit Accounting Staff" />
 
     <AppLayout>
         <div class="w-full p-6">
@@ -29,17 +29,19 @@ const breadcrumbs = [
 
             <div class="max-w-2xl">
                 <div class="overflow-hidden rounded-lg bg-white p-6 shadow-md">
-                    <h1 class="mb-6 text-2xl font-bold text-gray-900">Edit Staff Member</h1>
+                    <h1 class="mb-6 text-2xl font-bold text-gray-900">Edit Accounting Staff</h1>
 
                     <div class="mb-4 rounded-lg bg-gray-50 p-4">
                         <div class="text-sm text-gray-600">
-                            <p><strong>Admin ID:</strong> {{ admin.id }}</p>
+                            <p><strong>Staff ID:</strong> {{ admin.id }}</p>
                             <p><strong>Created:</strong> {{ new Date(admin.created_at).toLocaleDateString() }}</p>
-                            <p v-if="admin.updated_by"><strong>Last Updated:</strong> {{ new Date(admin.updated_at).toLocaleDateString() }}</p>
+                            <p v-if="admin.updated_by">
+                                <strong>Last Updated:</strong> {{ new Date(admin.updated_at).toLocaleDateString() }}
+                            </p>
                         </div>
                     </div>
 
-                    <AdminForm :admin="admin" :is-editing="true" :department="admin.department" />
+                    <AdminForm :admin="admin" :is-editing="true" />
                 </div>
             </div>
         </div>
