@@ -325,68 +325,7 @@ function submit() {
               </div>
             </CardContent>
           </Card>
-
-          <!-- Curriculum Auto-Fill (Regular Students) -->
-          <div v-if="selectedStudent && !selectedStudent.is_irregular" class="space-y-2">
-            <!-- Loading -->
-            <div v-if="curriculumLoading"
-              class="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-              <Loader2 class="h-4 w-4 animate-spin shrink-0" />
-              Loading curriculum…
-            </div>
-
-            <!-- Success — Curriculum Table -->
-            <Card v-else-if="curriculumSubjects.length > 0" class="border-green-200">
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm flex items-center gap-2 text-green-800">
-                  <BookOpen class="h-4 w-4 text-green-600" />
-                  Curriculum — {{ selectedStudent.course }}, {{ selectedStudent.year_level }}
-                </CardTitle>
-              </CardHeader>
-              <CardContent class="pt-0">
-                <div class="overflow-x-auto rounded-md border border-green-100">
-                  <table class="w-full text-sm">
-                    <thead class="bg-green-50 text-green-800">
-                      <tr>
-                        <th class="text-center px-6 py-2 font-semibold text-xs uppercase tracking-wide">LEC</th>
-                        <th class="text-center px-6 py-2 font-semibold text-xs uppercase tracking-wide">LAB</th>
-                        <th class="text-center px-6 py-2 font-semibold text-xs uppercase tracking-wide">Billable</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-green-50">
-                      <tr
-                        v-for="subject in curriculumSubjects"
-                        :key="subject.id"
-                        class="hover:bg-green-50/50 transition-colors"
-                      >
-                        <td class="text-center px-6 py-2 tabular-nums">{{ subject.lec_units }}</td>
-                        <td class="text-center px-6 py-2 tabular-nums">{{ subject.lab_units }}</td>
-                        <td class="text-center px-6 py-2">
-                          <CheckCircle2 v-if="subject.is_billable" class="h-4 w-4 text-green-500 mx-auto" />
-                          <span v-else class="text-muted-foreground">—</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <p class="mt-2 text-xs text-green-700 flex items-center gap-1.5">
-                  <CheckCircle2 class="h-3.5 w-3.5 text-green-500 shrink-0" />
-                  {{ curriculumSubjects.filter(s => s.is_billable).length }} billable subject{{ curriculumSubjects.filter(s => s.is_billable).length !== 1 ? 's' : '' }}
-                  · {{ form.lec_units }} LEC unit{{ form.lec_units !== 1 ? 's' : '' }}
-                  · {{ form.lab_units }} with lab
-                  — <span class="italic">override in Units Enrolled below if needed</span>
-                </p>
-              </CardContent>
-            </Card>
-
-            <!-- Warning / not found -->
-            <div v-else-if="curriculumMessage"
-              class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <AlertTriangle class="h-4 w-4 mt-0.5 shrink-0" />
-              {{ curriculumMessage }}
-            </div>
-          </div>
-
+          
           <!-- Irregular student notice -->
           <div v-if="selectedStudent?.is_irregular"
             class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
