@@ -62,16 +62,6 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->grou
 });
 
 // ============================================
-// STUDENT ARCHIVE ROUTES (Admin view-only)
-// ============================================
-Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
-    Route::get('students', [StudentController::class, 'index'])->name('students.index');
-    Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
-    Route::get('students-archive', [StudentController::class, 'archive'])->name('students.archive');
-    Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])->name('students.workflow-history');
-});
-
-// ============================================
 // STUDENT FEE MANAGEMENT ROUTES
 // ============================================
 
@@ -134,17 +124,33 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->group(function () {
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
-    // Users — view only
+    // User management — Admin can view all, but create/edit/deactivate Accounting only
     Route::get('users', [AdminController::class, 'index'])->name('users.index');
+    Route::get('users/create', [AdminController::class, 'create'])->name('users.create');
+    Route::post('users', [AdminController::class, 'store'])->name('users.store');
     Route::get('users/{user}', [AdminController::class, 'show'])->name('users.show');
+    Route::get('users/{user}/edit', [AdminController::class, 'edit'])->name('users.edit');
+    Route::put('users/{user}', [AdminController::class, 'update'])->name('users.update');
+    Route::post('users/{user}/deactivate', [AdminController::class, 'deactivate'])->name('users.deactivate');
+    Route::post('users/{user}/reactivate', [AdminController::class, 'reactivate'])->name('users.reactivate');
 
-    // Notifications — view only (dismiss is banner management, not record mutation)
+    // Notifications — view only for admin
     Route::get('notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
     Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('admin.notifications.show');
     Route::post('notifications/{notification}/dismiss', [NotificationController::class, 'dismiss'])->name('admin.notifications.dismiss');
 
     // Payment terms — view only
     Route::get('/payment-terms', [PaymentTermsController::class, 'index'])->name('admin.payment-terms.index');
+});
+
+// ============================================
+// STUDENT ARCHIVE ROUTES (Admin view-only)
+// ============================================
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
+    Route::get('students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
+    Route::get('students-archive', [StudentController::class, 'archive'])->name('students.archive');
+    Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])->name('students.workflow-history');
 });
 
 // ============================================

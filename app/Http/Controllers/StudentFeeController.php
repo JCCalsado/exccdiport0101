@@ -400,6 +400,7 @@ class StudentFeeController extends Controller
         return Inertia::render('StudentFees/Show', [
             'student' => [
                 'id'           => $user->id,
+                'student_db_id'  => $user->student?->id, 
                 'name'         => $this->buildStudentName($user),
                 'account_id'   => $user->account_id,
                 'course'       => $user->course,

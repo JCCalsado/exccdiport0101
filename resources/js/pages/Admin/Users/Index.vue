@@ -26,6 +26,7 @@ interface Props {
         total_accounting: number;
         total_active_accounting: number;
     };
+    // canManage: passed from controller; true for admin role
     canManage: boolean;
 }
 
@@ -45,15 +46,15 @@ const departmentBadge = (dept: string) => {
 };
 
 const deactivate = (id: number) => {
-    if (confirm('Deactivate this staff member?')) {
+    if (confirm('Deactivate this Accounting staff member?')) {
         const form = useForm({});
-        form.post(route('admin.users.deactivate', id));
+        form.post(route('users.deactivate', id));
     }
 };
 
 const reactivate = (id: number) => {
     const form = useForm({});
-    form.post(route('admin.users.reactivate', id));
+    form.post(route('users.reactivate', id));
 };
 </script>
 
@@ -67,10 +68,13 @@ const reactivate = (id: number) => {
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Admin Users</h1>
                     <p class="mt-1 text-sm text-gray-500">
-                        View administrators and manage accounting staff accounts
+                        Manage accounting staff accounts. Administrator accounts are read-only.
                     </p>
                 </div>
-                <!-- Only show Add button for canManage — links to Accounting staff creation -->
+                <!--
+                    Add Accounting Staff button — always visible since canManage is
+                    true for the admin role. Department is locked to Accounting in the form.
+                -->
                 <Link v-if="canManage" :href="route('users.create')">
                     <Button>+ Add Accounting Staff</Button>
                 </Link>
@@ -80,7 +84,7 @@ const reactivate = (id: number) => {
             <div v-if="stats" class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div class="rounded-lg border-2 border-purple-200 bg-white p-6 shadow-sm">
                     <h3 class="mb-2 text-lg font-bold text-gray-900">Administrator</h3>
-                    <p class="mb-4 text-sm text-gray-600">Full system administrators — view only</p>
+                    <p class="mb-4 text-sm text-gray-600">Full system administrators — view only, cannot be edited</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-4xl font-bold text-purple-600">{{ stats.total_active_admins }}</span>
                         <span class="text-sm text-gray-500">Active</span>
@@ -88,7 +92,7 @@ const reactivate = (id: number) => {
                 </div>
                 <div class="rounded-lg border-2 border-blue-200 bg-white p-6 shadow-sm">
                     <h3 class="mb-2 text-lg font-bold text-gray-900">Accounting</h3>
-                    <p class="mb-4 text-sm text-gray-600">Accounting staff — can be added and edited</p>
+                    <p class="mb-4 text-sm text-gray-600">Accounting staff — can be added, edited, and deactivated</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-4xl font-bold text-blue-600">{{ stats.total_active_accounting }}</span>
                         <span class="text-sm text-gray-500">Active</span>
@@ -145,15 +149,15 @@ const reactivate = (id: number) => {
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-2">
-                                        <!-- View is always available -->
+                                        <!-- View is always available for all departments -->
                                         <Link :href="route('users.show', admin.id)">
                                             <Button variant="ghost" size="sm">View</Button>
                                         </Link>
 
                                         <!--
                                             Edit / Deactivate / Reactivate:
-                                            Only available for Accounting department users.
-                                            Administrator accounts are view-only.
+                                            Only for Accounting department.
+                                            Administrator accounts are strictly read-only.
                                         -->
                                         <template v-if="canManage && admin.department === 'Accounting'">
                                             <Link :href="route('users.edit', admin.id)">
@@ -177,10 +181,10 @@ const reactivate = (id: number) => {
                                             </Button>
                                         </template>
 
-                                        <!-- Administrator rows: show read-only label -->
+                                        <!-- Administrator rows: read-only label -->
                                         <span
                                             v-else-if="admin.department === 'Administrator'"
-                                            class="text-xs text-gray-400 italic"
+                                            class="text-xs italic text-gray-400"
                                         >
                                             View only
                                         </span>

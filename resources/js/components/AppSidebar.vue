@@ -9,7 +9,7 @@ import {
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
-    Banknote, BarChart3, Bell, BookOpen, CheckCircle2, ClipboardList,
+    Banknote, BarChart3, Bell, CheckCircle2,
     CreditCard, GraduationCap, History, LayoutGrid, Receipt, Settings, Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -31,19 +31,21 @@ const mainNavItems = computed<NavItem[]>(() => {
         { title: 'Transaction History', href: safeRoute('transactions.index'), icon: History,       roles: ['student'] },
 
         // ── Admin ──
-        { title: 'Admin Dashboard',  href: safeRoute('admin.dashboard'),              icon: LayoutGrid,    roles: ['admin'] },
-        { title: 'Admin Users',      href: safeRoute('users.index'),                  icon: Users,         roles: ['admin'] },
-        // CHANGED: renamed from 'Student Management' to 'Student Overview' to reflect read-only access
-        { title: 'Student Overview', href: safeRoute('student-fees.index'),            icon: GraduationCap, roles: ['admin'] },
-        { title: 'Student Archive',  href: safeRoute('students.archive'),              icon: History,       roles: ['admin'] },
+        // Admin manages their own dashboard, the user list (where they manage Accounting staff),
+        // and has read-only visibility into student data.
+        { title: 'Admin Dashboard',  href: safeRoute('admin.dashboard'),    icon: LayoutGrid,    roles: ['admin'] },
+        { title: 'Admin Users',      href: safeRoute('users.index'),        icon: Users,         roles: ['admin'] },
+        { title: 'Student Overview', href: safeRoute('student-fees.index'), icon: GraduationCap, roles: ['admin'] },
+        { title: 'Student Archive',  href: safeRoute('students.archive'),   icon: History,       roles: ['admin'] },
 
         // ── Accounting ──
-        { title: 'Accounting Dashboard',    href: safeRoute('accounting.dashboard'),              icon: Banknote,     roles: ['accounting'] },
-        { title: 'Student Fee Management',  href: safeRoute('student-fees.index'),                icon: Receipt,      roles: ['accounting'] },
-        { title: 'Financial Reports',       href: safeRoute('accounting.financial-reports'),      icon: BarChart3,    roles: ['accounting'] },
-        { title: 'Fee Settings',            href: safeRoute('accounting.fee-settings.index'),     icon: Settings,     roles: ['accounting'] },
-        { title: 'Payment Approvals',       href: safeRoute('approvals.index'),                   icon: CheckCircle2, roles: ['accounting'] },
-        { title: 'Notifications',           href: safeRoute('admin.notifications.index'),         icon: Bell,         roles: ['accounting'] },
+        { title: 'Accounting Dashboard',   href: safeRoute('accounting.dashboard'),             icon: Banknote,     roles: ['accounting'] },
+        { title: 'Student Fee Management', href: safeRoute('student-fees.index'),               icon: Receipt,      roles: ['accounting'] },
+        { title: 'Financial Reports',      href: safeRoute('accounting.financial-reports'),     icon: BarChart3,    roles: ['accounting'] },
+        { title: 'Fee Settings',           href: safeRoute('accounting.fee-settings.index'),    icon: Settings,     roles: ['accounting'] },
+        { title: 'Payment Approvals',      href: safeRoute('approvals.index'),                  icon: CheckCircle2, roles: ['accounting'] },
+        // Fixed: was incorrectly pointing to admin.notifications.index
+        { title: 'Notifications',          href: safeRoute('accounting.notifications.index'),   icon: Bell,         roles: ['accounting'] },
     ];
     return items.filter((item) => !item.roles || item.roles.includes(role));
 });

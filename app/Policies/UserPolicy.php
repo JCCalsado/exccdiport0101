@@ -7,7 +7,7 @@ use App\Models\User;
 class UserPolicy
 {
     /**
-     * Any active admin can view the user list (view-only).
+     * Any active admin can view the user list.
      */
     public function viewAny(User $user): bool
     {
@@ -15,7 +15,8 @@ class UserPolicy
     }
 
     /**
-     * Active admins can view other users. Users can always view their own profile.
+     * Active admins can view any staff profile.
+     * Users can always view their own profile.
      */
     public function view(User $user, User $model): bool
     {
@@ -27,23 +28,32 @@ class UserPolicy
     }
 
     /**
-     * Admin cannot create new users.
-     * User creation is not permitted through the admin panel anymore.
-     * (Registration flow handles new users separately.)
+     * Admin can create Accounting staff only.
+     * Creating additional Admin accounts is forbidden.
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isAdmin() && $user->is_active;
     }
 
     /**
-     * Users can update their own profile settings.
-     * Admin can no longer update other users' records.
+     * Admin can update Accounting department users only.
+     * Admin-to-Admin editing is blocked in the controller layer.
+     * Users may edit their own profile.
      */
     public function update(User $user, User $model): bool
     {
-        // A user may always edit their own profile
-        return $user->id === $model->id && $user->is_active;
+        // Self-edit always allowed
+        if ($user->id === $model->id && $user->is_active) {
+            return true;
+        }
+
+        // Admin may only edit Accounting department staff, not other Admins
+        if ($user->isAdmin() && $user->is_active && $model->department === 'Accounting') {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -65,12 +75,22 @@ class UserPolicy
     }
 
     /**
-     * Admin can no longer activate/deactivate accounts.
-     * This action has been removed from the admin role.
+     * Admin can activate/deactivate Accounting users only.
+     * Cannot deactivate other Admins or themselves.
      */
     public function manageAdmins(User $user, User $model): bool
     {
-        return false;
+        if (! $user->isAdmin() || ! $user->is_active) {
+            return false;
+        }
+
+        // Cannot deactivate yourself
+        if ($user->id === $model->id) {
+            return false;
+        }
+
+        // Can only manage Accounting department users
+        return $model->department === 'Accounting';
     }
 
     public function acceptTerms(User $user, User $model): bool
@@ -78,9 +98,6 @@ class UserPolicy
         return $user->id === $model->id;
     }
 
-    /**
-     * Check if user is an active admin.
-     */
     public function isAdmin(User $user): bool
     {
         return $user->isAdmin() && $user->is_active;
