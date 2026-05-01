@@ -150,6 +150,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::get('students', [StudentController::class, 'index'])->name('students.index');
     Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
     Route::get('students-archive', [StudentController::class, 'archive'])->name('students.archive');
+    Route::post('students/{student}/reinstate', [StudentController::class, 'reinstate'])->name('students.reinstate');
     Route::get('students/{student}/workflow-history', [StudentController::class, 'workflowHistory'])->name('students.workflow-history');
 });
 

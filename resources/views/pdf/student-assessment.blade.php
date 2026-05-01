@@ -240,11 +240,7 @@
                 <img src="{{ public_path('images/ccdi-logo.png') }}" class="header-logo" alt="CCDI">
                 For now we render a text placeholder.
             --}}
-            <div style="width:48px; height:48px; border:2px solid #c00; border-radius:50%;
-                        display:inline-block; text-align:center; line-height:48px;
-                        font-size:13px; font-weight:bold; color:#c00;">
-                CDi
-            </div>
+<img src="{{ public_path('images/ccdilogo.png') }}" style="width:60px; height:60px;" alt="CCDI">
         </td>
         <td class="header-text-cell">
             <div class="header-school-name">
@@ -317,44 +313,17 @@
                 </thead>
                 <tbody>
                     @php
-                        /*
-                         * $assessment->subjects is stored as a JSON array of subject IDs
-                         * in store(). The fee_breakdown array contains the actual subject
-                         * data (code, name, lec_units, lab_units) we need here.
-                         *
-                         * We build a deduplicated list: one row per subject_id, showing
-                         * its code, name, and total units (lec + lab).
-                         *
-                         * For subjects without an entry in fee_breakdown (e.g. misc rows),
-                         * we skip them — they are not enrolled subjects.
-                         */
-                        $subjectRows = collect($assessment->fee_breakdown ?? [])
-                            ->filter(fn($row) => !empty($row['subject_id']))
-                            ->groupBy('subject_id')
-                            ->map(function($rows, $subjectId) {
-                                $lecRow = collect($rows)->firstWhere('category', 'Tuition');
-                                $labRow = collect($rows)->firstWhere('category', 'Laboratory');
-                                $code = $lecRow['code'] ?? $labRow['code'] ?? '—';
-                                // Strip "-LAB" suffix from lab-only codes
-                                $code = preg_replace('/-LAB$/i', '', $code);
-                                $name = $lecRow['name'] ?? ($labRow['name'] ?? '—');
-                                // Strip "Laboratory — " prefix from lab-only names
-                                $name = preg_replace('/^Laboratory\s*[—-]\s*/i', '', $name);
-                                $lecUnits = $lecRow['units'] ?? $lecRow['lec_units'] ?? 0;
-                                $labUnits = $labRow['units'] ?? $labRow['lab_units'] ?? 0;
-                                return [
-                                    'subject_id' => $subjectId,
-                                    'code'       => $code,
-                                    'name'       => $name,
-                                    'units'      => (int)$lecUnits + (int)$labUnits,
-                                ];
-                            })
-                            ->values();
+                        // Use subjects passed from controller (from subjects table)
+                        $subjectRows = collect($subjects ?? [])->map(function($s) {
+                            return [
+                                'code'  => $s->code,
+                                'name'  => $s->name,
+                                'units' => (float)($s->units ?? 0),
+                            ];
+                        });
 
                         $totalUnits = $subjectRows->sum('units');
-
-                        // Pad to at least 10 rows so the form looks official
-                        $minRows    = 10;
+                        $minRows    = 12;
                         $emptyRows  = max(0, $minRows - $subjectRows->count());
                     @endphp
 
@@ -362,7 +331,7 @@
                     <tr>
                         <td class="code-col">{{ $row['code'] }}</td>
                         <td class="title-col">{{ $row['name'] }}</td>
-                        <td class="units-col">{{ $row['units'] > 0 ? $row['units'] : '' }}</td>
+                        <td class="units-col">{{ $row['units'] > 0 ? number_format((float)$row['units'], 1) : '' }}</td>
                         <td class="time-col"></td>
                         <td class="day-col"></td>
                     </tr>
@@ -381,7 +350,7 @@
                     {{-- Total row --}}
                     <tr class="total-row">
                         <td colspan="2" style="text-align:right; padding-right:6px;">Total:</td>
-                        <td class="total-units">{{ $totalUnits }}</td>
+                        <td class="total-units">{{ number_format((float)$totalUnits, 1) }}</td>
                         <td colspan="2"></td>
                     </tr>
                 </tbody>
@@ -410,28 +379,13 @@
                  */
                 $breakdown = collect($assessment->fee_breakdown ?? []);
 
-                $registrationFee = $breakdown->filter(
-                    fn($r) => stripos($r['name'] ?? '', 'registration') !== false
-                )->sum('amount');
-
-                $tuitionFee = $breakdown->filter(
-                    fn($r) => ($r['category'] ?? '') === 'Tuition'
-                )->sum('amount');
-
-                $labFee = $breakdown->filter(
-                    fn($r) => ($r['category'] ?? '') === 'Laboratory'
-                )->sum('amount');
-
-                // Misc = everything that is NOT Tuition, Laboratory, or Registration
-                $miscFee = $breakdown->filter(function($r) {
-                    if (in_array($r['category'] ?? '', ['Tuition', 'Laboratory'])) return false;
-                    if (stripos($r['name'] ?? '', 'registration') !== false) return false;
-                    return true;
-                })->sum('amount');
-
+                $tuitionFee      = (float) ($assessment->tuition_fee ?? 0);
+                $labFee          = (float) ($assessment->lab_fee ?? 0);
+                $miscFee         = (float) ($assessment->misc_fee ?? 0);
+                $otherFees       = (float) ($assessment->other_fees ?? 0);
+                $registrationFee = 0; // Not stored separately
                 $totalAssessment = (float) $assessment->total_assessment;
 
-                // Format helper — show blank line if zero
                 $fmt = fn(float $v) => $v > 0
                     ? number_format($v, 2)
                     : '&nbsp;';

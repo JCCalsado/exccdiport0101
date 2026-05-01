@@ -166,7 +166,8 @@ const canReinstate = (student: Student) => ['dropped', 'inactive'].includes(stud
 
             <!-- Table -->
             <div class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm">
-                <table class="min-w-full divide-y divide-gray-100 text-sm">
+                <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100 text-sm whitespace-nowrap">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-5 py-3 text-left font-medium text-gray-600">Student ID</th>
@@ -205,7 +206,7 @@ const canReinstate = (student: Student) => ['dropped', 'inactive'].includes(stud
                             <td class="px-5 py-4 text-gray-500">{{ formatDate(student.updated_at) }}</td>
 
                             <td class="px-5 py-4">
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-col items-start gap-1">
                                     <Link
                                         :href="route('student-fees.show', student.user?.id ?? student.id) + '?from=archive'"
                                         class="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200 transition-colors ring-inset hover:bg-indigo-100"
@@ -237,6 +238,7 @@ const canReinstate = (student: Student) => ['dropped', 'inactive'].includes(stud
                         </tr>
                     </tbody>
                 </table>
+                </div>
 
                 <!-- Pagination -->
                 <div v-if="students.links?.length > 3" class="flex justify-center gap-1 border-t bg-gray-50 px-5 py-3">

@@ -16,7 +16,7 @@ const page = usePage();
 
             <!-- Header -->
             <header class="flex w-full items-center justify-between px-8 py-5">
-                <div>
+                <div class="[&_span]:!text-white [&_span]:!text-lg [&_span]:font-bold">
                     <AppLogo />
                 </div>
                 <nav class="flex items-center gap-3">
