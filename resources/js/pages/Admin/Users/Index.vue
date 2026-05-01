@@ -34,7 +34,7 @@ defineProps<Props>();
 
 const breadcrumbs = [
     { title: 'Admin', href: route('admin.dashboard') },
-    { title: 'Admin Users', href: route('users.index') },
+    { title: 'Users', href: route('users.index') },
 ];
 
 const departmentBadge = (dept: string) => {
@@ -59,16 +59,16 @@ const reactivate = (id: number) => {
 </script>
 
 <template>
-    <Head title="Admin Users" />
+    <Head title="Users" />
     <AppLayout>
         <div class="w-full p-6">
             <Breadcrumbs :items="breadcrumbs" />
 
             <div class="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Admin Users</h1>
+                    <h1 class="text-3xl font-bold text-gray-900">Users</h1>
                     <p class="mt-1 text-sm text-gray-500">
-                        Manage accounting staff accounts. Administrator accounts are read-only.
+                        Manage accounting staff accounts.
                     </p>
                 </div>
                 <!--
@@ -81,15 +81,7 @@ const reactivate = (id: number) => {
             </div>
 
             <!-- Stats cards -->
-            <div v-if="stats" class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div class="rounded-lg border-2 border-purple-200 bg-white p-6 shadow-sm">
-                    <h3 class="mb-2 text-lg font-bold text-gray-900">Administrator</h3>
-                    <p class="mb-4 text-sm text-gray-600">Full system administrators — view only, cannot be edited</p>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-4xl font-bold text-purple-600">{{ stats.total_active_admins }}</span>
-                        <span class="text-sm text-gray-500">Active</span>
-                    </div>
-                </div>
+            <div v-if="stats" class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-1">
                 <div class="rounded-lg border-2 border-blue-200 bg-white p-6 shadow-sm">
                     <h3 class="mb-2 text-lg font-bold text-gray-900">Accounting</h3>
                     <p class="mb-4 text-sm text-gray-600">Accounting staff — can be added, edited, and deactivated</p>

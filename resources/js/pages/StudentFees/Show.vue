@@ -784,6 +784,21 @@ const getStudentStatusColor = (status: string) => {
     };
     return map[status] ?? 'bg-gray-100 text-gray-800';
 };
+
+const formatPaymentMethod = (m: string): string => {
+    const labels: Record<string, string> = {
+        cash: 'Cash',
+        gcash: 'GCash',
+        bank_transfer: 'Bank Transfer',
+        credit_card: 'Credit Card',
+        debit_card: 'Debit Card',
+        paymaya: 'Maya',
+        maya: 'Maya',
+        paymongo: 'PayMongo',
+    };
+    return labels[m?.toLowerCase()] ?? m ?? '—';
+};
+
 </script>
 
 <template>
@@ -1414,7 +1429,7 @@ const getStudentStatusColor = (status: string) => {
                                     <td class="px-6 py-3 whitespace-nowrap">
                                         <span
                                             class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 capitalize"
-                                            >{{ payment.payment_method }}</span
+                                            >{{ formatPaymentMethod(payment.payment_method) }}</span
                                         >
                                     </td>
                                     <td class="px-6 py-3 text-sm text-gray-600">

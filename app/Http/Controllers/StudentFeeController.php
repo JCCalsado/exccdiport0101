@@ -731,11 +731,42 @@ class StudentFeeController extends Controller
             ->map(fn ($s) => ['label' => $s->label, 'amount' => (float) $s->amount])
             ->all();
 
+        // Map semester format: "2nd" -> "2nd Sem", "1st" -> "1st Sem"
+        $semesterMap = [
+            '1st' => '1st Sem', '2nd' => '2nd Sem', 'Summer' => 'Summer',
+            '1st Sem' => '1st Sem', '2nd Sem' => '2nd Sem',
+        ];
+        $semesterForSubjects = $semesterMap[$assessment->semester] ?? $assessment->semester;
+
+        // For irregular students, subjects may be stored in assessment->subjects (JSON array of IDs)
+        // For regular students, fetch from subjects table by course/year/semester
+        $isIrregular = (bool) $user->is_irregular;
+
+        if ($isIrregular && !empty($assessment->subjects)) {
+            $subjectIds = is_array($assessment->subjects)
+                ? $assessment->subjects
+                : json_decode($assessment->subjects, true);
+            $subjects = \DB::table('subjects')
+                ->whereIn('id', $subjectIds ?? [])
+                ->where('is_active', 1)
+                ->orderBy('id')
+                ->get();
+        } else {
+            $subjects = \DB::table('subjects')
+                ->where('course', $assessment->course)
+                ->where('year_level', $assessment->year_level)
+                ->where('semester', $semesterForSubjects)
+                ->where('is_active', 1)
+                ->orderBy('id')
+                ->get();
+        }
+
         $pdf = Pdf::loadView('pdf.student-assessment', [
             'student'      => $user,
             'assessment'   => $assessment,
             'paymentTerms' => $paymentTerms,
             'miscItems'    => $miscItems,
+            'subjects'     => $subjects,
         ]);
 
         $pdf->setPaper('A4', 'portrait');

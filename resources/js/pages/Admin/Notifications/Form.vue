@@ -121,6 +121,25 @@ watch(studentMode, (mode) => {
     searchQuery.value = '';
 });
 
+
+const generateMessage = (type: string): string => {
+    const msgs: Record<string, string> = {
+        general: `Dear Student,\n\nWe would like to inform you of an important announcement from CCDI.\n\n[Add your message here]\n\nShould you have any questions, please contact the accounting office.\n\nSincerely,\nCCDI Accounting Office`,
+        payment_due: `Dear Student,\n\nThis is a friendly reminder that your payment is due soon. Please settle your balance on or before the due date to avoid any penalties.\n\nPayment Details:\n\u2022 Amount Due: [Amount]\n\u2022 Due Date: [Due Date]\n\u2022 Payment Term: [Term]\n\nYou may pay at the cashier\'s office or through our online payment portal.\n\nSincerely,\nCCDI Accounting Office`,
+        payment_approved: `Dear Student,\n\nWe are pleased to inform you that your payment has been successfully verified and approved.\n\nPayment Details:\n\u2022 Reference No.: [Reference]\n\u2022 Amount Paid: [Amount]\n\u2022 Date Processed: [Date]\n\nThank you for settling your account. Please keep your receipt for your records.\n\nSincerely,\nCCDI Accounting Office`,
+        payment_rejected: `Dear Student,\n\nWe regret to inform you that your recent payment submission could not be verified and has been rejected.\n\nReason: [State reason here]\n\nPlease resubmit your proof of payment or visit the accounting office for assistance.\n\nSincerely,\nCCDI Accounting Office`,
+    };
+    return msgs[type] ?? msgs.general;
+};
+
+if (!form.message) {
+    form.message = generateMessage(form.type);
+}
+
+watch(() => form.type, (newType) => {
+    form.message = generateMessage(newType);
+});
+
 const submit = () => {
     if (termSelectionMode.value === 'none') {
         form.term_ids                = [];
@@ -136,9 +155,9 @@ const submit = () => {
     if (studentMode.value !== 'multi')  form.user_ids = [];
 
     if (isEditing.value && props.notification?.id) {
-        form.put(route('admin.notifications.update', props.notification.id));
+       form.put(route('admin.notifications.show', props.notification.id));
     } else {
-        form.post(route('admin.notifications.store'));
+        form.post(route('accounting.notifications.store'));
     }
 };
 
@@ -218,7 +237,7 @@ const messages: Record<string, string> = {
 };
 
 const breadcrumbs = [
-    { title: 'Admin', href: route('admin.dashboard') },
+    { title: 'Accounting', href: route('accounting.dashboard') },
     { title: 'Notifications', href: route('admin.notifications.index') },
     {
         title: isEditing.value
@@ -226,7 +245,7 @@ const breadcrumbs = [
             : 'Create Notification',
         href: isEditing.value
             ? route('admin.notifications.edit', props.notification?.id)
-            : route('admin.notifications.create'),
+           : route('admin.notifications.index'),
     },
 ];
 </script>

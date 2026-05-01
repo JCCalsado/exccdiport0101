@@ -63,7 +63,7 @@
                 <div class="grid grid-cols-2 gap-6">
                     <div>
                         <p class="text-sm text-gray-600">Payment Method</p>
-                        <p class="font-semibold">{{ workflow.payment_method }}</p>
+                        <p class="font-semibold">{{ formatPaymentMethod(workflow.payment_method) }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-600">Created At</p>
@@ -171,4 +171,19 @@ const rejectWorkflow = async () => {
         },
     });
 };
+
+const formatPaymentMethod = (m: string): string => {
+    const labels: Record<string, string> = {
+        cash: 'Cash',
+        gcash: 'GCash',
+        bank_transfer: 'Bank Transfer',
+        credit_card: 'Credit Card',
+        debit_card: 'Debit Card',
+        paymaya: 'Maya',
+        maya: 'Maya',
+        paymongo: 'PayMongo',
+    };
+    return labels[m?.toLowerCase()] ?? m ?? '—';
+};
+
 </script>

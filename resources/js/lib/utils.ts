@@ -25,8 +25,17 @@ export function urlIsActive(
 ): boolean {
     const href = toUrl(urlToCheck) ?? '';
 
-    // Strip query strings for comparison
-    const hrefPath = href.split('?')[0].replace(/\/$/, '');
+    // Strip origin so full URLs like https://example.com/student-fees
+    // become just /student-fees (same format as Inertia's page.url)
+    let hrefPath: string;
+    try {
+        hrefPath = new URL(href).pathname;
+    } catch {
+        hrefPath = href;
+    }
+
+    // Strip query strings and trailing slashes
+    hrefPath = hrefPath.split('?')[0].replace(/\/$/, '');
     const currentPath = currentUrl.split('?')[0].replace(/\/$/, '');
 
     // Exact match always wins
@@ -42,3 +51,4 @@ export function urlIsActive(
 
     return false;
 }
+
