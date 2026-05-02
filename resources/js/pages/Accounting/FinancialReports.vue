@@ -107,6 +107,20 @@ const exportPDF = () => {
         semester: selectedSemester.value,
     })
 }
+
+const exportAssessments = () => {
+    window.location.href = route('accounting.financial-reports.export-assessments', {
+        school_year: selectedSchoolYear.value,
+        semester: selectedSemester.value,
+    })
+}
+
+const exportReceipts = () => {
+    window.location.href = route('accounting.financial-reports.export-receipts', {
+        school_year: selectedSchoolYear.value,
+        semester: selectedSemester.value,
+    })
+}
 </script>
 
 <template>
@@ -122,10 +136,20 @@ const exportPDF = () => {
                     <h1 class="text-3xl font-bold text-foreground">Financial Reports</h1>
                     <p class="mt-1 text-sm text-muted-foreground">Monitor assessments, payments, and financial health</p>
                 </div>
-                <Button @click="exportPDF" class="gap-2">
-                    <Download class="h-4 w-4" />
-                    Export PDF
-                </Button>
+                <div class="flex gap-2 flex-wrap">
+                    <Button @click="exportPDF" class="gap-2">
+                        <Download class="h-4 w-4" />
+                        Financial Report
+                    </Button>
+                    <Button @click="exportAssessments" variant="outline" class="gap-2">
+                        <Download class="h-4 w-4" />
+                        Student Assessments
+                    </Button>
+                    <Button @click="exportReceipts" variant="outline" class="gap-2">
+                        <Download class="h-4 w-4" />
+                        Payment Receipts
+                    </Button>
+                </div>
             </div>
 
             <!-- Filters -->

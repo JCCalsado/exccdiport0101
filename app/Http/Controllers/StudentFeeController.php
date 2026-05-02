@@ -761,6 +761,38 @@ class StudentFeeController extends Controller
                 ->get();
         }
 
+        // If type=receipt, generate receipt PDF using latest paid transaction
+        if ($request->query('type') === 'receipt') {
+            $latestPayment = $user->transactions()
+                ->where('kind', 'payment')
+                ->where('status', 'paid')
+                ->where('semester', $assessment->semester)
+                ->with('user.account', 'user.student')
+                ->latest('paid_at')
+                ->first();
+
+            if (!$latestPayment) {
+                abort(404, 'No paid transaction found for this assessment.');
+            }
+
+            $receiptUser    = $latestPayment->user->load('account', 'student');
+            $currentBalance = (float) ($receiptUser->account->balance ?? 0);
+            $paymentAmount  = (float) $latestPayment->amount;
+            $balanceBefore    = round($currentBalance + $paymentAmount, 2);
+            $remainingBalance = round($currentBalance, 2);
+
+            $receiptPdf = Pdf::loadView('pdf.receipt', [
+                'transaction'      => $latestPayment,
+                'targetUser'       => $receiptUser,
+                'student'          => $receiptUser,
+                'paymentAmount'    => $paymentAmount,
+                'balanceBefore'    => $balanceBefore,
+                'remainingBalance' => $remainingBalance,
+            ]);
+            $receiptPdf->setPaper('A4', 'portrait');
+            return $receiptPdf->download('receipt-' . ($user->account_id ?? 'student') . '-' . $latestPayment->reference . '.pdf');
+        }
+
         $pdf = Pdf::loadView('pdf.student-assessment', [
             'student'      => $user,
             'assessment'   => $assessment,
@@ -892,7 +924,11 @@ class StudentFeeController extends Controller
             'year_level'    => 'required|string|max:50',
             'birthday'      => 'nullable|date',
             'phone'         => 'nullable|string|max:20',
-            'address'       => 'nullable|string|max:255',
+            'address_house_lot_unit'    => 'nullable|string|max:255',
+            'address_street_name'       => 'nullable|string|max:255',
+            'address_barangay'          => 'nullable|string|max:255',
+            'address_municipality_city' => 'nullable|string|max:255',
+            'address_province'          => 'nullable|string|max:255',
         ]);
 
         if ($student->user) {
@@ -905,7 +941,11 @@ class StudentFeeController extends Controller
                 'year_level'     => $validated['year_level'],
                 'birthday'       => $validated['birthday'],
                 'phone'          => $validated['phone'],
-                'address'        => $validated['address'],
+                'address_house_no'    => $validated['address_house_lot_unit'] ?? null,
+                'address_street'      => $validated['address_street_name'] ?? null,
+                'address_barangay'    => $validated['address_barangay'] ?? null,
+                'address_municipality'=> $validated['address_municipality_city'] ?? null,
+                'address_province'    => $validated['address_province'] ?? null,
             ]);
         }
 

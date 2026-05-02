@@ -869,6 +869,16 @@ const formatPaymentMethod = (m: string): string => {
                             <Download class="mr-2 h-4 w-4" /> Export PDF
                         </Button>
                     </a>
+                    <a v-if="selectedAssessment" :href="route('student-fees.export-pdf', student.id) + (selectedAssessmentId ? '?assessment_id=' + selectedAssessmentId + '&type=receipt' : '?type=receipt')" target="_blank">
+                        <Button variant="outline" size="sm">
+                            <Download class="mr-2 h-4 w-4" /> Receipt
+                        </Button>
+                    </a>
+                    <a v-if="selectedAssessment" :href="exportUrl" target="_blank">
+                        <Button variant="outline" size="sm">
+                            <Download class="mr-2 h-4 w-4" /> Assessment
+                        </Button>
+                    </a>
                     <Link v-if="isAccounting" :href="route('student-fees.edit-student', student.student_db_id)">
                         <Button variant="outline" size="sm">
                             <BookOpen class="mr-2 h-4 w-4" /> Edit Info
