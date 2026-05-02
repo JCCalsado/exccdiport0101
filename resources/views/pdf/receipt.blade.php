@@ -132,7 +132,7 @@
     <table style="width:100%; border-collapse:collapse; margin-bottom:10px;">
         <tr>
             <td style="width:70px; vertical-align:middle; padding-right:10px;">
-                <img src="file://{{ str_replace('\\', '/', public_path('images/logo.png')) }}"
+                <img src="file://{{ str_replace('\\', '/', public_path('images/ccdilogo.png')) }}"
                      width="60" height="60" style="display:block;">
             </td>
             <td style="vertical-align:middle; text-align:center;">
@@ -165,9 +165,9 @@
     <table class="info-table">
         <tr>
             <td class="lbl">Student No.:</td>
+            <td>{{ $student->student->student_id ?? '—' }}</td>
+            <td class="lbl">Account ID:</td>
             <td>{{ $student->account_id ?? '—' }}</td>
-            <td class="lbl">Account No.:</td>
-            <td>{{ $student->account->account_number ?? '—' }}</td>
         </tr>
         <tr>
             <td class="lbl">Full Name:</td>
@@ -191,10 +191,16 @@
         ?? $transaction->type
         ?? 'General Payment';
     $paymentDesc = $transaction->meta['description'] ?? null;
-    $method = $transaction->payment_channel
-        ? strtoupper(str_replace('_', ' ', $transaction->payment_channel))
-        : 'N/A';
-    $academicTerm = trim(($transaction->year ?? '') . ' ' . ($transaction->semester ?? '')) ?: 'N/A';
+    $methodRaw = $transaction->payment_channel ?? $transaction->payment_method ?? '';
+    $methodLabels = [
+        'cash' => 'Cash', 'gcash' => 'GCash', 'bank_transfer' => 'Bank Transfer',
+        'credit_card' => 'Credit Card', 'debit_card' => 'Debit Card',
+        'paymaya' => 'Maya', 'maya' => 'Maya', 'paymongo' => 'Online Payment',
+    ];
+    $method = $methodLabels[strtolower($methodRaw)] ?? strtoupper(str_replace('_', ' ', $methodRaw)) ?: 'N/A';
+    $schoolYear = $transaction->meta['school_year'] ?? $transaction->year ?? '';
+    $semester = $transaction->semester ?? '';
+    $academicTerm = trim($schoolYear . ($semester ? ' ' . $semester . ' Sem' : '')) ?: 'N/A';
     $paidDate = $transaction->paid_at
         ? $transaction->paid_at->format('F d, Y')
         : $transaction->created_at->format('F d, Y');

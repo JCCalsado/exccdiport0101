@@ -239,4 +239,68 @@ class FinancialReportsController extends Controller
 
         return $years;
     }
+
+    // ─── Export: All Student Assessments PDF ─────────────────────────────────
+
+    public function exportAssessments(Request $request)
+    {
+        $schoolYear = $request->query('school_year', '');
+        $semester   = $request->query('semester', '');
+
+        $assessments = StudentAssessment::where('school_year', $schoolYear)
+            ->where('semester', $semester)
+            ->with(['user', 'paymentTerms'])
+            ->orderBy('id')
+            ->get();
+
+        $miscItems = \App\Models\FeeSetting::whereIn('category', ['miscellaneous', 'other'])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn ($s) => ['label' => $s->label, 'amount' => (float) $s->amount])
+            ->all();
+
+        $pdf = Pdf::loadView('pdf.bulk-assessments', [
+            'schoolYear'  => $schoolYear,
+            'semester'    => $semester,
+            'assessments' => $assessments,
+            'miscItems'   => $miscItems,
+            'generatedAt' => now(),
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+        $filename = 'assessments-' . $schoolYear . '-' . str_replace(' ', '-', $semester) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    // ─── Export: All Payment Receipts PDF ────────────────────────────────────
+
+    public function exportReceipts(Request $request)
+    {
+        $schoolYear = $request->query('school_year', '');
+        $semester   = $request->query('semester', '');
+        $year       = (int) explode('-', $schoolYear)[0];
+
+        $transactions = \App\Models\Transaction::with(['user.account', 'user.student'])
+            ->where('kind', 'payment')
+            ->where('status', 'paid')
+            ->where('year', $year)
+            ->where('semester', $semester)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.bulk-receipts', [
+            'schoolYear'   => $schoolYear,
+            'semester'     => $semester,
+            'transactions' => $transactions,
+            'generatedAt'  => now(),
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+        $filename = 'receipts-' . $schoolYear . '-' . str_replace(' ', '-', $semester) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
 }

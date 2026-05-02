@@ -162,6 +162,8 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
     Route::get('/transactions', [TransactionController::class, 'index'])->name('accounting.transactions.index');
     Route::get('/financial-reports', [FinancialReportsController::class, 'index'])->name('accounting.financial-reports');
     Route::get('/financial-reports/export', [FinancialReportsController::class, 'export'])->name('accounting.financial-reports.export');
+    Route::get('/financial-reports/export-assessments', [FinancialReportsController::class, 'exportAssessments'])->name('accounting.financial-reports.export-assessments');
+    Route::get('/financial-reports/export-receipts', [FinancialReportsController::class, 'exportReceipts'])->name('accounting.financial-reports.export-receipts');
 
     Route::get('/fee-settings', [FeeSettingsController::class, 'index'])->name('accounting.fee-settings.index');
     Route::patch('/fee-settings/{feeSetting}', [FeeSettingsController::class, 'update'])->name('accounting.fee-settings.update');
