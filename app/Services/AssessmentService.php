@@ -253,11 +253,12 @@ class AssessmentService
         $labFee  = round($labSubjects * $labFeePerSubject, 2);
         $miscFee = round($rates['misc_total'], 2);
 
-        // Tuition components
+        // NSTP billing rule:
+        // NSTP (1.5 units) is ALWAYS billed at full price regardless of discount
+        // Discount applies ONLY to non-NSTP lec units
         $rawBillableTuition = round($lecUnits * $tuitionPerUnit, 2);
-        $nstpTuition        = round($nstpLecUnits * $tuitionPerUnit, 2); // 1.5 × 364 = 546
+        $nstpTuition        = round($nstpLecUnits * $tuitionPerUnit, 2);
 
-        // Discount applies ONLY to billable (non-NSTP) tuition
         if ($discountPercentage > 0 && $discountPercentage <= 100) {
             $discountSaving     = round($rawBillableTuition * ($discountPercentage / 100), 2);
             $discountedBillable = round($rawBillableTuition - $discountSaving, 2);
@@ -269,6 +270,7 @@ class AssessmentService
         }
 
         $finalTuition = $discountedBillable + $nstpTuition;
+        $total        = round($finalTuition + $labFee + $entrepreneurFee + $miscFee, 2);
         $total        = round($finalTuition + $labFee + $entrepreneurFee + $miscFee, 2);
 
         return [
@@ -313,20 +315,61 @@ class AssessmentService
      * ✅ FIX: Last term absorbs all rounding remainder so that
      *    SUM(term.amount) === total_assessment is always guaranteed.
      */
-    public static function buildPaymentTerms(float $total, array $rates): array
-    {
-        $terms        = [];
-        $runningTotal = 0.0;
-        $termConfigs  = $rates['payment_terms'];
-        $lastIndex    = count($termConfigs) - 1;
+    /**
+     * Build payment term records using the correct CCDI fee distribution rules:
+     *
+     *   Upon Registration = Miscellaneous Fee (₱4,700 fixed, one-time)
+     *   Prelim            = 30% × (Tuition + Lab) + misc carryover if underpaid
+     *   Midterm           = 30% × (Tuition + Lab)
+     *   Pre-Final         = 25% × (Tuition + Lab)
+     *   Final             = 15% × (Tuition + Lab)
+     *
+     * The misc carryover on Prelim only applies when a student underpays
+     * Upon Registration — at assessment creation time balance = full amount,
+     * so the carryover is tracked via StudentPaymentService when payments post.
+     *
+     * @param  float $total  Total assessment (tuition + lab + misc)
+     * @param  array $rates  Output of loadRates()
+     * @param  float $miscFee  Miscellaneous fee portion (defaults to rates misc_total)
+     * @param  float $tuitionAndLabFee  Tuition + Lab base (defaults to total - misc)
+     */
+    public static function buildPaymentTerms(
+        float  $total,
+        array  $rates,
+        ?float $miscFee         = null,
+        ?float $tuitionAndLabFee = null
+    ): array {
+        $miscFee          ??= round($rates['misc_total'], 2);
+        $tuitionAndLabFee ??= round($total - $miscFee, 2);
 
-        foreach ($termConfigs as $index => $config) {
-            if ($index === $lastIndex) {
-                // Last term absorbs remainder to guarantee SUM = total exactly.
-                $amount = round($total - $runningTotal, 2);
+        // Term percentages for Tuition+Lab base (must sum to 100)
+        $termPcts = [
+            ['term_name' => 'Upon Registration', 'term_order' => 1, 'percentage' => 0,    'base' => 'misc'],
+            ['term_name' => 'Prelim',            'term_order' => 2, 'percentage' => 30,   'base' => 'tuition_lab'],
+            ['term_name' => 'Midterm',           'term_order' => 3, 'percentage' => 30,   'base' => 'tuition_lab'],
+            ['term_name' => 'Pre-Final',         'term_order' => 4, 'percentage' => 25,   'base' => 'tuition_lab'],
+            ['term_name' => 'Final',             'term_order' => 5, 'percentage' => 15,   'base' => 'tuition_lab'],
+        ];
+
+        $terms        = [];
+        $runningTL    = 0.0;   // running total of tuition+lab terms (for rounding safety)
+        $tlTerms      = array_filter($termPcts, fn($t) => $t['base'] === 'tuition_lab');
+        $lastTLIndex  = array_key_last(array_values(array_filter($termPcts, fn($t) => $t['base'] === 'tuition_lab')));
+        $tlCounter    = 0;
+
+        foreach ($termPcts as $config) {
+            if ($config['base'] === 'misc') {
+                // Upon Registration = fixed misc fee
+                $amount = $miscFee;
             } else {
-                $amount = round($total * ($config['percentage'] / 100), 2);
-                $runningTotal += $amount;
+                // Tuition+Lab terms — last one absorbs rounding remainder
+                if ($tlCounter === count(array_filter($termPcts, fn($t) => $t['base'] === 'tuition_lab')) - 1) {
+                    $amount = round($tuitionAndLabFee - $runningTL, 2);
+                } else {
+                    $amount = round($tuitionAndLabFee * ($config['percentage'] / 100), 2);
+                    $runningTL += $amount;
+                }
+                $tlCounter++;
             }
 
             $terms[] = [
@@ -335,7 +378,7 @@ class AssessmentService
                 'percentage' => $config['percentage'],
                 'amount'     => $amount,
                 'balance'    => $amount,
-                'status'     => 'pending',   // ✅ was 'unpaid' — broke all balance queries
+                'status'     => 'pending',
                 'due_date'   => null,
                 'paid_date'  => null,
                 'created_at' => now(),
@@ -380,18 +423,9 @@ class AssessmentService
         $code = strtoupper(trim($code));
         $name = strtoupper(trim($name));
 
-        return str_starts_with($code, 'PATHFIT')
-            || str_starts_with($code, 'PE ')
-            || in_array($code, ['PE1', 'PE2', 'PE3', 'PE4', 'PE 1', 'PE 2', 'PE 3', 'PE 4'])
-            || str_contains($name, 'MOVEMENT COMPETENCY')
-            || str_contains($name, 'EXERCISE-BASED FITNESS')
-            || str_contains($name, 'OUTDOOR AND ADVENTURE')
-            || str_contains($name, 'DANCE')
-            || str_contains($name, 'RHYTHMIC')
-            || str_contains($name, 'RECREATIONAL SPORTS')
-            || str_contains($name, 'INDIVIDUAL AND TEAM SPORTS')
-            || str_contains($name, 'PHYSICAL FITNESS')
-            || str_contains($name, 'PATHFIT');
+        // All subjects are billable — only NSTP is handled separately (fixed 1.5 units)
+        // PE, PATHFIT, Rhythmic, etc. are all billed normally
+        return false;
     }
 
     /**
