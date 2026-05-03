@@ -38,7 +38,11 @@ class ProfileUpdateRequest extends FormRequest
             ],
             'birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'phone'    => ['nullable', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
-            'address'  => ['nullable', 'string', 'max:500'],
+            'address_house_lot_unit'    => ['nullable', 'string', 'max:255'],
+            'address_street_name'       => ['nullable', 'string', 'max:255'],
+            'address_barangay'          => ['nullable', 'string', 'max:255'],
+            'address_municipality_city' => ['nullable', 'string', 'max:255'],
+            'address_province'          => ['nullable', 'string', 'max:255'],
         ];
 
         // Student-specific rules — now correctly comparing against the Enum value

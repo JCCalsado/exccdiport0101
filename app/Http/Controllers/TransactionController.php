@@ -36,6 +36,7 @@ class TransactionController extends Controller
         // BUG FIX #2: Remove non-existent 'super_admin' role
         if (in_array($user->role->value, ['admin', 'accounting'])) {
             $transactions = Transaction::with('user')
+                ->where('kind', 'payment')
                 ->orderByDesc('year')
                 ->orderByDesc('semester')
                 ->get()

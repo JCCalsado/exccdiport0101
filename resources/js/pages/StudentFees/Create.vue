@@ -198,14 +198,35 @@ const tuitionFee         = computed(() => discountedBillable.value + nstpTuition
 const labFee             = computed(() => baseLabFee.value)
 const totalAssessment    = computed(() => tuitionFee.value + labFee.value + entrepreneurFee.value + miscFee.value)
 
-const paymentTermBreakdown = computed(() =>
-  props.feeRates.payment_terms.map((t) => ({
-    term_name:  t.term_name,
-    term_order: t.term_order,
-    percentage: t.percentage,
-    amount:     Math.round(totalAssessment.value * (t.percentage / 100) * 100) / 100,
-  }))
+const tuitionAndLab = computed(() =>
+  discountedBillable.value + nstpTuition.value + labFee.value + entrepreneurFee.value
 )
+
+const paymentTermBreakdown = computed(() => {
+  const tl      = tuitionAndLab.value
+  const misc    = miscFee.value
+  const tlTerms = props.feeRates.payment_terms.filter((t) => t.term_name !== 'Upon Registration')
+  let runningTL = 0
+
+  return props.feeRates.payment_terms.map((t, idx) => {
+    let amount: number
+    if (t.term_name === 'Upon Registration') {
+      amount = misc
+    } else if (tl === 0) {
+      amount = 0
+    } else {
+      const tlIdx = tlTerms.findIndex((x) => x.term_name === t.term_name)
+      const isLastTL = tlIdx === tlTerms.length - 1
+      if (isLastTL) {
+        amount = Math.round((tl - runningTL) * 100) / 100
+      } else {
+        amount = Math.round(tl * (t.percentage / 100) * 100) / 100
+        runningTL += amount
+      }
+    }
+    return { term_name: t.term_name, term_order: t.term_order, percentage: t.percentage, amount }
+  })
+})
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
 

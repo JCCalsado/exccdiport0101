@@ -87,7 +87,11 @@ const form = useForm({
     middle_initial: user.value.middle_initial ?? '',
     email: user.value.email ?? '',
     birthday: formatBirthday(user.value.birthday),
-    address: user.value.address ?? '',
+    address_house_lot_unit: user.value.address_house_no ?? '',
+    address_street_name: user.value.address_street ?? '',
+    address_barangay: user.value.address_barangay ?? '',
+    address_municipality_city: user.value.address_municipality ?? '',
+    address_province: user.value.address_province ?? 'Sorsogon',
     phone: user.value.phone ?? '',
     account_id: user.value.account_id ?? '',
     course: user.value.course ?? '',
@@ -280,10 +284,34 @@ const profileInitial = computed(() => {
                             <InputError class="mt-2" :message="form.errors.phone" />
                         </div>
 
-                        <div class="grid gap-2">
-                            <Label for="address">Address</Label>
-                            <Input id="address" v-model="form.address" autocomplete="street-address" placeholder="Sorsogon City" />
-                            <InputError class="mt-2" :message="form.errors.address" />
+                        <div class="grid gap-2 col-span-full">
+                            <Label>Address</Label>
+                            <div class="grid gap-2 rounded-md border border-input p-3">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <Input v-model="form.address_house_lot_unit" placeholder="Unit/Lot No." />
+                                        <InputError class="mt-1" :message="form.errors.address_house_lot_unit" />
+                                    </div>
+                                    <div>
+                                        <Input v-model="form.address_street_name" placeholder="Street Name" />
+                                        <InputError class="mt-1" :message="form.errors.address_street_name" />
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <Input v-model="form.address_barangay" placeholder="Barangay" />
+                                        <InputError class="mt-1" :message="form.errors.address_barangay" />
+                                    </div>
+                                    <div>
+                                        <Input v-model="form.address_municipality_city" placeholder="City/Municipality" />
+                                        <InputError class="mt-1" :message="form.errors.address_municipality_city" />
+                                    </div>
+                                    <div>
+                                        <Input v-model="form.address_province" placeholder="Province" />
+                                        <InputError class="mt-1" :message="form.errors.address_province" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Faculty (Accounting/Admin Only) -->
