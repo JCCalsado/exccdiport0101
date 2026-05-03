@@ -325,6 +325,20 @@ const payNow = () => {
     if (!canMakePayment.value) return;
     router.visit(route('student.account', { tab: 'payment' }));
 };
+
+const formatPaymentMethod = (m: string): string => {
+    const labels: Record<string, string> = {
+        cash: 'Cash',
+        gcash: 'GCash',
+        bank_transfer: 'Bank Transfer',
+        credit_card: 'Credit Card',
+        debit_card: 'Debit Card',
+        paymaya: 'Maya',
+        maya: 'Maya',
+        paymongo: 'Online Payment',
+    };
+    return labels[m?.toLowerCase()] ?? m ?? '—';
+};
 </script>
 
 <template>
@@ -454,7 +468,7 @@ const payNow = () => {
                                 <tr class="bg-gray-100 text-xs text-gray-600 uppercase">
                                     <th class="p-3 font-semibold">Reference</th>
                                     <th v-if="isStaff" class="p-3 font-semibold">Student</th>
-                                    <th class="p-3 font-semibold">Kind</th>
+                                    <th class="p-3 font-semibold">Method</th>
                                     <th class="p-3 font-semibold">Category</th>
                                     <th class="p-3 font-semibold">Year & Semester</th>
                                     <th class="p-3 font-semibold">Amount</th>
@@ -472,27 +486,22 @@ const payNow = () => {
                                             <p class="text-xs text-gray-500">{{ t.user?.account_id }}</p>
                                         </div>
                                     </td>
-                                    <td class="p-3">
-                                        <span
-                                            class="rounded-full px-2 py-1 text-xs font-semibold"
-                                            :class="t.kind === 'charge' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'"
-                                        >
-                                            {{ t.kind === 'charge' ? 'Assessment' : 'Payment' }}
-                                        </span>
+                                    <td class="p-3 text-sm">
+                                        <span v-if="t.kind === 'charge'" class="text-gray-400 italic text-xs">—</span>
+                                        <span v-else>{{ formatPaymentMethod(t.payment_method) }}</span>
                                     </td>
                                     <td class="p-3 text-sm">
                                         <!-- Show term_name from meta if available (e.g. "Prelim"), otherwise type -->
                                         {{ t.meta?.term_name ?? t.type }}
                                     </td>
                                     <td class="p-3 text-sm">
-                                        <div v-if="t.year || t.semester" class="space-y-0.5">
-                                            <p v-if="t.year" class="font-medium">{{ t.year }}</p>
-                                            <p v-if="t.semester" class="text-xs text-gray-500">{{ t.semester }}</p>
-                                        </div>
+                                        <span v-if="t.year || t.semester" class="font-medium">
+                                            {{ [t.year, t.semester].filter(Boolean).join(' ') }}
+                                        </span>
                                         <span v-else class="text-gray-400">—</span>
                                     </td>
-                                    <td class="p-3 font-semibold" :class="t.kind === 'charge' ? 'text-red-600' : 'text-green-600'">
-                                        {{ t.kind === 'charge' ? '−' : '+' }}{{ formatCurrency(t.amount) }}
+                                    <td class="p-3 font-semibold text-gray-800">
+                                        {{ formatCurrency(t.amount) }}
                                     </td>
                                     <td class="p-3">
                                         <span

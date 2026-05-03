@@ -144,13 +144,14 @@ const getDueDateColor = (dueDate: string): 'red' | 'amber' | 'green' => {
 const nextPaymentDue = computed(() => {
     if (!unpaidTerms.value.length) return null;
     const term = unpaidTerms.value[0];
-    const daysUntilDue = Math.ceil((new Date(term.due_date).getTime() - Date.now()) / 86_400_000);
+    const dueDateMs = term.due_date ? new Date(term.due_date).getTime() : null;
+    const daysUntilDue = dueDateMs ? Math.ceil((dueDateMs - Date.now()) / 86_400_000) : null;
     return {
         ...term,
         dueColor: getDueDateColor(term.due_date),
         daysUntilDue,
         formattedDueDate: formatDate(term.due_date),
-        isDueOrOverdue: daysUntilDue <= 7,
+        isDueOrOverdue: daysUntilDue !== null && daysUntilDue <= 7,
     };
 });
 
@@ -374,7 +375,7 @@ const dismissReminder = (id: number) => {
                             <Link :href="route('student.account')" class="block w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center text-sm font-medium text-foreground transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
                                 View Account
                             </Link>
-                            <Link :href="route('student.account', { tab: 'payment' })" class="block w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center text-sm font-medium text-emerald-800 transition-all hover:bg-emerald-100">
+                            <Link :href="route('payment.create')" class="block w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center text-sm font-medium text-emerald-800 transition-all hover:bg-emerald-100">
                                 Make Payment
                             </Link>
                             <Link :href="route('transactions.index')" class="block w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center text-sm font-medium text-foreground transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700">
@@ -406,17 +407,17 @@ const dismissReminder = (id: number) => {
                                         <p class="text-xs text-muted-foreground">Due date</p>
                                         <p class="text-sm font-semibold" :class="nextPaymentDue.dueColor === 'red' ? 'text-red-700' : nextPaymentDue.dueColor === 'amber' ? 'text-amber-700' : 'text-foreground'">{{ nextPaymentDue.formattedDueDate }}</p>
                                     </div>
-                                    <span v-if="nextPaymentDue.daysUntilDue >= 0" class="rounded-lg px-2.5 py-1 text-xs font-semibold" :class="nextPaymentDue.dueColor === 'red' ? 'bg-red-200 text-red-800' : nextPaymentDue.dueColor === 'amber' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-200 text-emerald-800'">
+                                    <span v-if="nextPaymentDue.daysUntilDue !== null && nextPaymentDue.daysUntilDue >= 0" class="rounded-lg px-2.5 py-1 text-xs font-semibold" :class="nextPaymentDue.dueColor === 'red' ? 'bg-red-200 text-red-800' : nextPaymentDue.dueColor === 'amber' ? 'bg-amber-200 text-amber-800' : 'bg-emerald-200 text-emerald-800'">
                                         {{ nextPaymentDue.daysUntilDue }} day{{ nextPaymentDue.daysUntilDue !== 1 ? 's' : '' }} left
                                     </span>
-                                    <span v-else class="rounded-lg bg-red-200 px-2.5 py-1 text-xs font-semibold text-red-800">
+                                    <span v-else-if="nextPaymentDue.daysUntilDue !== null" class="rounded-lg bg-red-200 px-2.5 py-1 text-xs font-semibold text-red-800">
                                         {{ Math.abs(nextPaymentDue.daysUntilDue) }} day{{ Math.abs(nextPaymentDue.daysUntilDue) !== 1 ? 's' : '' }} overdue
                                     </span>
                                 </div>
                             </div>
                             <div class="flex gap-2">
                                 <Link :href="route('student.account')" class="flex-1 rounded-xl border border-border bg-card py-2 text-center text-sm font-medium text-foreground transition-all hover:bg-muted">View Details</Link>
-                                <Link :href="route('student.account', { tab: 'payment', term_id: nextPaymentDue.id })" class="flex-1 rounded-xl py-2 text-center text-sm font-semibold text-white transition-all hover:opacity-90" style="background: linear-gradient(135deg, #16a34a, #15803d);">Pay Now</Link>
+                                <Link :href="route('payment.create', { term_id: nextPaymentDue.id })" class="flex-1 rounded-xl py-2 text-center text-sm font-semibold text-white transition-all hover:opacity-90" style="background: linear-gradient(135deg, #16a34a, #15803d);">Pay Now</Link>
                             </div>
                         </div>
                     </div>

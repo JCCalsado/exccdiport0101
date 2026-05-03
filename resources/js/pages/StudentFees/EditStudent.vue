@@ -20,7 +20,11 @@ interface StudentData {
     year_level: string
     birthday: string | null
     phone: string | null
-    address: string | null
+    address_house_no: string | null
+    address_street: string | null
+    address_barangay: string | null
+    address_municipality: string | null
+    address_province: string | null
   }
 }
 
@@ -46,7 +50,11 @@ const form = useForm({
   year_level: props.student.user.year_level,
   birthday: props.student.user.birthday ?? '',
   phone: props.student.user.phone ?? '',
-  address: props.student.user.address ?? '',
+  address_house_lot_unit: props.student.user.address_house_no ?? '',
+  address_street_name: props.student.user.address_street ?? '',
+  address_barangay: props.student.user.address_barangay ?? '',
+  address_municipality_city: props.student.user.address_municipality ?? '',
+  address_province: props.student.user.address_province ?? 'Sorsogon',
 })
 
 const submit = () => {
@@ -167,16 +175,34 @@ const submit = () => {
               </p>
             </div>
 
-            <div class="space-y-2">
-              <Label for="address">Address</Label>
-              <Input
-                id="address"
-                v-model="form.address"
-                placeholder="Sorsogon City"
-              />
-              <p v-if="form.errors.address" class="text-sm text-red-500">
-                {{ form.errors.address }}
-              </p>
+            <div class="space-y-2 col-span-full">
+              <Label>Address</Label>
+              <div class="grid gap-2 rounded-md border border-input p-3">
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input v-model="form.address_house_lot_unit" placeholder="Unit/Lot No." />
+                    <p v-if="form.errors.address_house_lot_unit" class="text-sm text-red-500">{{ form.errors.address_house_lot_unit }}</p>
+                  </div>
+                  <div>
+                    <Input v-model="form.address_street_name" placeholder="Street Name" />
+                    <p v-if="form.errors.address_street_name" class="text-sm text-red-500">{{ form.errors.address_street_name }}</p>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div>
+                    <Input v-model="form.address_barangay" placeholder="Barangay" />
+                    <p v-if="form.errors.address_barangay" class="text-sm text-red-500">{{ form.errors.address_barangay }}</p>
+                  </div>
+                  <div>
+                    <Input v-model="form.address_municipality_city" placeholder="City/Municipality" />
+                    <p v-if="form.errors.address_municipality_city" class="text-sm text-red-500">{{ form.errors.address_municipality_city }}</p>
+                  </div>
+                  <div>
+                    <Input v-model="form.address_province" placeholder="Province" />
+                    <p v-if="form.errors.address_province" class="text-sm text-red-500">{{ form.errors.address_province }}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

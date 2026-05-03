@@ -46,4 +46,11 @@ return [
     'brevo' => [
         'key' => env('BREVO_API_KEY'),
     ],
+
+    'philsms' => [
+        'token'     => env('PHILSMS_TOKEN', ''),
+        'sender_id' => env('PHILSMS_SENDER_ID', 'PhilSMS'),
+        'enabled'   => env('PHILSMS_ENABLED', false),
+    ],
+
 ];
